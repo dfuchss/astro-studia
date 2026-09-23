@@ -23,8 +23,17 @@
     padding-bottom: 0.35rem;
     border-bottom: 1px solid var(--border);
   }
+  /* h3 and h4 take the section accent and the muted ink respectively, so a
+     long post has three visibly distinct heading levels without needing three
+     distinct sizes. */
   .prose h3 {
     margin-top: 1.75rem;
+    color: var(--sec-strong);
+  }
+  .prose h4 {
+    margin-top: 1.25rem;
+    font-size: 1rem;
+    color: var(--text-muted);
   }
 
   .prose ul,
