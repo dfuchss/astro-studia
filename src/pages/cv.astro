@@ -1,120 +1,217 @@
 ---
+import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Email from '../components/Email.astro';
 import SocialRow from '../components/SocialRow.astro';
 import { SITE, SELF } from '../consts.ts';
 import { cv, dateRange, isCurrent } from '../lib/cv.ts';
+import portrait from '../assets/portrait.svg';
+
+/*
+ * Each section picks its own shape from its data: a section whose entries
+ * carry dates gets the timeline with the rail, one whose entries do not — a
+ * language list, a set of honours — gets plain rows. Deciding per section
+ * rather than per site means adding "Grants" to cv.yml needs no code here.
+ */
+const shaped = cv.sections.map((section) => ({
+  ...section,
+  timeline: section.entries.some((e) => e.start || e.end),
+}));
 ---
 
-<Base title="cv" description={cv.summary} section="cv">
+<Base title="Curriculum vitae" description={cv.summary} section="cv">
   <section class="wrap section">
-    <p class="kicker" data-sigil="##">cv</p>
-    <h1>{SELF.first} {SELF.last}</h1>
-    {cv.summary && <p class="lede">{cv.summary}</p>}
+    <div class="profile">
+      <div>
+        <p class="kicker" data-sigil="##">cv</p>
+        <h1>Curriculum vitae</h1>
+        {cv.summary && <p class="summary">{cv.summary}</p>}
+        <p class="contact mono">
+          <span class="muted">{SELF.first} {SELF.last}</span>
+          <span aria-hidden="true">·</span>
+          <Email address={SITE.email} />
+        </p>
+        <SocialRow />
+      </div>
+      <Image class="portrait" src={portrait} alt="" width={320} height={320} />
+    </div>
 
-    <p class="contact">
-      <Email address={SITE.email} class="chip" label="Email" />
-    </p>
-    <SocialRow />
-
-    <nav class="jump" aria-label="Jump to a section">
+    <nav class="jump mono" aria-label="Jump to a section">
       {
-        cv.sections.map((s) => (
+        shaped.map((s) => (
           <a class="chip" href={`#${s.id}`}>
-            <span aria-hidden="true">#</span>
-            {s.heading}
+            {s.heading.toLowerCase()} <span>{s.entries.length}</span>
           </a>
         ))
       }
     </nav>
-  </section>
 
-  {
-    cv.sections.map((section) => (
-      <section class="wrap section block" id={section.id}>
-        <h2>{section.heading}</h2>
-        <ul class="entries">
-          {section.entries.map((entry) => (
-            <li class="entry reveal">
-              <p class="mono when">{dateRange(entry)}</p>
-              <div class="what">
-                <h3>
-                  {entry.title}
-                  {isCurrent(entry) && <span class="now mono">now</span>}
-                </h3>
-                {entry.org && (
-                  <p class="org">
-                    {entry.url ? (
-                      <a href={entry.url} rel="noopener">
-                        {entry.org}
-                      </a>
-                    ) : (
-                      entry.org
-                    )}
-                    {entry.location && <span class="where"> · {entry.location}</span>}
-                  </p>
-                )}
-                {entry.note && <p class="note">{entry.note}</p>}
-                {entry.details && entry.details.length > 0 && (
-                  <ul class="details">
-                    {entry.details.map((d) => (
-                      <li>{d}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-    ))
-  }
+    {
+      shaped.map((section) => (
+        <section class="block" id={section.id}>
+          <h2>
+            {section.heading} <span class="count mono">{section.entries.length}</span>
+          </h2>
+
+          <ol class:list={['entries', section.timeline ? 'timeline' : 'rows']}>
+            {section.entries.map((entry) => (
+              <li>
+                <span class="when mono">{dateRange(entry)}</span>
+                <div class="what">
+                  <h3>
+                    {entry.title}
+                    {isCurrent(entry) && <span class="now mono">now</span>}
+                  </h3>
+                  {entry.org && (
+                    <p class="where">
+                      {entry.url ? (
+                        <a href={entry.url} rel="noopener">
+                          {entry.org}
+                        </a>
+                      ) : (
+                        entry.org
+                      )}
+                      {entry.location && <span class="muted">, {entry.location}</span>}
+                    </p>
+                  )}
+                  {entry.note && <p class="detail note">{entry.note}</p>}
+                  {entry.details && entry.details.length > 0 && (
+                    <ul class="details">
+                      {entry.details.map((d) => (
+                        <li>{d}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))
+    }
+  </section>
 </Base>
 
 <style>
-  .lede {
-    max-width: 60ch;
+  /* No box: the lede reads as prose, closed off by the same hairline the rest
+     of the site uses to separate sections. */
+  .profile {
+    display: grid;
+    /* Same as the home page hero: cap the text at its reading measure so the
+       portrait sits beside it rather than across a void at the far edge. */
+    grid-template-columns: minmax(0, 64ch) auto;
+    justify-content: start;
+    gap: 2.5rem;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  /* Matches the home page hero portrait exactly. */
+  .profile :global(.portrait) {
+    width: 11rem;
+    height: 11rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--sec-line);
+    box-shadow: 0 0 0 6px var(--sec-dim);
+  }
+  .summary {
     color: var(--text-muted);
+    max-width: 62ch;
   }
   .contact {
-    margin: 1.25rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5ch;
+    align-items: center;
+    margin: 0;
+    color: var(--text-faint);
+  }
+  .jump span {
+    color: var(--sec);
   }
 
+  .block {
+    margin-top: 3rem;
+  }
   .block h2 {
-    padding-bottom: 0.35rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding-bottom: 0.4rem;
     border-bottom: 1px solid var(--border);
+  }
+  .count {
+    font-size: var(--fs-mono);
+    color: var(--text-faint);
+    font-weight: 400;
   }
 
   .entries {
     list-style: none;
-    margin: 0;
+    margin: 1.25rem 0 0;
     padding: 0;
   }
-  /* A date rail down the left, so the eye can scan the timeline without
-     reading any of the entries. */
-  .entry {
+
+  /* Timeline: a date rail on the left, content on the right. One custom
+     property positions both the dot and the line, so they cannot end up a
+     couple of pixels apart. */
+  .timeline > li {
+    --rail: 10.25rem;
     display: grid;
-    grid-template-columns: 10rem minmax(0, 1fr);
-    gap: 0 1.1rem;
-    padding: 1.1rem 0;
-    border-bottom: 1px solid var(--border);
+    grid-template-columns: 10.5rem 1fr;
+    gap: 0 1.25rem;
+    padding-bottom: 1.5rem;
+    position: relative;
   }
-  .when {
-    margin: 0;
-    padding-top: 0.25rem;
-    color: var(--text-faint);
+  .timeline > li::before {
+    content: '';
+    position: absolute;
+    left: var(--rail);
+    top: 0.45rem;
+    margin-left: -3.5px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sec);
+    box-shadow: 0 0 0 4px var(--sec-dim);
+  }
+  .timeline > li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: var(--rail);
+    top: 1.15rem;
+    bottom: 0;
+    margin-left: -0.5px;
+    width: 1px;
+    background: var(--border);
   }
 
-  h3 {
+  /* Rows: for a section whose entries have no dates, where a rail would be a
+     line of dots against nothing. */
+  .rows > li {
+    display: grid;
+    grid-template-columns: 10.5rem 1fr;
+    gap: 0 1.25rem;
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .when {
+    color: var(--text-faint);
+    padding-top: 0.15rem;
+  }
+  .what h3 {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
     gap: 0.6rem;
-    font-size: 1.05rem;
-    margin: 0 0 0.2rem;
+    margin: 0 0 0.15rem;
+    font-size: 1.0625rem;
   }
   .now {
-    padding: 0.15em 0.5em;
+    padding: 0.1em 0.5em;
     border: 1px solid var(--sec-line);
     border-radius: 999px;
     background: var(--sec-dim);
@@ -122,37 +219,57 @@ import { cv, dateRange, isCurrent } from '../lib/cv.ts';
     font-size: var(--fs-mono);
     font-weight: 400;
   }
-
-  .org,
-  .note {
-    margin: 0 0 0.25rem;
-    color: var(--text-muted);
-    font-size: var(--fs-small);
-  }
   .where {
-    color: var(--text-faint);
+    margin: 0 0 0.3rem;
+    font-size: var(--fs-small);
+    color: var(--text-muted);
+  }
+  .detail {
+    margin: 0;
+    font-size: var(--fs-small);
+    color: var(--text-muted);
+    max-width: 68ch;
   }
   .note {
     font-style: italic;
   }
-
   .details {
     margin: 0.4rem 0 0;
     padding-left: 1.1rem;
     color: var(--text-muted);
     font-size: var(--fs-small);
+    max-width: 68ch;
   }
   .details li {
     margin-bottom: 0.2rem;
   }
+  .details li::marker {
+    color: var(--sec);
+  }
+  .muted {
+    color: var(--text-faint);
+  }
 
-  @media (max-width: 34rem) {
-    .entry {
+  @media (max-width: 44rem) {
+    .profile {
       grid-template-columns: 1fr;
-      gap: 0.35rem;
+      gap: 1.5rem;
     }
-    .when {
-      padding-top: 0;
+    .profile :global(.portrait) {
+      order: -1;
+      width: 7rem;
+      height: 7rem;
+    }
+    /* The rail has nowhere to live once the date is above the entry rather
+       than beside it. */
+    .timeline > li,
+    .rows > li {
+      grid-template-columns: 1fr;
+      gap: 0.2rem;
+    }
+    .timeline > li::before,
+    .timeline > li::after {
+      display: none;
     }
   }
 </style>

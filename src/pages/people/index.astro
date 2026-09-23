@@ -37,7 +37,7 @@ const list = await members();
     display: grid;
     /* auto-fit with a minimum, so one person is not a lonely card in a
        four-column grid and twelve do not become a wall of tiny ones. */
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
     gap: 0.75rem 2rem;
   }
 </style>

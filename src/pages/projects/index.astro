@@ -39,54 +39,59 @@ const grouped = GROUPS.map((g) => ({
       <code>redirect</code> in its front matter and no page here.
     </p>
 
-    <nav class="jump" aria-label="Jump to a group">
+    <nav class="jump mono" aria-label="Jump to a group">
       {
         grouped.map((g) => (
           <a class="chip" href={`#${g.id}`}>
-            <span aria-hidden="true">#</span>
-            {g.label}
+            {g.label.toLowerCase()} <span>{g.items.length}</span>
           </a>
         ))
       }
     </nav>
-  </section>
 
-  {
-    grouped.map((g) => (
-      <section class="wrap section group" id={g.id}>
-        <h2>{g.label}</h2>
-        <p class="blurb">{g.blurb}</p>
-        <ul class="grid">
-          {g.items.map((project) => (
-            <ProjectCard project={project} />
-          ))}
-        </ul>
-      </section>
-    ))
-  }
+    {
+      grouped.map((g) => (
+        <section class="group" id={g.id}>
+          <h2>{g.label}</h2>
+          <p class="blurb">{g.blurb}</p>
+          <ul class="grid">
+            {g.items.map((project) => (
+              <ProjectCard project={project} />
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </section>
 </Base>
 
 <style>
   .lede {
-    max-width: 60ch;
+    max-width: 62ch;
     color: var(--text-muted);
   }
+  .jump span {
+    color: var(--sec);
+  }
 
+  .group {
+    margin-top: 3rem;
+  }
   .group h2 {
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.25rem;
   }
   .blurb {
+    max-width: 60ch;
     color: var(--text-faint);
     font-size: var(--fs-small);
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
   }
 
   .grid {
-    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: 0.9rem;
     margin: 0;
     padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
-    gap: 1rem;
   }
 </style>

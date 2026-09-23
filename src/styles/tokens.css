@@ -105,12 +105,18 @@
   --max: 1180px;
   --gutter: clamp(1rem, 4vw, 2.5rem);
 
-  /* The single-column measure, which is a different question from --max: how
-     wide a column of *prose* may get before it is tiring to read. Article
-     pages — a paper page, a post — size their header, figure, prose, link list
-     and cite block to this, so the left and right edges line up all the way
-     down instead of every block picking its own width. */
-  --measure: 52rem;
+  /* THE READING COLUMN, which is a different question from --max: how wide a
+     column of prose may get before the eye loses the start of the next line.
+
+     In `ch`, not rem, because the answer is a number of characters and not a
+     number of pixels — so it follows the font you choose rather than needing
+     to be re-tuned when you change one. Custom properties resolve at the point
+     of use, so this is 72 characters of whatever the element is set in.
+
+     Article pages — a paper page, a post — size their header, figure, prose,
+     link list and cite block to this, so their left and right edges line up
+     all the way down instead of every block picking its own width. */
+  --measure: 72ch;
 
   --radius-s: 6px;
   --radius-m: 12px;
