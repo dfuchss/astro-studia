@@ -24,7 +24,7 @@ const initials = d.title
   .join('');
 ---
 
-<li class="card project reveal">
+<li class="project reveal">
   <a class="hit" href={href} rel={external ? 'noopener' : undefined}>
     <div class="head">
       {
@@ -56,53 +56,60 @@ const initials = d.title
 
 <style>
   .project {
-    padding: 0;
+    list-style: none;
   }
-  /* The whole card is the link, so there is no small target inside a large
+
+  /* Flat, like the rest of the site: a hairline rule instead of a filled tile.
+     The whole card is the link, so there is no small target inside a large
      clickable-looking box. */
   .hit {
-    display: block;
-    padding: 1.25rem 1.35rem;
-    color: inherit;
-    text-decoration: none;
-    border-radius: inherit;
+    display: grid;
+    gap: 0.6rem;
     height: 100%;
+    align-content: start;
+    padding: 1rem 0 0;
+    border-top: 1px solid var(--border);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color var(--dur) var(--ease);
   }
-  .project:hover {
-    border-color: var(--sec-line);
-    background: var(--bg-2);
+  .hit:hover {
+    border-top-color: var(--sec-line);
+  }
+  .hit:hover h3 {
+    color: var(--sec-strong);
   }
 
   .head {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.6rem;
+    gap: 0.7rem;
   }
   .logo {
+    width: 2.75rem;
+    height: 2.75rem;
     flex: none;
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius-m);
+    object-fit: contain;
+    border-radius: var(--radius-s);
   }
   .fallback {
     display: grid;
     place-items: center;
-    background: var(--bg-3);
-    border: 1px solid var(--border);
+    background: var(--sec-dim);
+    border: 1px solid var(--sec-line);
     color: var(--sec);
-    font-size: 0.95rem;
+    text-transform: uppercase;
     font-weight: 600;
+    font-size: 0.9rem;
   }
+
   h3 {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 1.0625rem;
     line-height: 1.3;
   }
-  .hit:hover h3 {
-    color: var(--sec-strong);
-  }
   .out {
+    margin-left: auto;
     color: var(--text-faint);
     font-size: 0.85em;
   }

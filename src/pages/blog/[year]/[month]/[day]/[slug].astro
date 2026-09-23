@@ -1,0 +1,84 @@
+---
+import { render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../../../layouts/Base.astro';
+import Prose from '../../../../../components/Prose.astro';
+import {
+  publishedPosts,
+  permalinkParts,
+  formatPostDate,
+  slugifyTag,
+} from '../../../../../lib/blog.ts';
+import { tagPath } from '../../../../../lib/paths.ts';
+
+export const getStaticPaths = (async () => {
+  // publishedPosts() drops drafts, so a draft has no route at all — it is not
+  // merely hidden from the list.
+  const posts = await publishedPosts();
+  return posts.map((post) => ({ params: permalinkParts(post.id), props: { post } }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const d = post.data;
+---
+
+<Base title={d.title} description={d.description} section="blog">
+  <article class="wrap section">
+    <header class="head">
+      <time class="mono date" datetime={d.date.toISOString().slice(0, 10)}>
+        {formatPostDate(d.date)}
+      </time>
+      <h1>{d.title}</h1>
+      {d.description && <p class="lede">{d.description}</p>}
+
+      {
+        d.tags.length > 0 && (
+          <p class="tags">
+            {d.tags.map((tag) => (
+              <a class="chip" href={tagPath(slugifyTag(tag))}>
+                <span aria-hidden="true">#</span>
+                {tag}
+              </a>
+            ))}
+          </p>
+        )
+      }
+    </header>
+
+    <Prose>
+      <Content />
+    </Prose>
+
+    <p class="back">
+      <a class="chip" href="/blog/">← All posts</a>
+    </p>
+  </article>
+</Base>
+
+<style>
+  .head {
+    max-width: var(--measure);
+    margin-bottom: 2rem;
+  }
+  .date {
+    color: var(--text-faint);
+  }
+  h1 {
+    margin: 0.4rem 0 0.5rem;
+  }
+  .lede {
+    color: var(--text-muted);
+    font-size: var(--fs-h3);
+    line-height: 1.45;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 1rem 0 0;
+  }
+  .back {
+    margin-top: 2.5rem;
+  }
+</style>

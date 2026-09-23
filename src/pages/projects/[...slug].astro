@@ -23,7 +23,7 @@ const d = project.data;
 ---
 
 <Base title={d.title} description={d.description} section="projects">
-  <article class="wrap project">
+  <article class="wrap section">
     <header class="head">
       {
         d.logo && (
@@ -47,9 +47,6 @@ const d = project.data;
 </Base>
 
 <style>
-  .project {
-    padding-block: clamp(2.5rem, 7vw, 4rem) 1rem;
-  }
   .head {
     display: flex;
     align-items: flex-start;

@@ -1,0 +1,103 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../layouts/Base.astro';
+import {
+  publishedPosts,
+  permalink,
+  formatPostDate,
+  groupByTag,
+  slugifyTag,
+} from '../../../lib/blog.ts';
+
+export const getStaticPaths = (async () => {
+  const posts = await publishedPosts();
+  return groupByTag(posts).map(([tag, items]) => ({
+    params: { tag: slugifyTag(tag) },
+    // The display form is carried through as a prop: slugifyTag is lossy, so
+    // "Formal Methods" could not be recovered from "formal-methods".
+    props: { tag, items },
+  }));
+}) satisfies GetStaticPaths;
+
+const { tag, items } = Astro.props;
+---
+
+<Base title={`#${tag}`} description={`Posts tagged ${tag}.`} section="blog">
+  <section class="wrap section">
+    <p class="kicker" data-sigil="##">tag</p>
+    <h1>#{tag}</h1>
+    <p class="lede">{items.length} {items.length === 1 ? 'post' : 'posts'}.</p>
+
+    <ul class="list">
+      {
+        items.map((post) => (
+          <li class="item reveal">
+            <time class="mono date" datetime={post.data.date.toISOString().slice(0, 10)}>
+              {formatPostDate(post.data.date)}
+            </time>
+            <div>
+              <h2>
+                <a href={permalink(post.id)}>{post.data.title}</a>
+              </h2>
+              {post.data.description && <p class="desc">{post.data.description}</p>}
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="back">
+      <a class="chip" href="/blog/">← All posts</a>
+    </p>
+  </section>
+</Base>
+
+<style>
+  .lede {
+    color: var(--text-muted);
+  }
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .item {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: 0 1.1rem;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .date {
+    color: var(--text-faint);
+    padding-top: 0.35rem;
+  }
+  h2 {
+    font-size: var(--fs-h3);
+    margin: 0 0 0.3rem;
+  }
+  h2 a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--sec-strong);
+  }
+  .desc {
+    margin: 0;
+    color: var(--text-muted);
+  }
+  .back {
+    padding-bottom: 2rem;
+  }
+
+  @media (max-width: 34rem) {
+    .item {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+    }
+    .date {
+      padding-top: 0;
+    }
+  }
+</style>

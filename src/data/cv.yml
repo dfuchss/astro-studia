@@ -1,0 +1,97 @@
+# The CV. /cv/ renders this file and nothing else.
+#
+# Every section has the same shape — a title, a heading, and a list of entries —
+# so adding "Service" or "Grants" is a new block here and no code at all. Order
+# on this page is the order in this file.
+#
+# Every field of an entry except `title` is optional:
+#
+#   title     what it was                             (required)
+#   org       who it was with
+#   url       link on the org
+#   start     "2020-03", "2020", or anything else — a value that looks like a
+#   end       date is formatted, anything else is printed verbatim. Omitting
+#             `end` means "to the present" and marks the entry as current.
+#   location  city, country
+#   note      one short line, e.g. a thesis title
+#   details   bullets
+#
+# DEMO CONTENT.
+
+summary: >-
+  Advocate, magistrate and translator. Brought Greek philosophy into Latin, and
+  in the process supplied much of the technical vocabulary European philosophy
+  still runs on.
+
+sections:
+  - id: experience
+    heading: Experience
+    entries:
+      - title: Writing and private study
+        org: Tusculum
+        start: '46 BC'
+        # No `end`: this is the current entry, which /cv/ marks as such and the
+        # home page reads for the "office" line.
+        details:
+          - Composed the philosophical works in under two years.
+          - Corresponded with Atticus at a rate that has no modern equivalent.
+
+      - title: Proconsul
+        org: Province of Cilicia
+        start: '51 BC'
+        end: '50 BC'
+        location: Cilicia
+        details:
+          - Administered the province and, reluctantly, commanded in the field.
+
+      - title: Consul
+        org: Roman Republic
+        start: '63 BC'
+        end: '62 BC'
+        location: Rome
+        note: Suppression of the Catilinarian conspiracy
+        details:
+          - Delivered the four Catilinarian orations.
+          - Executed five conspirators without trial — the decision that led to exile five years later.
+
+      - title: Praetor
+        org: Roman Republic
+        start: '66 BC'
+        end: '66 BC'
+        location: Rome
+
+      - title: Quaestor
+        org: Roman Republic
+        start: '75 BC'
+        end: '75 BC'
+        location: Lilybaeum, Sicily
+
+  - id: education
+    heading: Education
+    entries:
+      - title: Rhetoric and philosophy
+        org: Rhodes and Athens
+        start: '79 BC'
+        end: '77 BC'
+        note: Studied under Molon of Rhodes and Antiochus of Ascalon.
+
+      - title: Law
+        org: Rome
+        start: '90 BC'
+        note: Under Quintus Mucius Scaevola.
+
+  - id: awards
+    heading: Honours
+    entries:
+      - title: Pater Patriae
+        org: Roman Senate
+        start: '63 BC'
+        note: Voted after the conspiracy.
+
+  - id: languages
+    heading: Languages
+    entries:
+      - title: Latin
+        note: Native
+      - title: Greek
+        note: Fluent — read, wrote and argued in it

@@ -223,4 +223,36 @@ const projects = defineCollection({
     }),
 });
 
-export const collections = { venues, authors, people, publications, papers, projects };
+/** Front matter in the wild uses both `tags: x` and `tags: [x, y]`. */
+const toArray = (v: string | string[]) => (Array.isArray(v) ? v : [v]);
+
+/**
+ * Posts. The FILENAME sets the URL and must be YYYY-MM-DD-slug — see
+ * src/lib/blog.ts for why the date is not taken from the front matter.
+ */
+const posts = defineCollection({
+  loader: glob({ base: 'src/content/posts', pattern: '**/*.md' }),
+  schema: z.object({
+    title: z.string(),
+    /** Must agree with the filename; publishedPosts() throws if it does not. */
+    date: z.coerce.date(),
+    description: z.string().optional(),
+    tags: z
+      .union([z.string(), z.array(z.string())])
+      .transform(toArray)
+      .default([]),
+    featured: z.boolean().default(false),
+    /** Kept out of the list, the feed, the sitemap and its own page. */
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = {
+  venues,
+  authors,
+  people,
+  publications,
+  papers,
+  projects,
+  posts,
+};

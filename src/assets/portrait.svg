@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Portrait placeholder">
+  <!-- DEMO PORTRAIT. Rendered as a circle, so the composition is centred and
+       nothing important goes near the corners. Replace with a photograph: drop
+       portrait.jpg into src/assets/ and change the import in
+       src/pages/index.astro. Astro's <Image> handles both. -->
+  <rect width="320" height="320" fill="#111520"/>
+  <circle cx="160" cy="160" r="160" fill="#161c27"/>
+  <g fill="none" stroke="#5cc8e8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"
+     stroke-opacity="0.85">
+    <circle cx="160" cy="132" r="48"/>
+    <path d="M78 268c0-45 37-72 82-72s82 27 82 72"/>
+  </g>
+</svg>

@@ -6,15 +6,15 @@
 // in tokens.css. Nothing is fetched from a third-party origin at runtime —
 // scripts/audit-site.mjs enforces that.
 //
-// Inter is imported with every unicode subset but only the weight axis
-// (`wght.css`, not `index.css`): an academic author list is full of names the
-// latin subset cannot render, and a missing glyph in a co-author's name is
-// worse than a few extra woff2 files the browser never requests — unicode-range
-// means it only fetches the subsets a page actually uses. JetBrains Mono styles
-// chrome and never a name, so latin is enough for it.
-import '@fontsource-variable/inter/wght.css';
-import '@fontsource/jetbrains-mono/latin-400.css';
-import '@fontsource/jetbrains-mono/latin-500.css';
+// Only the weights actually used are imported. @fontsource ships one file per
+// weight per subset, and importing the package bare pulls all of them — most
+// of which the browser then never requests.
+import '@fontsource/space-grotesk/400.css';
+import '@fontsource/space-grotesk/500.css';
+import '@fontsource/space-grotesk/600.css';
+import '@fontsource/space-grotesk/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
 
 import '../styles/tokens.css';
 import '../styles/base.css';

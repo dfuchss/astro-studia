@@ -1,0 +1,109 @@
+---
+import Base from '../../layouts/Base.astro';
+import {
+  publishedPosts,
+  permalink,
+  formatPostDate,
+  groupByTag,
+  slugifyTag,
+} from '../../lib/blog.ts';
+import { tagPath } from '../../lib/paths.ts';
+
+const posts = await publishedPosts();
+const tags = groupByTag(posts);
+---
+
+<Base title="blog" description="Notes, in reverse order." section="blog">
+  <section class="wrap section">
+    <p class="kicker" data-sigil="##">writing</p>
+    <h1>Blog</h1>
+    <p class="lede">
+      {posts.length} posts. Drafts are excluded here, from the tag pages, from the feed and from the sitemap
+      — and are not built at all.
+    </p>
+
+    {
+      tags.length > 0 && (
+        <nav class="jump" aria-label="Tags">
+          {tags.map(([tag, items]) => (
+            <a class="chip" href={tagPath(slugifyTag(tag))}>
+              <span aria-hidden="true">#</span>
+              {tag}
+              <span class="count">{items.length}</span>
+            </a>
+          ))}
+        </nav>
+      )
+    }
+
+    <ul class="list">
+      {
+        posts.map((post) => (
+          <li class="item reveal">
+            <time class="mono date" datetime={post.data.date.toISOString().slice(0, 10)}>
+              {formatPostDate(post.data.date)}
+            </time>
+            <div class="body">
+              <h2>
+                <a href={permalink(post.id)}>{post.data.title}</a>
+              </h2>
+              {post.data.description && <p class="desc">{post.data.description}</p>}
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .lede {
+    max-width: 60ch;
+    color: var(--text-muted);
+  }
+  .count {
+    color: var(--text-faint);
+  }
+
+  .list {
+    list-style: none;
+    margin: 0;
+  }
+  .item {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: 0 1.1rem;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .date {
+    color: var(--text-faint);
+    padding-top: 0.35rem;
+  }
+  h2 {
+    font-size: var(--fs-h3);
+    margin: 0 0 0.3rem;
+  }
+  h2 a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--sec-strong);
+  }
+  .desc {
+    margin: 0;
+    color: var(--text-muted);
+    max-width: var(--measure);
+  }
+
+  @media (max-width: 34rem) {
+    .item {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+    }
+    .date {
+      padding-top: 0;
+    }
+  }
+</style>

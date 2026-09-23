@@ -121,6 +121,7 @@ export const NAV: { label: string; href: string; section: Section }[] = [
 /** The thin link row in the footer. Add or drop freely. */
 export const FOOTER_LINKS: { label: string; href: string }[] = [
   { label: 'Feed', href: '/feed.xml' },
+  { label: 'PGP', href: '/pgp-key/' },
   { label: 'Imprint', href: '/imprint/' },
 ];
 

@@ -11,37 +11,33 @@ const list = await members();
   description="Everyone listed in src/data/people.yml, each with the anchor their author name links to."
   section="people"
 >
-  <div class="wrap head">
+  <section class="wrap section">
     <p class="kicker" data-sigil="##">people</p>
     <h1>People</h1>
     <p class="lede">
       Each entry's key in <code>src/data/people.yml</code> is its anchor here, which is where an author
       name in the publication list points.
     </p>
-  </div>
 
-  <ul class="wrap grid">
-    {list.map((member) => <PersonCard member={member} />)}
-  </ul>
+    <ul class="grid">
+      {list.map((member) => <PersonCard member={member} />)}
+    </ul>
+  </section>
 </Base>
 
 <style>
-  .head {
-    padding-block: clamp(2.5rem, 7vw, 4rem) 0.5rem;
-  }
   .lede {
-    max-width: var(--measure);
+    max-width: 60ch;
     color: var(--text-muted);
   }
 
   .grid {
     list-style: none;
     margin: 0;
-    padding-bottom: 2rem;
     display: grid;
     /* auto-fit with a minimum, so one person is not a lonely card in a
        four-column grid and twelve do not become a wall of tiny ones. */
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 0.75rem 2rem;
   }
 </style>

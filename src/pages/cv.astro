@@ -1,0 +1,158 @@
+---
+import Base from '../layouts/Base.astro';
+import Email from '../components/Email.astro';
+import SocialRow from '../components/SocialRow.astro';
+import { SITE, SELF } from '../consts.ts';
+import { cv, dateRange, isCurrent } from '../lib/cv.ts';
+---
+
+<Base title="cv" description={cv.summary} section="cv">
+  <section class="wrap section">
+    <p class="kicker" data-sigil="##">cv</p>
+    <h1>{SELF.first} {SELF.last}</h1>
+    {cv.summary && <p class="lede">{cv.summary}</p>}
+
+    <p class="contact">
+      <Email address={SITE.email} class="chip" label="Email" />
+    </p>
+    <SocialRow />
+
+    <nav class="jump" aria-label="Jump to a section">
+      {
+        cv.sections.map((s) => (
+          <a class="chip" href={`#${s.id}`}>
+            <span aria-hidden="true">#</span>
+            {s.heading}
+          </a>
+        ))
+      }
+    </nav>
+  </section>
+
+  {
+    cv.sections.map((section) => (
+      <section class="wrap section block" id={section.id}>
+        <h2>{section.heading}</h2>
+        <ul class="entries">
+          {section.entries.map((entry) => (
+            <li class="entry reveal">
+              <p class="mono when">{dateRange(entry)}</p>
+              <div class="what">
+                <h3>
+                  {entry.title}
+                  {isCurrent(entry) && <span class="now mono">now</span>}
+                </h3>
+                {entry.org && (
+                  <p class="org">
+                    {entry.url ? (
+                      <a href={entry.url} rel="noopener">
+                        {entry.org}
+                      </a>
+                    ) : (
+                      entry.org
+                    )}
+                    {entry.location && <span class="where"> · {entry.location}</span>}
+                  </p>
+                )}
+                {entry.note && <p class="note">{entry.note}</p>}
+                {entry.details && entry.details.length > 0 && (
+                  <ul class="details">
+                    {entry.details.map((d) => (
+                      <li>{d}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</Base>
+
+<style>
+  .lede {
+    max-width: 60ch;
+    color: var(--text-muted);
+  }
+  .contact {
+    margin: 1.25rem 0 0;
+  }
+
+  .block h2 {
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* A date rail down the left, so the eye can scan the timeline without
+     reading any of the entries. */
+  .entry {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: 0 1.1rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .when {
+    margin: 0;
+    padding-top: 0.25rem;
+    color: var(--text-faint);
+  }
+
+  h3 {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-size: 1.05rem;
+    margin: 0 0 0.2rem;
+  }
+  .now {
+    padding: 0.15em 0.5em;
+    border: 1px solid var(--sec-line);
+    border-radius: 999px;
+    background: var(--sec-dim);
+    color: var(--sec);
+    font-size: var(--fs-mono);
+    font-weight: 400;
+  }
+
+  .org,
+  .note {
+    margin: 0 0 0.25rem;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+  }
+  .where {
+    color: var(--text-faint);
+  }
+  .note {
+    font-style: italic;
+  }
+
+  .details {
+    margin: 0.4rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+  }
+  .details li {
+    margin-bottom: 0.2rem;
+  }
+
+  @media (max-width: 34rem) {
+    .entry {
+      grid-template-columns: 1fr;
+      gap: 0.35rem;
+    }
+    .when {
+      padding-top: 0;
+    }
+  }
+</style>

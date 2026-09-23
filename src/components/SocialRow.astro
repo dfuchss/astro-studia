@@ -1,0 +1,57 @@
+---
+import { socials } from '../lib/data.ts';
+import { keyId } from '../lib/pgp.ts';
+
+/*
+ * Profile chips, built from src/data/socials.yml.
+ *
+ * Every entry is dropped when its id is unset, so removing a profile you do
+ * not have is a null in the data file rather than an edit here. rel="me" on
+ * each one is what lets those profiles verify this site back (Mastodon and
+ * IndieAuth both read it).
+ */
+const pgp = keyId();
+
+const links = [
+  socials.orcid_id && { label: 'ORCID', href: `https://orcid.org/${socials.orcid_id}` },
+  socials.scholar_userid && {
+    label: 'Scholar',
+    href: `https://scholar.google.com/citations?user=${socials.scholar_userid}`,
+  },
+  socials.dblp_url && { label: 'DBLP', href: socials.dblp_url },
+  socials.github_username && {
+    label: 'GitHub',
+    href: `https://github.com/${socials.github_username}`,
+  },
+  socials.linkedin_username && {
+    label: 'LinkedIn',
+    href: `https://www.linkedin.com/in/${socials.linkedin_username}`,
+  },
+  pgp && { label: `PGP ${pgp}`, href: '/pgp-key/' },
+].filter(Boolean) as { label: string; href: string }[];
+---
+
+{
+  links.length > 0 && (
+    <ul class="row">
+      {links.map((l) => (
+        <li>
+          <a class="chip" href={l.href} rel="me noopener">
+            {l.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+  }
+</style>

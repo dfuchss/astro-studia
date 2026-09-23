@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+import { NAV } from '../consts.ts';
+---
+
+<Base title="404" description="That page does not exist.">
+  <section class="wrap section miss">
+    <p class="kicker">404</p>
+    <h1>Not here</h1>
+    <p class="lede">
+      That address does not exist on this site. It may have been renamed, or it may never have been
+      anything.
+    </p>
+
+    <nav class="jump" aria-label="Elsewhere on this site">
+      {
+        NAV.map((item) => (
+          <a class="chip" href={item.href} data-section={item.section}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+  </section>
+</Base>
+
+<style>
+  .miss {
+    max-width: var(--measure);
+  }
+  .lede {
+    color: var(--text-muted);
+  }
+  /* Each chip previews its destination's accent, the same way the nav does:
+     its own data-section has already re-pointed --sec inside it. */
+  .jump .chip:hover {
+    border-color: var(--sec-line);
+    color: var(--sec-strong);
+    background: var(--sec-dim);
+  }
+</style>

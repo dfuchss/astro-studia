@@ -1,0 +1,109 @@
+---
+import Base from '../layouts/Base.astro';
+import { fingerprint, grouped, keyId, keyPath } from '../lib/pgp.ts';
+
+// All four derive from the single value in socials.yml, so they cannot
+// disagree with one another. All four are null when it is unset.
+const fp = fingerprint();
+const id = keyId();
+const pretty = grouped();
+const asc = keyPath();
+---
+
+<Base title="pgp key" description="Public key for encrypted mail." section="home">
+  <section class="wrap section page">
+    <p class="kicker" data-sigil="##">pgp</p>
+    <h1>PGP key</h1>
+
+    {
+      fp ? (
+        <>
+          <p class="lede">For anything you would rather not send in the clear.</p>
+          <dl class="fields">
+            <div>
+              <dt class="mono">Fingerprint</dt>
+              <dd class="mono fp">{pretty}</dd>
+            </div>
+            <div>
+              <dt class="mono">Long key id</dt>
+              <dd class="mono">{id}</dd>
+            </div>
+          </dl>
+          <p class="actions">
+            <a class="chip" href={asc}>
+              Download public key
+            </a>
+          </p>
+          <p class="hint">
+            Verify the fingerprint over a second channel before you trust it. A key served from the
+            same site as the address it belongs to proves very little on its own.
+          </p>
+        </>
+      ) : (
+        <div class="notice">
+          <p>
+            <strong>No key is configured.</strong> Set <code>pgp_fingerprint</code> in
+            <code>src/data/socials.yml</code> to the 40-character fingerprint, then put the exported
+            public key at <code>public/assets/pgp-key/&lt;FINGERPRINT&gt;.asc</code>.
+          </p>
+          <p>
+            This page and the PGP chip in the profile row both appear on their own once it is set.
+            If you do not use PGP, delete <code>src/pages/pgp-key.astro</code> and
+            <code>src/lib/pgp.ts</code>.
+          </p>
+        </div>
+      )
+    }
+  </section>
+</Base>
+
+<style>
+  .page {
+    max-width: var(--measure);
+  }
+  .lede {
+    color: var(--text-muted);
+  }
+
+  .fields > div {
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--border);
+  }
+  dt {
+    color: var(--text-faint);
+    font-size: var(--fs-mono);
+    margin-bottom: 0.25rem;
+  }
+  dd {
+    margin: 0;
+  }
+  /* A fingerprint is read in groups of four and must not rewrap mid-group. */
+  .fp {
+    word-spacing: 0.35em;
+    overflow-wrap: break-word;
+  }
+
+  .actions {
+    margin: 1.25rem 0;
+  }
+  .hint {
+    color: var(--text-faint);
+    font-size: var(--fs-small);
+  }
+
+  .notice {
+    margin-top: 1.5rem;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-m);
+    background: var(--bg-1);
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+  }
+  .notice p:last-child {
+    margin-bottom: 0;
+  }
+  .notice strong {
+    color: var(--text);
+  }
+</style>

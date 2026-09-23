@@ -109,8 +109,8 @@
   /* ── TYPE ───────────────────────────────────────────────────────────────
      Two faces, self-hosted through @fontsource and imported in
      layouts/Base.astro. Swapping them is that import plus these three lines. */
-  --font-head: 'Inter Variable', system-ui, sans-serif;
-  --font-body: 'Inter Variable', system-ui, sans-serif;
+  --font-head: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Space Grotesk', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', SFMono-Regular, monospace;
 
   /* Fluid scale: no media queries, and no step so large that a long title

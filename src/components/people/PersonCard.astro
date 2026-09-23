@@ -25,7 +25,7 @@ const profiles = [
 ].filter(Boolean) as { label: string; href: string }[];
 ---
 
-<li class="person card reveal" id={entry.id}>
+<li class="person reveal" id={entry.id}>
   <img
     class="portrait"
     src={d.image}
@@ -54,32 +54,44 @@ const profiles = [
 </li>
 
 <style>
+  /* Flat, like the rest of the site: a hairline rule rather than a filled
+     tile. The portrait is the only solid shape in the row. */
   .person {
+    list-style: none;
     display: flex;
     gap: 1.1rem;
     align-items: flex-start;
+    padding: 1rem 0.5rem 0;
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius-s);
+    transition: border-color var(--dur) var(--ease);
   }
-  /* :target rather than a hover state: arriving from an author link in the
-     publication list should say which of these you were sent to. */
+  .person:hover {
+    border-top-color: var(--sec-line);
+  }
+  /* Arriving from an author link in the publication list should say which of
+     these you were sent to. */
   .person:target {
-    border-color: var(--sec-line);
+    border-top-color: var(--sec-line);
     background: var(--sec-dim);
   }
 
   .portrait {
     flex: none;
-    width: 72px;
-    height: 72px;
+    width: 4.5rem;
+    height: 4.5rem;
     border-radius: 50%;
-    border: 1px solid var(--border);
     object-fit: cover;
+    border: 1px solid var(--sec-line);
+    box-shadow: 0 0 0 4px var(--sec-dim);
   }
 
   .body {
     min-width: 0;
+    padding-bottom: 1rem;
   }
   h2 {
-    font-size: var(--fs-h3);
+    font-size: 1.0625rem;
     margin: 0 0 0.15rem;
   }
   .role {
