@@ -1,0 +1,215 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../layouts/Base.astro';
+import Prose from '../../../components/Prose.astro';
+import Figure from '../../../components/Figure.astro';
+import VenueBadge from '../../../components/pub/VenueBadge.astro';
+import CopyButton from '../../../components/pub/CopyButton.astro';
+import ScholarMeta from '../../../components/pub/ScholarMeta.astro';
+
+export const getStaticPaths = (async () => {
+  const papers = await getCollection('papers');
+  return papers.map((paper) => ({ params: { slug: paper.id }, props: { paper } }));
+}) satisfies GetStaticPaths;
+
+const { paper } = Astro.props;
+const { Content } = await render(paper);
+
+// Everything bibliographic comes from the BibTeX entry, never from this
+// page's front matter — so a paper has exactly one source of truth for its
+// venue, year and DOI, and they cannot drift apart.
+const pub = await getEntry(paper.data.publication);
+if (!pub) throw new Error(`${paper.id}: publication ${paper.data.publication.id} not found`);
+const d = pub.data;
+
+const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
+
+/**
+ * Pretty names for the link keys used in front matter. A key with no entry
+ * here falls back to itself, so adding a link never requires editing this —
+ * it just renders as you typed it.
+ */
+const LINK_LABELS: Record<string, string> = {
+  acm: 'ACM DL',
+  ieee: 'IEEE Xplore',
+  arxiv: 'arXiv',
+  doi: 'DOI',
+  pdf: 'PDF',
+  preprint: 'Preprint',
+  zenodo: 'Zenodo',
+  repo: 'Repository',
+  data: 'Data',
+  loeb: 'Loeb',
+  archive: 'Internet Archive',
+  perseus: 'Perseus',
+};
+const label = (key: string) => LINK_LABELS[key] ?? key;
+
+const linkRows = [
+  { title: 'Paper', map: paper.data.links.paper },
+  { title: 'Replication', map: paper.data.links.replication },
+  { title: 'Slides', map: paper.data.links.slides },
+].filter((row) => row.map && Object.keys(row.map).length > 0);
+
+const inParts = [d.booktitle ?? d.journal ?? d.school ?? d.institution, d.location].filter(Boolean);
+const bibId = `bib-${pub.id}`;
+---
+
+<Base title={paper.data.title} description={paper.data.description} section="papers">
+  <ScholarMeta slot="head" pub={pub} />
+
+  <article class="wrap paper">
+    <header class="head">
+      <div class="meta">
+        <VenueBadge abbr={d.abbr} />
+        <span class="mono year">{d.year}</span>
+      </div>
+
+      <h1>{paper.data.title}</h1>
+
+      {
+        authors.length > 0 && (
+          <p class="authors">
+            {authors.map((a, i) => (
+              <>
+                {i > 0 && <span aria-hidden="true">, </span>}
+                {a.data.orcid ? (
+                  <a href={`https://orcid.org/${a.data.orcid}`} rel="noopener">
+                    {a.data.name}
+                  </a>
+                ) : (
+                  <span>{a.data.name}</span>
+                )}
+              </>
+            ))}
+          </p>
+        )
+      }
+
+      {inParts.length > 0 && <p class="venue-line">{inParts.join(', ')}</p>}
+    </header>
+
+    {
+      paper.data.figure && (
+        <Figure
+          src={paper.data.figure.src}
+          alt={paper.data.figure.alt}
+          plate={paper.data.figure.plate}
+        />
+      )
+    }
+
+    <Prose>
+      <Content />
+    </Prose>
+
+    {
+      linkRows.length > 0 && (
+        <section class="links" aria-label="Links">
+          {linkRows.map((row) => (
+            <div class="row">
+              <h2 class="mono row-title">{row.title}</h2>
+              <div class="chips">
+                {Object.entries(row.map!).map(([key, href]) => (
+                  <a class="chip" href={href} rel="noopener">
+                    {label(key)}
+                  </a>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      )
+    }
+
+    <section class="cite" aria-labelledby="cite-h">
+      <h2 class="mono" id="cite-h">Cite</h2>
+      <div class="cite-body">
+        <CopyButton target={bibId} />
+        <pre id={bibId}>{d.bibtex}</pre>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  /* Header, figure, prose, links and the cite block all size to --measure, so
+     their left and right edges line up the whole way down the page instead of
+     each block picking its own width. */
+  .paper {
+    padding-block: clamp(2.5rem, 7vw, 4rem) 1rem;
+  }
+  .head,
+  .links,
+  .cite {
+    max-width: var(--measure);
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+  .year {
+    color: var(--text-faint);
+  }
+
+  h1 {
+    margin-bottom: 0.5rem;
+  }
+
+  .authors,
+  .venue-line {
+    margin: 0 0 0.35rem;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+  }
+  .venue-line {
+    font-style: italic;
+  }
+
+  .links {
+    margin-top: 2.5rem;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .row-title {
+    /* Fixed column so the chip rows line up under one another, but allowed to
+       wrap onto its own line before it squeezes them. */
+    flex: 0 0 6rem;
+    margin: 0;
+    font-size: var(--fs-mono);
+    font-weight: 500;
+    color: var(--text-faint);
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .cite {
+    margin-top: 2.5rem;
+  }
+  .cite h2 {
+    font-size: var(--fs-mono);
+    font-weight: 500;
+    color: var(--text-faint);
+    margin-bottom: 0.5rem;
+  }
+  .cite-body {
+    position: relative;
+  }
+  .cite-body pre {
+    margin: 0;
+    font-size: 0.75rem;
+  }
+</style>

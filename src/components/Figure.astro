@@ -1,0 +1,63 @@
+---
+import { intrinsic } from '../lib/images.ts';
+
+interface Props {
+  /** Path under public/, e.g. "/assets/img/papers/overview.svg". */
+  src: string;
+  alt: string;
+  /**
+   * Put the image on a white plate. Diagrams exported from a paper are almost
+   * always dark line art on a transparent background, drawn for a white page;
+   * on a near-black one they are close to invisible. Set false for an image
+   * that carries its own background.
+   */
+  plate?: boolean;
+  caption?: string;
+}
+
+const { src, alt, plate = true, caption } = Astro.props;
+
+const { width, height } = intrinsic(src);
+
+/*
+ * How wide the figure is allowed to get.
+ *
+ * Vectors are capped at the prose measure. A diagram is usually small and wide,
+ * and stretched across the full column it dominates the page and dwarfs the
+ * text it illustrates.
+ *
+ * Rasters are capped at their own pixel width instead, because scaling one past
+ * that is what makes it look soft.
+ */
+const isVector = src.endsWith('.svg');
+const maxWidth = isVector ? 'var(--measure)' : `${width}px`;
+---
+
+<figure class:list={['figure', plate && 'has-plate']} style={`--fig-max: ${maxWidth}`}>
+  <img src={src} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .figure {
+    max-width: min(100%, var(--fig-max));
+    margin: 0 auto 1.75rem;
+  }
+  .figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-m);
+    border: 1px solid var(--border);
+  }
+  .has-plate img {
+    background: #fff;
+    padding: 0.9rem;
+  }
+  figcaption {
+    margin-top: 0.6rem;
+    font-size: var(--fs-small);
+    color: var(--text-faint);
+    text-align: center;
+  }
+</style>

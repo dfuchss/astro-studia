@@ -1,6 +1,6 @@
 import { defineCollection, reference } from 'astro:content';
 import { z } from 'zod';
-import { file } from 'astro/loaders';
+import { file, glob } from 'astro/loaders';
 import { bibtexLoader } from './loaders/bibtex.ts';
 
 /*
@@ -103,4 +103,69 @@ const publications = defineCollection({
   }),
 });
 
-export const collections = { venues, authors, publications };
+/**
+ * An image under public/, with the one decision a dark page forces on you.
+ * Figure.astro reads the dimensions off disk, so there is nothing to declare
+ * here but the path.
+ */
+const figure = z.object({
+  src: z.string(),
+  alt: z.string(),
+  /**
+   * Put it on a white plate. True is right for the usual case — a diagram
+   * exported from a paper, dark line art on transparency, which is invisible
+   * on this background. Set false when the image has its own background.
+   */
+  plate: z.boolean().default(true),
+});
+
+/**
+ * A map of label -> URL, rendered as a row of chips: `{ acm: "https://…" }`.
+ * A plain record rather than a fixed set of fields, because every paper has a
+ * different handful of places it lives.
+ */
+const linkMap = z
+  .record(
+    z.string(),
+    z.union([
+      z.url(),
+      z.string().regex(/^\/[^\s]*$/, 'link must be an absolute URL or a site-relative path'),
+    ]),
+  )
+  .optional();
+
+/**
+ * One page per paper: the abstract, the figure, the links, the citation.
+ *
+ * The filename is the URL — src/content/papers/de-officiis.md is
+ * /papers/de-officiis/ — and it is what a `page = {/papers/<slug>/}` field in
+ * papers.bib has to match. Renaming this file without touching the .bib fails
+ * the build, which is the point.
+ */
+const papers = defineCollection({
+  loader: glob({ base: 'src/content/papers', pattern: '**/*.md' }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string().optional(),
+
+    /** The BibTeX key. Everything bibliographic is read from there, not here. */
+    publication: reference('publications'),
+
+    /**
+     * Authors as entries in authors.yml, so the page can link each to their
+     * ORCID. Separate from the BibTeX author list on purpose: that one is
+     * strings, this one is identities.
+     */
+    authors: z.array(reference('authors')).default([]),
+
+    /** Sort key for /papers/. Lower comes first. */
+    order: z.number().int().default(100),
+    featured: z.boolean().default(false),
+
+    figure: figure.optional(),
+
+    links: z.object({ paper: linkMap, replication: linkMap, slides: linkMap }).default({}),
+  }),
+});
+
+export const collections = { venues, authors, publications, papers };
