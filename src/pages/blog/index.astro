@@ -11,99 +11,186 @@ import { tagPath } from '../../lib/paths.ts';
 
 const posts = await publishedPosts();
 const tags = groupByTag(posts);
+const featured = posts.filter((p) => p.data.featured);
 ---
 
-<Base title="blog" description="Notes, in reverse order." section="blog">
+<Base title="Blog" description="Occasional notes, newest first." section="blog">
   <section class="wrap section">
-    <p class="kicker" data-sigil="##">writing</p>
+    <p class="kicker" data-sigil="##">blog</p>
     <h1>Blog</h1>
     <p class="lede">
-      {posts.length} posts. Drafts are excluded here, from the tag pages, from the feed and from the sitemap
-      — and are not built at all.
+      {posts.length} posts{featured.length > 0 ? `, ${featured.length} of them featured` : ''}.
+      Drafts appear here, on the tag pages, in the feed and in the sitemap not at all — they are not
+      built.
     </p>
 
     {
       tags.length > 0 && (
-        <nav class="jump" aria-label="Tags">
+        <ul class="tags">
           {tags.map(([tag, items]) => (
-            <a class="chip" href={tagPath(slugifyTag(tag))}>
-              <span aria-hidden="true">#</span>
-              {tag}
-              <span class="count">{items.length}</span>
-            </a>
+            <li>
+              <a
+                class="chip tag-pill"
+                href={tagPath(slugifyTag(tag))}
+                data-tag={slugifyTag(tag)}
+                aria-pressed="false"
+              >
+                {tag} <span>{items.length}</span>
+              </a>
+            </li>
           ))}
-        </nav>
+        </ul>
       )
     }
+    <p class="no-posts mono" hidden>No posts with that tag.</p>
 
-    <ul class="list">
+    <ol class="posts">
       {
-        posts.map((post) => (
-          <li class="item reveal">
-            <time class="mono date" datetime={post.data.date.toISOString().slice(0, 10)}>
-              {formatPostDate(post.data.date)}
-            </time>
-            <div class="body">
-              <h2>
-                <a href={permalink(post.id)}>{post.data.title}</a>
-              </h2>
-              {post.data.description && <p class="desc">{post.data.description}</p>}
-            </div>
+        posts.map((p) => (
+          <li class="reveal" data-tags={p.data.tags.map(slugifyTag).join(' ')}>
+            <a class="post" href={permalink(p.id)}>
+              <time class="date mono" datetime={p.data.date.toISOString().slice(0, 10)}>
+                {formatPostDate(p.data.date)}
+              </time>
+              <span class="ptext">
+                <span class="ptitle">
+                  {p.data.title}
+                  {p.data.featured && (
+                    <span class="star mono" title="Featured">
+                      ★
+                    </span>
+                  )}
+                </span>
+                {p.data.description && <span class="pdesc">{p.data.description}</span>}
+              </span>
+            </a>
           </li>
         ))
       }
-    </ul>
+    </ol>
   </section>
 </Base>
 
+<script>
+  // The pills stay real links to /blog/tag/<slug>/, so they work with JS off
+  // and stay shareable. With JS they filter in place instead — the same
+  // behaviour as the filter on /publications/, rather than a page load per tag.
+  const pills = Array.from(document.querySelectorAll<HTMLAnchorElement>('.tag-pill'));
+  const posts = Array.from(document.querySelectorAll<HTMLElement>('.posts > li'));
+  const empty = document.querySelector<HTMLElement>('.no-posts');
+
+  const apply = (tag: string | null) => {
+    let visible = 0;
+    for (const li of posts) {
+      const hit = !tag || (li.dataset.tags ?? '').split(' ').includes(tag);
+      li.hidden = !hit;
+      if (hit) {
+        visible++;
+        // A post far down the list may never have been scrolled into view, so
+        // the scroll-reveal still has it at opacity 0. Filtering pulls it up
+        // the page, so reveal it.
+        if (tag) li.classList.add('is-in');
+      }
+    }
+    for (const pill of pills) {
+      const on = pill.dataset.tag === tag;
+      pill.classList.toggle('is-on', on);
+      pill.setAttribute('aria-pressed', String(on));
+    }
+    if (empty) empty.hidden = visible !== 0;
+    const url = tag ? `/blog/tag/${tag}/` : '/blog/';
+    history.replaceState({ tag }, '', url);
+  };
+
+  for (const pill of pills) {
+    pill.addEventListener('click', (e) => {
+      // Let modified clicks (new tab, download) fall through to the real page.
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault();
+      apply(pill.classList.contains('is-on') ? null : (pill.dataset.tag ?? null));
+    });
+  }
+</script>
+
 <style>
   .lede {
-    max-width: 60ch;
+    max-width: 62ch;
     color: var(--text-muted);
   }
-  .count {
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    list-style: none;
+    margin: 1.5rem 0 2rem;
+    padding: 0;
+  }
+  .tags span {
+    color: var(--sec);
+  }
+  /* Selected state for the filter pills. */
+  .tag-pill.is-on {
+    border-color: var(--sec-line);
+    background: var(--sec-dim);
+    color: var(--sec-strong);
+  }
+  .no-posts {
+    margin: 0 0 2rem;
     color: var(--text-faint);
   }
 
-  .list {
+  .posts {
     list-style: none;
     margin: 0;
+    padding: 0;
   }
-  .item {
+  /* The same 11rem label column as the home page's post list and contact rows,
+     so the three line up with one another. */
+  .post {
     display: grid;
-    grid-template-columns: 10rem minmax(0, 1fr);
-    gap: 0 1.1rem;
-    padding: 1.25rem 0;
+    grid-template-columns: 11rem 1fr;
+    gap: 0 1.25rem;
+    padding: 0.95rem 0.5rem;
     border-top: 1px solid var(--border);
+    text-decoration: none;
+    color: inherit;
+    border-radius: var(--radius-s);
+  }
+  .post:hover {
+    background: var(--sec-dim);
+  }
+  .post:hover .ptitle {
+    color: var(--sec-strong);
   }
   .date {
     color: var(--text-faint);
-    padding-top: 0.35rem;
+    padding-top: 0.2rem;
   }
-  h2 {
-    font-size: var(--fs-h3);
-    margin: 0 0 0.3rem;
+  .ptext {
+    display: grid;
+    gap: 0.2rem;
   }
-  h2 a {
-    color: var(--text);
-    text-decoration: none;
+  .ptitle {
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 1.0625rem;
   }
-  h2 a:hover {
-    color: var(--sec-strong);
+  .star {
+    margin-left: 0.5ch;
+    color: var(--amber);
+    font-size: 0.75rem;
+    vertical-align: 0.15em;
   }
-  .desc {
-    margin: 0;
+  .pdesc {
+    font-size: var(--fs-small);
     color: var(--text-muted);
-    max-width: var(--measure);
   }
 
-  @media (max-width: 34rem) {
-    .item {
+  @media (max-width: 38rem) {
+    .post {
       grid-template-columns: 1fr;
-      gap: 0.3rem;
-    }
-    .date {
-      padding-top: 0;
+      gap: 0.25rem;
     }
   }
 </style>
