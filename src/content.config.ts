@@ -37,6 +37,32 @@ const authors = defineCollection({
   }),
 });
 
+/**
+ * The people shown at /people/.
+ *
+ * The collection id is the page anchor — see the header of people.yml — and
+ * inbound author links depend on it, so a key here is a published URL.
+ */
+const people = defineCollection({
+  loader: file('src/data/people.yml'),
+  schema: z.object({
+    /** Name and ORCID come from authors.yml, not from here. */
+    author: reference('authors'),
+    order: z.number().int(),
+    role: z.string().optional(),
+    /** Path under public/. Figure/img dimensions are read off disk. */
+    image: z.string(),
+    email: z.string().optional(),
+    url: z.url().optional(),
+    github: z.string().optional(),
+    /**
+     * Every surname this person publishes under. Used to link an author name
+     * in the publication list back to their entry here.
+     */
+    surnames: z.array(z.string()).min(1),
+  }),
+});
+
 const publications = defineCollection({
   loader: bibtexLoader({
     file: 'src/data/papers.bib',
@@ -168,4 +194,33 @@ const papers = defineCollection({
   }),
 });
 
-export const collections = { venues, authors, publications, papers };
+/**
+ * Things you have made: a tool, a corpus, a long-running line of work.
+ *
+ * An entry with `redirect` is a link out and gets no page of its own — useful
+ * for something that lives on someone else's site but should still appear in
+ * your list.
+ */
+const projects = defineCollection({
+  loader: glob({ base: 'src/content/projects', pattern: '**/*.md' }),
+  /**
+   * The schema is a function here so it can take `image()`, which runs the
+   * logo through Astro's asset pipeline: hashed filename, and width and height
+   * known at build time without reading the file. That is why project logos
+   * live in src/assets/ and figures live in public/ — the two are served by
+   * different machinery, and only public/ has stable URLs.
+   */
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      /** Buckets on /projects/. Labels for these live in that page. */
+      category: z.enum(['research', 'tools', 'misc']),
+      order: z.number().int().default(100),
+      /** When set, the entry links straight out and no page is generated. */
+      redirect: z.url().optional(),
+      logo: image().optional(),
+    }),
+});
+
+export const collections = { venues, authors, people, publications, papers, projects };

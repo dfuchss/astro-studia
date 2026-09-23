@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="TPA">
+  <!-- DEMO AVATAR. Initials on a disc, so the repo ships no photographs of
+       anyone. Replace with a real portrait — a .jpg here works the same way;
+       lib/images.ts reads the dimensions out of the file either way. -->
+  <rect width="160" height="160" fill="#161c27"/>
+  <circle cx="80" cy="80" r="56" fill="none" stroke="#55d39a" stroke-width="2.5"/>
+  <circle cx="80" cy="80" r="56" fill="#55d39a" fill-opacity="0.10"/>
+  <text x="80" y="80" fill="#55d39a" font-family="Helvetica, Arial, sans-serif"
+        font-size="34" font-weight="600" letter-spacing="1.5"
+        text-anchor="middle" dominant-baseline="central">TPA</text>
+</svg>

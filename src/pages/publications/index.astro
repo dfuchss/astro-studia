@@ -4,10 +4,13 @@ import Base from '../../layouts/Base.astro';
 import PubEntry from '../../components/pub/PubEntry.astro';
 import { byYear } from '../../lib/publications.ts';
 import { scholarMetrics, formatCount, formatUpdated } from '../../lib/citations.ts';
+import { peopleLinks } from '../../lib/people.ts';
 
 const pubs = await getCollection('publications');
 const groups = byYear(pubs);
 const metrics = scholarMetrics();
+// Built once for the whole page, then handed to every entry.
+const links = await peopleLinks();
 ---
 
 <Base
@@ -53,7 +56,7 @@ const metrics = scholarMetrics();
           <h2>{g.year}</h2>
           <ul class="entries">
             {g.items.map((pub) => (
-              <PubEntry pub={pub} />
+              <PubEntry pub={pub} links={links} />
             ))}
           </ul>
         </section>

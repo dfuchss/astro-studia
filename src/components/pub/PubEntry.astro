@@ -3,7 +3,7 @@ import type { CollectionEntry } from 'astro:content';
 import VenueBadge from './VenueBadge.astro';
 import CopyButton from './CopyButton.astro';
 import { citationsFor, formatCount } from '../../lib/citations.ts';
-import { truncateAuthors, fullName, isSelf } from '../../lib/authors.ts';
+import { truncateAuthors, fullName, isSelf, surnameKey } from '../../lib/authors.ts';
 import { paperPath } from '../../lib/paths.ts';
 
 interface Props {
@@ -14,9 +14,17 @@ interface Props {
    * page — where the full apparatus would drown the rest of the page.
    */
   compact?: boolean;
+  /**
+   * Surname → /people/#anchor, from peopleLinks(). Optional on purpose: this
+   * component must not depend on the people collection, so that removing
+   * /people/ does not break /publications/. Built once per page by the caller,
+   * because building it per entry would hit the content store hundreds of
+   * times on a long list.
+   */
+  links?: Map<string, string>;
 }
 
-const { pub, compact = false } = Astro.props;
+const { pub, compact = false, links } = Astro.props;
 const d = pub.data;
 
 const { shown, hidden } = truncateAuthors(d.authors);
@@ -52,12 +60,22 @@ const bibId = `bib-${pub.id}`;
 
     <p class="authors">
       {
-        shown.map((p, i) => (
-          <>
-            {i > 0 && <span aria-hidden="true">, </span>}
-            {isSelf(p) ? <strong>{fullName(p)}</strong> : <span>{fullName(p)}</span>}
-          </>
-        ))
+        shown.map((p, i) => {
+          const href = links?.get(surnameKey(p.last));
+          const name = isSelf(p) ? <strong>{fullName(p)}</strong> : fullName(p);
+          return (
+            <>
+              {i > 0 && <span aria-hidden="true">, </span>}
+              {href ? (
+                <a class="who" href={href}>
+                  {name}
+                </a>
+              ) : (
+                <span>{name}</span>
+              )}
+            </>
+          );
+        })
       }
       {hidden > 0 && <span class="more"> and {hidden} more authors</span>}
     </p>
@@ -165,6 +183,18 @@ const bibId = `bib-${pub.id}`;
   }
   .authors strong {
     color: var(--text);
+  }
+  /* An author who has an entry on /people/. Underlined only on hover: in a
+     list of forty papers, a permanent underline under half of every author
+     line is louder than the titles. */
+  .who {
+    color: inherit;
+    text-decoration: none;
+  }
+  .who:hover {
+    color: var(--sec-strong);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .more {
     color: var(--text-faint);

@@ -1,0 +1,76 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import { Image } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import Prose from '../../components/Prose.astro';
+
+export const getStaticPaths = (async () => {
+  const projects = await getCollection('projects');
+  return (
+    projects
+      // An entry with `redirect` lives somewhere else; generating a page here
+      // would be a second, worse copy of it that search engines then have to
+      // choose between.
+      .filter((p) => !p.data.redirect)
+      .map((project) => ({ params: { slug: project.id }, props: { project } }))
+  );
+}) satisfies GetStaticPaths;
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const d = project.data;
+---
+
+<Base title={d.title} description={d.description} section="projects">
+  <article class="wrap project">
+    <header class="head">
+      {
+        d.logo && (
+          <Image class="logo" src={d.logo} alt="" width={64} height={64} densities={[1, 2]} />
+        )
+      }
+      <div>
+        <h1>{d.title}</h1>
+        <p class="lede">{d.description}</p>
+      </div>
+    </header>
+
+    <Prose>
+      <Content />
+    </Prose>
+
+    <p class="back">
+      <a class="chip" href="/projects/">← All projects</a>
+    </p>
+  </article>
+</Base>
+
+<style>
+  .project {
+    padding-block: clamp(2.5rem, 7vw, 4rem) 1rem;
+  }
+  .head {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.1rem;
+    max-width: var(--measure);
+    margin-bottom: 2rem;
+  }
+  .logo {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-m);
+  }
+  h1 {
+    margin-bottom: 0.4rem;
+  }
+  .lede {
+    margin: 0;
+    color: var(--text-muted);
+  }
+  .back {
+    margin-top: 2.5rem;
+  }
+</style>

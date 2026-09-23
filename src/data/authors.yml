@@ -50,3 +50,15 @@ king:
 shackleton_bailey:
   name: David Roy Shackleton Bailey
   orcid: null
+
+# The one invented person in this demo, and the only author here with an ORCID.
+# She exists so that every integration the template supports has something to
+# render: the ORCID link on a paper page, a fully-populated /people/ entry, and
+# an author name that links back to it.
+#
+# The ORCID is real and resolves — 0000-0002-1825-0097 is Josiah Carberry, the
+# deliberately fictional researcher ORCID maintains for exactly this purpose.
+# Replace it with your own and the link keeps working.
+marek:
+  name: Livia Marek
+  orcid: 0000-0002-1825-0097

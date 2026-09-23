@@ -1,0 +1,31 @@
+# Profile links for SocialRow.astro, and the ids the data scripts need.
+#
+# Every field is optional: set one to null (or delete the line) and the chip
+# for it simply does not render. That is how you remove a profile you do not
+# have, rather than by editing the component.
+#
+# DEMO VALUES. Two of these are real, resolvable placeholders — ORCID's own
+# fictional researcher and GitHub's own demo account — so that nothing here
+# ships a link into someone's actual profile, and nothing ships a link that
+# 404s either.
+
+# ORCID's deliberately fictional record, maintained for demos like this one.
+orcid_id: 0000-0002-1825-0097
+
+# Google Scholar has no equivalent placeholder account, so this stays unset
+# rather than pointing at a profile that does not exist. Yours is the `user`
+# parameter in your profile URL:
+#   https://scholar.google.com/citations?user=XXXXXXXXXXXX
+# Setting it does two things: it renders the Scholar chip, and it tells
+# scripts/update_scholar_citations.py whose citations to fetch.
+scholar_userid: null
+
+# GitHub's own demo account.
+github_username: octocat
+
+dblp_url: null
+linkedin_username: null
+
+# Your PGP key fingerprint, no spaces. When set, /pgp-key/ renders it and
+# SocialRow links there; when null, both quietly stand down.
+pgp_fingerprint: null

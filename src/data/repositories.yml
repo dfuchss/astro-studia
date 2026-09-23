@@ -1,0 +1,25 @@
+# What /repositories/ lists.
+#
+# Nothing here is fetched at build time. `scripts/fetch-github-metadata.mjs`
+# reads this file, calls the GitHub API, and writes src/data/github-metadata.json,
+# which is committed — so the build is hermetic and works offline, with no token
+# and nothing to rate-limit. Run it by hand, or on the schedule in
+# .github/workflows/update-github-metadata.yml.
+#
+# Add a repo here, run `npm run data:github`, commit both files.
+#
+# DEMO VALUES: GitHub's own demo account and two repositories that certainly
+# exist, so `npm run data:github` works on a fresh clone.
+
+github_users:
+  - octocat
+
+github_repos:
+  - withastro/astro
+  - octocat/Hello-World
+
+# Archived datasets and software releases, listed by DOI. No API call, no
+# metadata file — a DOI does not go stale.
+zenodo_repos:
+  - name: Replication package (example)
+    doi: 10.5281/zenodo.10000000

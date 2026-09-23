@@ -19,6 +19,13 @@ const fold = (s: string) =>
 
 const SELF_SURNAMES = SELF.surnames.map(fold);
 
+/**
+ * The key a surname is looked up under — in the people map, and anywhere else
+ * two spellings of one name have to meet. Exported so that whatever builds the
+ * map and whatever reads it cannot fold differently.
+ */
+export const surnameKey = fold;
+
 /** Is this author the person (or one of the people) the site is about? */
 export const isSelf = (p: Person) => SELF_SURNAMES.includes(fold(p.last));
 

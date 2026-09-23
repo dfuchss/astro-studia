@@ -1,0 +1,94 @@
+---
+import { intrinsic } from '../../lib/images.ts';
+import Email from '../Email.astro';
+import type { Member } from '../../lib/people.ts';
+
+interface Props {
+  member: Member;
+}
+
+const { member } = Astro.props;
+const { entry, author } = member;
+const d = entry.data;
+
+const { width, height } = intrinsic(d.image);
+
+// Each of these is optional in people.yml, so a person with none of them
+// renders as a name and a portrait and nothing looks broken.
+const profiles = [
+  d.url && { label: 'Homepage', href: d.url },
+  author.data.orcid && {
+    label: 'ORCID',
+    href: `https://orcid.org/${author.data.orcid}`,
+  },
+  d.github && { label: 'GitHub', href: `https://github.com/${d.github}` },
+].filter(Boolean) as { label: string; href: string }[];
+---
+
+<li class="person card reveal" id={entry.id}>
+  <img
+    class="portrait"
+    src={d.image}
+    alt=""
+    width={width}
+    height={height}
+    loading="lazy"
+    decoding="async"
+  />
+
+  <div class="body">
+    <h2>{author.data.name}</h2>
+    {d.role && <p class="role mono">{d.role}</p>}
+
+    <div class="chips">
+      {
+        profiles.map((p) => (
+          <a class="chip" href={p.href} rel="noopener">
+            {p.label}
+          </a>
+        ))
+      }
+      {d.email && <Email address={d.email} label="Email" class="chip" />}
+    </div>
+  </div>
+</li>
+
+<style>
+  .person {
+    display: flex;
+    gap: 1.1rem;
+    align-items: flex-start;
+  }
+  /* :target rather than a hover state: arriving from an author link in the
+     publication list should say which of these you were sent to. */
+  .person:target {
+    border-color: var(--sec-line);
+    background: var(--sec-dim);
+  }
+
+  .portrait {
+    flex: none;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    object-fit: cover;
+  }
+
+  .body {
+    min-width: 0;
+  }
+  h2 {
+    font-size: var(--fs-h3);
+    margin: 0 0 0.15rem;
+  }
+  .role {
+    margin: 0 0 0.6rem;
+    color: var(--sec);
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+</style>

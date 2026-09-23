@@ -1,0 +1,71 @@
+---
+/**
+ * An email address that is not in the served HTML.
+ *
+ * The address is split and rot13'd into data attributes and reassembled on
+ * load, so a scraper reading the shipped bytes finds nothing to harvest.
+ * scripts/audit-site.mjs greps the built output for anything address-shaped
+ * and fails the build if one appears — which is what catches the case where
+ * somebody writes a plain mailto: into a page and nobody notices for a year.
+ *
+ * Without JS it renders "name (at) example (dot) org", which is readable,
+ * unambiguous, and still not a harvestable address.
+ */
+interface Props {
+  /** The real address. It never reaches the HTML. */
+  address: string;
+  /** Link text once JS has run. Defaults to the address itself. */
+  label?: string;
+  class?: string;
+}
+
+const { address, label, class: className } = Astro.props;
+
+const rot13 = (s: string) =>
+  s.replace(/[a-zA-Z]/g, (c) =>
+    String.fromCharCode(
+      (c <= 'Z' ? 90 : 122) >= c.charCodeAt(0) + 13 ? c.charCodeAt(0) + 13 : c.charCodeAt(0) - 13,
+    ),
+  );
+
+const [user, domain] = address.split('@');
+const readable = `${user} (at) ${domain.replace(/\./g, ' (dot) ')}`;
+---
+
+<span
+  class:list={['email', className]}
+  data-u={rot13(user)}
+  data-d={rot13(domain)}
+  data-label={label ? rot13(label) : ''}
+>
+  {readable}
+</span>
+
+<script>
+  const unrot = (s: string) =>
+    s.replace(/[a-zA-Z]/g, (c) =>
+      String.fromCharCode(
+        (c <= 'Z' ? 90 : 122) >= c.charCodeAt(0) + 13 ? c.charCodeAt(0) + 13 : c.charCodeAt(0) - 13,
+      ),
+    );
+
+  for (const el of document.querySelectorAll<HTMLElement>('.email[data-u]')) {
+    const address = `${unrot(el.dataset.u!)}@${unrot(el.dataset.d!)}`;
+    const label = el.dataset.label ? unrot(el.dataset.label) : address;
+
+    const a = document.createElement('a');
+    a.href = `mailto:${address}`;
+    a.textContent = label;
+    a.className = el.className;
+
+    el.replaceWith(a);
+  }
+</script>
+
+<style>
+  .email {
+    /* The no-JS form is longer than the label that replaces it; keep it from
+       breaking mid-address. */
+    white-space: nowrap;
+  }
+</style>

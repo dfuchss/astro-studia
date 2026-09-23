@@ -1,0 +1,115 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { projectPath } from '../../lib/paths.ts';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const d = project.data;
+
+// An entry with `redirect` has no page of its own; the card links straight out.
+const href = d.redirect ?? projectPath(project.id);
+const external = Boolean(d.redirect);
+
+// Fallback when there is no logo: the first two initials of the title. Keeps
+// the grid even, and means a new project needs no artwork to look finished.
+const initials = d.title
+  .split(/\s+/)
+  .filter((w) => /[a-zA-Z]/.test(w[0] ?? ''))
+  .slice(0, 2)
+  .map((w) => w[0].toUpperCase())
+  .join('');
+---
+
+<li class="card project reveal">
+  <a class="hit" href={href} rel={external ? 'noopener' : undefined}>
+    <div class="head">
+      {
+        d.logo ? (
+          /* densities 1x and 2x: the logo is small and rendered at a fixed
+             size, so the retina variant is cheap and the difference obvious. */
+          <Image class="logo" src={d.logo} alt="" width={44} height={44} densities={[1, 2]} />
+        ) : (
+          <span class="logo fallback mono" aria-hidden="true">
+            {initials}
+          </span>
+        )
+      }
+      <h3>
+        {d.title}
+        {
+          external && (
+            <span class="out" aria-label="(external link)">
+              {' '}
+              ↗
+            </span>
+          )
+        }
+      </h3>
+    </div>
+    <p>{d.description}</p>
+  </a>
+</li>
+
+<style>
+  .project {
+    padding: 0;
+  }
+  /* The whole card is the link, so there is no small target inside a large
+     clickable-looking box. */
+  .hit {
+    display: block;
+    padding: 1.25rem 1.35rem;
+    color: inherit;
+    text-decoration: none;
+    border-radius: inherit;
+    height: 100%;
+  }
+  .project:hover {
+    border-color: var(--sec-line);
+    background: var(--bg-2);
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+  .logo {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-m);
+  }
+  .fallback {
+    display: grid;
+    place-items: center;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--sec);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+  .hit:hover h3 {
+    color: var(--sec-strong);
+  }
+  .out {
+    color: var(--text-faint);
+    font-size: 0.85em;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+  }
+</style>

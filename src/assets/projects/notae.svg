@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="N">
+  <rect width="96" height="96" rx="20" fill="#161c27"/>
+  <rect x="1" y="1" width="94" height="94" rx="19" fill="none" stroke="#ad8cf2" stroke-opacity="0.45"/>
+  <text x="48" y="49" fill="#ad8cf2" font-family="Helvetica, Arial, sans-serif" font-size="42"
+        font-weight="600" text-anchor="middle" dominant-baseline="central">N</text>
+</svg>
