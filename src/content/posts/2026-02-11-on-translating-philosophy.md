@@ -17,6 +17,23 @@ for philosophy, and the evidence offered is that it lacks the words. But a
 language does not have words for something nobody has yet written about in it,
 and acquiring them is the ordinary cost of going first.
 
+<!-- Written as HTML rather than as ![](…) for two reasons: markdown cannot
+     carry `width` and `height`, which the image audit requires, and it cannot
+     opt out of the white plate that .prose puts behind an SVG. This figure has
+     its own background, so it takes `class="no-plate"`. -->
+<figure>
+  <img
+    class="no-plate"
+    src="/assets/img/posts/translation-layers.svg"
+    alt="Three strategies for moving a term between languages: borrow it, calque it, or reuse a word that already exists."
+    width="760"
+    height="300"
+    loading="lazy"
+    decoding="async"
+  />
+  <figcaption>The same Greek term, arriving in Latin three different ways.</figcaption>
+</figure>
+
 ## Three ways to do it
 
 **Borrow.** Keep the Greek and let it naturalise. Cheap, and it works, but each

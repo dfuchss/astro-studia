@@ -94,17 +94,27 @@
   --sec-dim: var(--cyan-dim);
   --sec-glow: var(--cyan-glow);
 
-  /* ── GEOMETRY ──────────────────────────────────────────────────────────── */
+  /* ── GEOMETRY ──────────────────────────────────────────────────────────
+     --max IS THE WIDTH OF THE PAGE. It is the only place that decides it:
+     `.wrap` in base.css is what every page and every section is inside, and
+     `.wrap` is `max-width: var(--max)` plus the gutter. Change this one value
+     and the whole site gets wider or narrower.
+
+     --gutter is the breathing room at the left and right edges, and it shrinks
+     on a narrow screen rather than being a fixed inset. */
+  --max: 1180px;
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+
+  /* The single-column measure, which is a different question from --max: how
+     wide a column of *prose* may get before it is tiring to read. Article
+     pages — a paper page, a post — size their header, figure, prose, link list
+     and cite block to this, so the left and right edges line up all the way
+     down instead of every block picking its own width. */
+  --measure: 52rem;
+
   --radius-s: 6px;
   --radius-m: 12px;
   --radius-l: 18px;
-  --max: 1120px;
-  /* The single-column measure. Article pages — a paper page, a post — size
-     their header, figure, prose, link list and cite block to this, so the left
-     and right edges line up all the way down instead of every block picking
-     its own width. */
-  --measure: 52rem;
-  --gutter: clamp(1rem, 4vw, 2.5rem);
 
   /* ── TYPE ───────────────────────────────────────────────────────────────
      Two faces, self-hosted through @fontsource and imported in

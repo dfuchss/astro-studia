@@ -61,7 +61,7 @@ const links = await peopleLinks();
     {
       groups.map((g) => (
         <section class="year" data-year={g.year}>
-          <h2>{g.year}</h2>
+          <h2 class="year-head mono">{g.year}</h2>
           <ul class="entries">
             {g.items.map((pub) => (
               <PubEntry pub={pub} links={links} />
@@ -183,23 +183,31 @@ const links = await peopleLinks();
 
   .entries {
     list-style: none;
-    margin: 0;
+    margin: 0.5rem 0 0;
     padding: 0;
   }
 
-  /* Sticky under the nav, which is 3.75rem tall, so the year you are reading
-     stays visible while you scroll its entries. */
-  .year h2 {
-    position: sticky;
-    top: 3.75rem;
-    z-index: 1;
-    margin: 2rem 0 0.25rem;
-    padding: 0.5rem 0 0.4rem;
+  .year {
+    margin-top: 2.25rem;
+  }
+  /* A flat section marker rather than a sticky pill: a sticky one floats over
+     the entries as you scroll, and stacks up wherever two years sit close
+     together. The rule is drawn by ::after so it fills whatever space is left
+     beside the number, at any width. */
+  .year-head {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin: 0;
     font-family: var(--font-mono);
-    font-size: 1.05rem;
+    font-size: var(--fs-mono);
+    font-weight: 500;
     color: var(--sec);
-    background: color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border);
+  }
+  .year-head::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
   }
 </style>

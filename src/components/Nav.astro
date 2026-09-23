@@ -10,9 +10,8 @@ const { section } = Astro.props;
 
 <header class="nav">
   <div class="wrap inner">
-    <a class="brand" href="/">
-      <img src="/favicon.svg" alt="" width="26" height="26" />
-      <span>{SITE.brand}</span>
+    <a class="brand mono" href="/">
+      {SITE.brandPrompt && <span class="brand-prompt">{SITE.brandPrompt}</span>}{SITE.brand}
     </a>
 
     <nav aria-label="Primary">
@@ -49,22 +48,21 @@ const { section } = Astro.props;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem 1.5rem;
-    min-height: 3.75rem;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.5rem;
   }
 
+  /* A wordmark, not an image. If you want a logo here instead, put one in
+     public/ and render it beside the text — see docs/theming.md. */
   .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-family: var(--font-mono);
-    font-weight: 600;
     color: var(--text);
     text-decoration: none;
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    white-space: nowrap;
   }
-  .brand img {
-    border-radius: var(--radius-s);
+  .brand-prompt {
+    color: var(--text-faint);
   }
   .brand:hover {
     color: var(--sec-strong);
@@ -72,21 +70,31 @@ const { section } = Astro.props;
 
   /* No hamburger: short items wrap onto a second line on narrow screens, which
      is less machinery and one fewer thing that can trap focus. */
+  /* Pushed to the right edge, and kept there once it wraps. space-between on
+     .inner already does this while the two sit on one line; margin-left:auto
+     plus flex-end is what holds the alignment when the items drop onto a line
+     of their own, which they do as soon as the nav is long or the window is
+     narrow. */
+  nav {
+    margin-left: auto;
+  }
   ul {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem 1.1rem;
+    justify-content: flex-end;
+    gap: 0.25rem 1.1rem;
     list-style: none;
-    margin: 0 0 0 auto;
+    margin: 0;
     padding: 0;
   }
 
   ul a {
+    display: block;
     font-family: var(--font-mono);
     font-size: var(--fs-mono);
     color: var(--text-muted);
     text-decoration: none;
-    padding: 0.3rem 0;
+    padding: 0.35rem 0;
     border-bottom: 1px solid transparent;
   }
 

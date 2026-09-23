@@ -22,6 +22,13 @@ export const SITE = {
    */
   brand: 'M. T. Cicero',
 
+  /**
+   * A prefix rendered in front of the brand in a fainter colour — the shell
+   * prompt conceit, `~/name`. Set it to null for a plain wordmark, or to
+   * something else entirely; it is decoration and nothing depends on it.
+   */
+  brandPrompt: '~/',
+
   /** One line under the title on the home page and in the feed. Optional. */
   tagline: 'Bringing Greek philosophy into Latin.',
 
