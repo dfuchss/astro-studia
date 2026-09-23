@@ -1,0 +1,46 @@
+---
+import { SITE } from '../consts.ts';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+
+// The page title, or the site's own on the home page — never "Home · Site".
+const pageTitle = title ? `${title} · ${SITE.title}` : SITE.title;
+const desc = description ?? SITE.description;
+
+// Safe because astro.config.ts sets trailingSlash: 'always' with
+// build.format: 'directory', which makes Astro.url.pathname the address a
+// visitor actually sees. Under build.format: 'preserve' it would be the file
+// path ("/papers/sosp67.html") and every canonical here would be wrong.
+const canonical = new URL(Astro.url.pathname, SITE.url);
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{pageTitle}</title>
+<meta name="description" content={desc} />
+<link rel="canonical" href={canonical} />
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+{/* Delete this line along with src/pages/feed.xml.ts if you drop the blog. */}
+<link rel="alternate" type="application/rss+xml" title={SITE.title} href="/feed.xml" />
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content={SITE.title} />
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={desc} />
+<meta property="og:url" content={canonical} />
+
+{
+  /* summary, not summary_large_image: nothing here ships an og:image, so the
+    large card would render as a blank rectangle. docs/deploying.md covers
+    adding one. */
+}
+<meta name="twitter:card" content="summary" />
+
+<meta name="generator" content={Astro.generator} />

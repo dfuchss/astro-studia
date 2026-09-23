@@ -1,0 +1,13 @@
+# Astro
+dist/
+.astro/
+node_modules/
+
+# Python (scripts/update_bib.py, scripts/update_scholar_citations.py)
+.venv/
+__pycache__/
+*.pyc
+
+# Editors / OS
+.DS_Store
+.idea

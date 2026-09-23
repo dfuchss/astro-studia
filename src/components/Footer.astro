@@ -1,0 +1,74 @@
+---
+import { SITE, FOOTER_LINKS } from '../consts.ts';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="foot">
+  <div class="wrap inner">
+    <p class="mono">© {year} {SITE.brand}</p>
+
+    {
+      FOOTER_LINKS.length > 0 && (
+        <nav aria-label="Secondary">
+          <ul>
+            {FOOTER_LINKS.map((link) => (
+              <li>
+                <a class="mono" href={link.href}>
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+
+    <p class="mono built">
+      Built with <a href="https://astro.build/">Astro</a> and
+      <a href={SITE.repo}>aca-theme</a>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .foot {
+    border-top: 1px solid var(--border);
+    margin-top: clamp(3rem, 8vw, 6rem);
+    padding-block: 2rem;
+    color: var(--text-faint);
+  }
+
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1.5rem;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  /* Pushed to the far end on a wide viewport; wraps underneath on a phone. */
+  .built {
+    margin-left: auto;
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    color: var(--text-muted);
+    text-decoration-color: var(--border-strong);
+  }
+  a:hover {
+    color: var(--sec-strong);
+  }
+</style>

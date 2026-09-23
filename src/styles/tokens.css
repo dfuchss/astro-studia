@@ -1,0 +1,194 @@
+/*
+ * Design tokens.
+ *
+ * Dark only. Every colour is defined on bare `:root` — there is no light theme
+ * and no [data-theme] switching, so a colour has exactly one definition and
+ * there is no second palette to keep in step. scripts/audit-site.mjs fails the
+ * build if a [data-theme] block appears, so this stays true by accident as
+ * well as on purpose.
+ *
+ * Section accents: five hue families, each with the same five roles. A page
+ * sets `data-section` on <body> and the neutral `--sec-*` aliases re-point at
+ * that family, so one set of components recolours itself by context. Nav links
+ * carry `data-section` too, which is how each previews its destination's hue.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ── SURFACES ──────────────────────────────────────────────────────────
+     Near-neutral, very slightly cool. Deliberately not tinted toward any of
+     the accents below: a surface that leans into the brand hue looks
+     considered with one palette and muddy with the next, and this file is
+     meant to be re-hued by whoever clones it. */
+  --bg: #0b0d12;
+  --bg-1: #111520;
+  --bg-2: #161c27;
+  --bg-3: #1d2431;
+  --border: rgb(255 255 255 / 9%);
+  --border-strong: rgb(255 255 255 / 16%);
+
+  /* ── INK ───────────────────────────────────────────────────────────────
+     Three weights, no more. If a fourth seems necessary the real problem is
+     usually that something wants --text-muted at a larger size. */
+  --text: #edeff4;
+  --text-muted: #a4adbd;
+  --text-faint: #828d9f;
+
+  /* ── PALETTE ───────────────────────────────────────────────────────────
+     To rebrand this site, change the five base hex values below and nothing
+     else: no other file in the codebase names a colour. The four other roles
+     in each family are mixed from the base, so a hue is one edit rather than
+     five plus a hex-to-rgb conversion by hand.
+
+     Keep each base at 3:1 or better against --bg, and the --text* values at
+     4.5:1, or scripts/audit-site.mjs will fail the build and tell you which
+     one and by how much.
+
+       base     links, icons, the accent rule under a heading
+       -strong  hover, and headings that carry the accent themselves
+       -line    borders and rules — never text
+       -dim     tints: chip backgrounds, :target highlights
+       -glow    the fixed radial wash behind the page, in body::before */
+
+  --cyan: #5cc8e8;
+  --cyan-strong: color-mix(in srgb, var(--cyan) 55%, white);
+  --cyan-line: color-mix(in srgb, var(--cyan) 42%, transparent);
+  --cyan-dim: color-mix(in srgb, var(--cyan) 12%, transparent);
+  --cyan-glow: color-mix(in srgb, var(--cyan) 15%, transparent);
+
+  --green: #55d39a;
+  --green-strong: color-mix(in srgb, var(--green) 55%, white);
+  --green-line: color-mix(in srgb, var(--green) 42%, transparent);
+  --green-dim: color-mix(in srgb, var(--green) 12%, transparent);
+  --green-glow: color-mix(in srgb, var(--green) 15%, transparent);
+
+  --violet: #ad8cf2;
+  --violet-strong: color-mix(in srgb, var(--violet) 55%, white);
+  --violet-line: color-mix(in srgb, var(--violet) 42%, transparent);
+  --violet-dim: color-mix(in srgb, var(--violet) 13%, transparent);
+  --violet-glow: color-mix(in srgb, var(--violet) 15%, transparent);
+
+  --rose: #f18fa2;
+  --rose-strong: color-mix(in srgb, var(--rose) 55%, white);
+  --rose-line: color-mix(in srgb, var(--rose) 42%, transparent);
+  --rose-dim: color-mix(in srgb, var(--rose) 13%, transparent);
+  --rose-glow: color-mix(in srgb, var(--rose) 14%, transparent);
+
+  --amber: #e0b364;
+  --amber-strong: color-mix(in srgb, var(--amber) 55%, white);
+  --amber-line: color-mix(in srgb, var(--amber) 42%, transparent);
+  --amber-dim: color-mix(in srgb, var(--amber) 13%, transparent);
+  --amber-glow: color-mix(in srgb, var(--amber) 14%, transparent);
+
+  /* Error and draft states. Not a section family — nothing re-points to it. */
+  --warn: #e8823f;
+
+  /* ── NEUTRAL SECTION ALIASES ───────────────────────────────────────────
+     What components actually reference. The [data-section] blocks at the
+     bottom of this file re-point them; this is the fallback for anything
+     rendered outside a section. */
+  --sec: var(--cyan);
+  --sec-strong: var(--cyan-strong);
+  --sec-line: var(--cyan-line);
+  --sec-dim: var(--cyan-dim);
+  --sec-glow: var(--cyan-glow);
+
+  /* ── GEOMETRY ──────────────────────────────────────────────────────────── */
+  --radius-s: 6px;
+  --radius-m: 12px;
+  --radius-l: 18px;
+  --max: 1120px;
+  /* The single-column measure. Article pages — a paper page, a post — size
+     their header, figure, prose, link list and cite block to this, so the left
+     and right edges line up all the way down instead of every block picking
+     its own width. */
+  --measure: 52rem;
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+
+  /* ── TYPE ───────────────────────────────────────────────────────────────
+     Two faces, self-hosted through @fontsource and imported in
+     layouts/Base.astro. Swapping them is that import plus these three lines. */
+  --font-head: 'Inter Variable', system-ui, sans-serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', SFMono-Regular, monospace;
+
+  /* Fluid scale: no media queries, and no step so large that a long title
+     wraps to four lines on a phone. */
+  --fs-h1: clamp(2rem, 1.2rem + 3.6vw, 3.4rem);
+  --fs-h2: clamp(1.5rem, 1.1rem + 1.6vw, 2.0625rem);
+  --fs-h3: clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
+  --fs-body: 1rem;
+  --fs-small: 0.875rem;
+  --fs-mono: 0.8125rem;
+
+  /* ── MOTION ─────────────────────────────────────────────────────────────
+     One easing and one duration. base.css turns both off under
+     prefers-reduced-motion. */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur: 200ms;
+}
+
+/* ── SECTION ACCENT SCOPING ───────────────────────────────────────────────
+   One block per value of the `Section` union in src/consts.ts. Every value
+   needs one — including 'home', which is why it has a block of its own rather
+   than falling through to the :root default: audit-site.mjs collects the
+   data-section values out of the built HTML and the selectors out of the built
+   CSS, and fails on any value with no block. That check is what makes "adding
+   a section is two edits" safe to say.
+
+   Sections may share a family. Eight areas over five hues reads as a palette;
+   eight distinct hues reads as a swatch chart. */
+
+[data-section='home'] {
+  /* Ink rather than a hue: the home page carries the site's own colour in its
+     glow, and an accented nav item for "about" would compete with whichever
+     section the visitor is actually in. */
+  --sec: var(--text);
+  --sec-strong: var(--text);
+  --sec-line: var(--border-strong);
+  --sec-dim: color-mix(in srgb, var(--text) 8%, transparent);
+  --sec-glow: var(--cyan-glow);
+}
+
+[data-section='publications'] {
+  --sec: var(--green);
+  --sec-strong: var(--green-strong);
+  --sec-line: var(--green-line);
+  --sec-dim: var(--green-dim);
+  --sec-glow: var(--green-glow);
+}
+
+[data-section='papers'] {
+  --sec: var(--violet);
+  --sec-strong: var(--violet-strong);
+  --sec-line: var(--violet-line);
+  --sec-dim: var(--violet-dim);
+  --sec-glow: var(--violet-glow);
+}
+
+[data-section='projects'],
+[data-section='repositories'] {
+  --sec: var(--cyan);
+  --sec-strong: var(--cyan-strong);
+  --sec-line: var(--cyan-line);
+  --sec-dim: var(--cyan-dim);
+  --sec-glow: var(--cyan-glow);
+}
+
+[data-section='blog'] {
+  --sec: var(--rose);
+  --sec-strong: var(--rose-strong);
+  --sec-line: var(--rose-line);
+  --sec-dim: var(--rose-dim);
+  --sec-glow: var(--rose-glow);
+}
+
+[data-section='people'],
+[data-section='cv'] {
+  --sec: var(--amber);
+  --sec-strong: var(--amber-strong);
+  --sec-line: var(--amber-line);
+  --sec-dim: var(--amber-dim);
+  --sec-glow: var(--amber-glow);
+}

@@ -1,0 +1,50 @@
+{
+  "name": "aca-theme",
+  "version": "0.1.0",
+  "description": "An academic Astro starter: publications from BibTeX, paper pages, projects, blog, CV, people. No UI framework, no CSS framework, dark only.",
+  "license": "MIT",
+  "author": "Dominik Fuchß",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dfuchss/aca-theme"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check && prettier . --check",
+    "format": "prettier . --write",
+    "audit": "node scripts/audit-site.mjs",
+    "verify": "node scripts/verify-invariants.mjs && npm run audit",
+    "baseline": "node scripts/generate-asset-baseline.mjs",
+    "data:github": "node scripts/fetch-github-metadata.mjs",
+    "bib:check": "python3 scripts/update_bib.py"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.0",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.9",
+    "@retorquere/bibtex-parser": "^11.0.0",
+    "astro": "^7.3.2",
+    "sharp": "^0.35.4",
+    "yaml": "^2.8.1",
+    "zod": "^4.6.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.5.1",
+    "prettier": "^3.8.0",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

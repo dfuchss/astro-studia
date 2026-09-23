@@ -1,0 +1,86 @@
+---
+// The only layout. Every page renders through it.
+//
+// Fonts are self-hosted through @fontsource and imported here rather than in
+// tokens.css, so swapping a face is this import plus the three --font-* lines
+// in tokens.css. Nothing is fetched from a third-party origin at runtime —
+// scripts/audit-site.mjs enforces that.
+//
+// Inter is imported with every unicode subset but only the weight axis
+// (`wght.css`, not `index.css`): an academic author list is full of names the
+// latin subset cannot render, and a missing glyph in a co-author's name is
+// worse than a few extra woff2 files the browser never requests — unicode-range
+// means it only fetches the subsets a page actually uses. JetBrains Mono styles
+// chrome and never a name, so latin is enough for it.
+import '@fontsource-variable/inter/wght.css';
+import '@fontsource/jetbrains-mono/latin-400.css';
+import '@fontsource/jetbrains-mono/latin-500.css';
+
+import '../styles/tokens.css';
+import '../styles/base.css';
+
+import BaseHead from '../components/BaseHead.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { SITE, type Section } from '../consts.ts';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Picks the accent family — see the [data-section] blocks in tokens.css. */
+  section?: Section;
+}
+
+const { title, description, section } = Astro.props;
+---
+
+<!doctype html>
+<html lang={SITE.lang}>
+  <head>
+    <BaseHead title={title} description={description} />
+    {
+      /* Pages inject page-specific <head> markup here — a paper page puts its
+        Highwire citation_* tags and JSON-LD through this slot. */
+    }
+    <slot name="head" />
+  </head>
+  <body data-section={section}>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Nav section={section} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      // Mark that JS is available, so `.reveal` may start hidden. Without this
+      // class the reveal styles are a no-op (html:not(.js) .reveal in
+      // base.css), which is what keeps the page fully readable with JS off.
+      document.documentElement.classList.add('js');
+
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const targets = document.querySelectorAll('.reveal');
+
+      if (reduce || !('IntersectionObserver' in window)) {
+        targets.forEach((el) => el.classList.add('is-in'));
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              // Reveal on entering the viewport, but also when an element has
+              // been skipped over entirely — an anchor jump, the End key or a
+              // restored scroll position never makes it intersect, and it
+              // would otherwise sit at opacity 0 forever.
+              const skipped = !entry.isIntersecting && entry.boundingClientRect.bottom <= 0;
+              if (!entry.isIntersecting && !skipped) continue;
+              entry.target.classList.add('is-in');
+              io.unobserve(entry.target);
+            }
+          },
+          { rootMargin: '0px 0px -10% 0px', threshold: 0.05 },
+        );
+        targets.forEach((el) => io.observe(el));
+      }
+    </script>
+  </body>
+</html>

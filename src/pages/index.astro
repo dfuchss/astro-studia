@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, SELF } from '../consts.ts';
+---
+
+<Base section="home">
+  <section class="section wrap hero">
+    <p class="kicker">whoami</p>
+    <h1>{SELF.first} {SELF.last}</h1>
+    <p class="tagline">{SITE.tagline}</p>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    max-width: var(--measure);
+    margin-inline: 0;
+  }
+  .tagline {
+    font-size: var(--fs-h3);
+    color: var(--text-muted);
+    max-width: 42ch;
+  }
+</style>
