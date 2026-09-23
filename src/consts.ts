@@ -13,20 +13,20 @@ export const SITE = {
    */
   url: 'https://example.com',
 
-  title: 'Edsger W. Dijkstra — aca-theme demo',
+  title: 'Marcus Tullius Cicero — aca-theme demo',
 
   /**
    * What the nav shows. A <title> and a brand mark have different length
    * budgets: the title can afford to disambiguate, the brand has to fit beside
    * the nav items on a phone. Keep this to a word or two.
    */
-  brand: 'E. W. Dijkstra',
+  brand: 'M. T. Cicero',
 
   /** One line under the title on the home page and in the feed. Optional. */
-  tagline: 'Programming as a human activity.',
+  tagline: 'Bringing Greek philosophy into Latin.',
 
   description:
-    'Demo content for aca-theme, an academic Astro starter. Replace everything in src/data/ and src/content/ with your own.',
+    'Demo content for aca-theme, an academic Astro starter. Replace src/consts.ts, src/data/ and src/content/ with your own.',
 
   /** Used for <html lang>. */
   lang: 'en',
@@ -38,9 +38,33 @@ export const SITE = {
    */
   locale: 'en-US',
 
-  email: 'ewd@example.edu',
+  email: 'cicero@example.org',
 
   repo: 'https://github.com/dfuchss/aca-theme',
+
+  /**
+   * The footer's copyright holder — "© 2026 <this>".
+   *
+   * Your own name, or your group's or institution's if the site is theirs.
+   * Kept separate from `brand` because the two are genuinely different: a site
+   * *about* someone is not necessarily copyright them — which is the trap the
+   * demo content below would otherwise walk straight into, since it renders
+   * somebody else's name in the nav.
+   */
+  copyright: 'Dominik Fuchß',
+
+  /**
+   * DELETE THIS LINE (set it to null) once the content is yours.
+   *
+   * While it is set, a banner sits at the top of the home page and a line runs
+   * in the footer saying the content is a demo — so that an unmodified deploy
+   * cannot be mistaken for a real site.
+   *
+   * Nothing else depends on it — components/DemoNotice.astro renders nothing
+   * when it is null.
+   */
+  demoNotice:
+    "Demo content for the aca-theme starter — the works are Cicero's, the website is not.",
 } as const;
 
 /**
@@ -56,9 +80,9 @@ export const SITE = {
  * with the bolding in `src/components/pub/PubEntry.astro`.
  */
 export const SELF = {
-  first: 'Edsger',
-  last: 'Dijkstra',
-  surnames: ['Dijkstra'],
+  first: 'Marcus Tullius',
+  last: 'Cicero',
+  surnames: ['Cicero'],
 } as const;
 
 /**

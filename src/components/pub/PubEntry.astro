@@ -1,0 +1,261 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import VenueBadge from './VenueBadge.astro';
+import CopyButton from './CopyButton.astro';
+import { citationsFor, formatCount } from '../../lib/citations.ts';
+import { truncateAuthors, fullName, isSelf } from '../../lib/authors.ts';
+import { paperPath } from '../../lib/paths.ts';
+
+interface Props {
+  pub: CollectionEntry<'publications'>;
+  /**
+   * Trim the entry to its citation: no BibTeX block, no "Paper page" chip.
+   * For places that list a few publications alongside other things — a home
+   * page — where the full apparatus would drown the rest of the page.
+   */
+  compact?: boolean;
+}
+
+const { pub, compact = false } = Astro.props;
+const d = pub.data;
+
+const { shown, hidden } = truncateAuthors(d.authors);
+const cites = citationsFor(d.googleScholarId);
+
+// Where it appeared: proceedings, journal, or the awarding institution.
+const inParts = [d.booktitle ?? d.journal ?? d.school ?? d.institution, d.location].filter(Boolean);
+
+// The id is the anchor — /publications/#cicero_de_officiis_1913 highlights
+// this entry — and `data-search` is what the filter on that page matches
+// against. Both live here rather than on a wrapper the pages have to remember
+// to add, so an entry is filterable wherever it is rendered.
+const bibId = `bib-${pub.id}`;
+---
+
+<li class="entry reveal" id={pub.id} data-search={d.searchText}>
+  <div class="badge">
+    <VenueBadge abbr={d.abbr} />
+  </div>
+
+  <div class="body">
+    <h3 class="title">
+      {
+        d.pageSlug ? (
+          <a class="title-link" href={paperPath(d.pageSlug)}>
+            {d.title}
+          </a>
+        ) : (
+          d.title
+        )
+      }
+    </h3>
+
+    <p class="authors">
+      {
+        shown.map((p, i) => (
+          <>
+            {i > 0 && <span aria-hidden="true">, </span>}
+            {isSelf(p) ? <strong>{fullName(p)}</strong> : <span>{fullName(p)}</span>}
+          </>
+        ))
+      }
+      {hidden > 0 && <span class="more"> and {hidden} more authors</span>}
+    </p>
+
+    {
+      inParts.length > 0 && (
+        <p class="venue-line">
+          <em>{inParts.join(', ')}</em>
+          {d.year ? <span>, {d.year}</span> : null}
+        </p>
+      )
+    }
+
+    <div class="links">
+      {
+        d.pdfUrl && (
+          <a class="chip" href={d.pdfUrl}>
+            PDF
+          </a>
+        )
+      }
+      {
+        d.doi ? (
+          <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
+            DOI
+          </a>
+        ) : (
+          /* Only when there is no DOI: a DOI is the better permalink, and two
+             chips pointing at the same paper is noise. */
+          d.url && (
+            <a class="chip" href={d.url} rel="noopener">
+              Link
+            </a>
+          )
+        )
+      }
+      {
+        cites > 0 && (
+          <span class="chip cites" title="Citations (Google Scholar)">
+            {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
+          </span>
+        )
+      }
+      {
+        d.pageSlug && !compact && (
+          <a class="chip paper-page" href={paperPath(d.pageSlug)}>
+            Paper page →
+          </a>
+        )
+      }
+      {
+        !compact && (
+          <details class="bib">
+            <summary class="chip bib-toggle">
+              <span class="caret mono" aria-hidden="true">
+                ▸
+              </span>
+              BibTeX
+            </summary>
+            <div class="bib-body">
+              <CopyButton target={bibId} />
+              <pre id={bibId}>{d.bibtex}</pre>
+            </div>
+          </details>
+        )
+      }
+    </div>
+  </div>
+</li>
+
+<style>
+  .entry {
+    display: grid;
+    /* minmax(0, 1fr) rather than 1fr: a plain `1fr` track has `min-width: auto`,
+       so the wide BibTeX block would stretch the column past the viewport. */
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    gap: 0 1.1rem;
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--border);
+  }
+  /* Arriving from /publications/#<key> — or from a citation elsewhere — should
+     say which of forty near-identical rows you were sent to. */
+  .entry:target {
+    background: var(--sec-dim);
+    border-radius: var(--radius-m);
+    padding-inline: 0.75rem;
+  }
+
+  .badge {
+    padding-top: 0.2rem;
+  }
+
+  .title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    margin: 0 0 0.2rem;
+    line-height: 1.35;
+  }
+
+  .authors,
+  .venue-line {
+    margin: 0 0 0.3rem;
+    font-size: var(--fs-small);
+    color: var(--text-muted);
+  }
+  .authors strong {
+    color: var(--text);
+  }
+  .more {
+    color: var(--text-faint);
+    font-style: italic;
+  }
+  .venue-line em {
+    color: var(--text-muted);
+  }
+
+  /* Inline layout, not flex. The chips are inline-flex so they wrap on their
+     own, and the BibTeX block — a block-level child — starts its own line and
+     sizes to this container. As a flex item it instead resolves its width from
+     the `pre` and its padding, and ends up wider than the column. */
+  .links {
+    margin: 0.5rem 0 0;
+  }
+  .links > .chip,
+  .links .bib-toggle {
+    margin: 0 0.4rem 0.4rem 0;
+    vertical-align: middle;
+  }
+  .cites {
+    border-color: var(--sec-line);
+    color: var(--sec);
+    background: var(--sec-dim);
+  }
+  /* The two links here that lead to a page of ours rather than off-site. */
+  .title-link {
+    color: inherit;
+    text-decoration: none;
+  }
+  .title-link:hover {
+    color: var(--sec-strong);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .paper-page {
+    border-color: var(--sec-line);
+    color: var(--sec-strong);
+  }
+
+  /* `display: contents` promotes the summary and the body to children of the
+     pill row, so the chip keeps its place in the row and does not move when you
+     open it — the body just wraps onto a full-width line beneath. It also
+     bypasses the UA's own hiding of closed content, so hide it explicitly. */
+  .bib {
+    display: contents;
+  }
+  .bib:not([open]) .bib-body {
+    display: none;
+  }
+  /* Reads as one more chip in the row above, so it is obviously a control. The
+     default disclosure triangle is replaced by a caret we can animate. */
+  .bib-toggle {
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+  .bib-toggle::-webkit-details-marker {
+    display: none;
+  }
+  .bib-toggle:hover {
+    border-color: var(--sec-line);
+    color: var(--sec-strong);
+  }
+  .caret {
+    display: inline-block;
+    font-size: 0.7em;
+    transition: rotate var(--dur) var(--ease);
+  }
+  .bib[open] .caret {
+    rotate: 90deg;
+  }
+
+  /* Copy sits in the corner of the block it copies rather than floating above
+     it, overlaying the code instead of reserving a gutter — reserving one via
+     padding pushes the block past its basis and off the screen. */
+  .bib-body {
+    position: relative;
+    margin-top: 0.1rem;
+  }
+  .bib-body pre {
+    margin: 0;
+    max-width: 100%;
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 34rem) {
+    .entry {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+  }
+</style>

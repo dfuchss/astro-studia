@@ -1,9 +1,12 @@
 ---
 import Base from '../layouts/Base.astro';
+import DemoNotice from '../components/DemoNotice.astro';
 import { SITE, SELF } from '../consts.ts';
 ---
 
 <Base section="home">
+  <DemoNotice />
+
   <section class="section wrap hero">
     <p class="kicker">whoami</p>
     <h1>{SELF.first} {SELF.last}</h1>

@@ -1,0 +1,174 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import PubEntry from '../../components/pub/PubEntry.astro';
+import { byYear } from '../../lib/publications.ts';
+import { scholarMetrics, formatCount, formatUpdated } from '../../lib/citations.ts';
+
+const pubs = await getCollection('publications');
+const groups = byYear(pubs);
+const metrics = scholarMetrics();
+---
+
+<Base
+  title="publications"
+  description="Everything in src/data/papers.bib, newest first, with the BibTeX for each."
+  section="publications"
+>
+  <div class="wrap head">
+    <p class="kicker" data-sigil="##">publications</p>
+    <h1>Publications</h1>
+    <p class="lede">
+      {pubs.length} entries, parsed from <code>src/data/papers.bib</code> at build time. Each one carries
+      its own BibTeX; entries with a <strong>Paper page</strong> link have a page of their own.
+    </p>
+
+    {
+      metrics.total > 0 && (
+        <p class="metrics mono">
+          {formatCount(metrics.total)} citations · h-index {metrics.hIndex} · i10-index{' '}
+          {metrics.i10}
+          <span class="asof"> · as of {formatUpdated(metrics.lastUpdated)}</span>
+        </p>
+      )
+    }
+
+    <div class="filter">
+      <label class="sr-only" for="pubsearch">Filter publications</label>
+      <input
+        id="pubsearch"
+        type="search"
+        placeholder="Filter by title, author or venue…"
+        autocomplete="off"
+        hidden
+      />
+    </div>
+    <p class="no-results" hidden>No publications match that filter.</p>
+  </div>
+
+  <div class="wrap list">
+    {
+      groups.map((g) => (
+        <section class="year" data-year={g.year}>
+          <h2>{g.year}</h2>
+          <ul class="entries">
+            {g.items.map((pub) => (
+              <PubEntry pub={pub} />
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</Base>
+
+<script>
+  /*
+   * Client-side filter over the whole list. No index, no library: the loader
+   * already built a lowercased `searchText` per entry, so this is a substring
+   * test over a few dozen strings and runs in well under a frame.
+   *
+   * The input ships `hidden` and this script reveals it, so with JS off there
+   * is no dead control — the full list is there either way.
+   */
+  const input = document.querySelector<HTMLInputElement>('#pubsearch');
+  const empty = document.querySelector<HTMLElement>('.no-results');
+  const rows = [...document.querySelectorAll<HTMLElement>('.entry')];
+  const years = [...document.querySelectorAll<HTMLElement>('.year')];
+
+  if (input && empty) {
+    input.hidden = false;
+
+    const apply = (raw: string) => {
+      const q = raw.trim().toLowerCase();
+      let shown = 0;
+      for (const row of rows) {
+        const hit = q === '' || (row.dataset.search ?? '').includes(q);
+        row.hidden = !hit;
+        if (hit) shown += 1;
+      }
+      // Hide a year heading once everything under it is filtered out,
+      // otherwise the page is a column of empty years.
+      for (const year of years) {
+        year.hidden = !year.querySelector('.entry:not([hidden])');
+      }
+      empty.hidden = shown > 0;
+    };
+
+    input.addEventListener('input', () => apply(input.value));
+
+    // A fragment that is not an entry's own id is treated as a starting
+    // filter, so /publications/#rhetoric is a shareable pre-filtered view.
+    // Checking getElementById first keeps deep links to a single entry —
+    // /publications/#cicero_de_officiis_1913 — scrolling to it instead.
+    const hash = decodeURIComponent(location.hash.replace(/^#/, ''));
+    if (hash && !document.getElementById(hash)) {
+      input.value = hash;
+      apply(hash);
+    }
+  }
+</script>
+
+<style>
+  .head {
+    padding-block: clamp(2.5rem, 7vw, 4rem) 1rem;
+  }
+  .lede {
+    max-width: var(--measure);
+    color: var(--text-muted);
+  }
+  .metrics {
+    margin: 0;
+    color: var(--text-muted);
+  }
+  .asof {
+    color: var(--text-faint);
+  }
+
+  .filter {
+    margin-top: 1.5rem;
+  }
+  #pubsearch {
+    width: min(100%, 28rem);
+    padding: 0.6rem 0.9rem;
+    font: inherit;
+    font-size: var(--fs-small);
+    color: var(--text);
+    background: var(--bg-1);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-m);
+  }
+  #pubsearch:focus-visible {
+    border-color: var(--sec-line);
+  }
+  .no-results {
+    margin: 1rem 0 0;
+    color: var(--text-faint);
+    font-size: var(--fs-small);
+  }
+
+  .list {
+    padding-bottom: 1rem;
+  }
+  .entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Sticky under the nav, which is 3.75rem tall, so the year you are reading
+     stays visible while you scroll its entries. */
+  .year h2 {
+    position: sticky;
+    top: 3.75rem;
+    z-index: 1;
+    margin: 2rem 0 0.25rem;
+    padding: 0.5rem 0 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    color: var(--sec);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+</style>
