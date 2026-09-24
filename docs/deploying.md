@@ -26,15 +26,53 @@ domain that stops resolving, and nothing else would notice.
 
 ### A project page rather than a domain
 
-Deploying to `https://<user>.github.io/<repo>/` needs a base path. In
-`astro.config.ts`:
+Deploying to `https://<user>.github.io/<repo>/` needs a base path. Two edits:
 
 ```js
+// astro.config.ts
 base: '/my-repo',
 ```
 
-and set `SITE.url` to the full origin including the path. Every internal href
-in `src/` is root-relative, so that is the only change.
+```ts
+// src/consts.ts
+url: 'https://<user>.github.io/my-repo',
+```
+
+That is genuinely all, but it is worth knowing why, because Astro's own
+documentation warns that it is not:
+
+> When using this option, all of your static asset imports and URLs should add
+> the base as a prefix.
+
+Astro prefixes the URLs it generates itself — hashed assets, imported images —
+but not a `/cv/` you wrote by hand, and it will not guess: given `/something`
+it cannot tell whether you meant it relative to the base or to the server root.
+There is no built-in option that changes this.
+
+The usual workaround is a `withBase()` helper called everywhere a path is
+emitted. This template does not use one, because that approach cannot reach
+the cases that break most often — an image path in `people.yml`, a slides link
+in a paper's front matter, a plain `![](/assets/…)` in a post. Those are
+strings in content, not expressions in a component.
+
+Instead `src/integrations/base-paths.ts` rewrites the built output once, at
+the end of the build. You write `/cv/` everywhere, and it is correct at the
+root and in a subdirectory alike. (Starlight's ecosystem arrived at the same
+answer for the same reason.) It is a no-op when no base is set.
+
+`npm run verify` then proves it worked: with a base configured, any internal
+link or subresource that does not carry it fails the build. So this cannot
+regress quietly into a site whose every link is broken.
+
+**The one case it cannot reach** is a client-side script that builds a path at
+runtime. There is one, in `src/pages/blog/index.astro`; it reads
+`import.meta.env.BASE_URL` directly. Do the same if you add another.
+
+**A note on `robots.txt`.** Crawlers only read `/robots.txt` at the origin
+root, so on a project page yours is at a path nothing will fetch. That is a
+property of GitHub Pages, not of this template — the `sitemap-index.xml` URL
+in it is still correct, and submitting the sitemap directly to Search Console
+works regardless.
 
 ## Another host
 

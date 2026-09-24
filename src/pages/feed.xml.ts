@@ -24,7 +24,11 @@ export const GET: APIRoute = async (context) => {
       title: post.data.title,
       description: post.data.description,
       pubDate: post.data.date,
-      link: permalink(post.id),
+      // The base is applied here rather than by the base-paths integration:
+      // an RSS <link> is an element, not an attribute, and this one is
+      // resolved against `site` by @astrojs/rss — a root-absolute path would
+      // replace the base rather than sit under it.
+      link: `${import.meta.env.BASE_URL.replace(/\/$/, '')}${permalink(post.id)}`,
       categories: post.data.tags,
     })),
     customData: `<language>${SITE.lang}</language>`,

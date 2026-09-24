@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
 import { SITE } from './src/consts.ts';
+import basePaths from './src/integrations/base-paths.ts';
 
 export default defineConfig({
   // Imported rather than written out, so the site's address exists in exactly
@@ -25,6 +26,14 @@ export default defineConfig({
     // public/ and want them indexed, add them explicitly — see docs/deploying.md:
     //   sitemap({ customPages: [`${SITE.url}/assets/pdf/paper.pdf`] })
     sitemap(),
+
+    // Makes `base` below actually work for hand-written links. Astro prefixes
+    // the URLs it generates itself but not a `/cv/` you typed, and there is no
+    // built-in option that changes that — see the integration's own header for
+    // why, and why a withBase() helper is the worse answer.
+    //
+    // A no-op when no base is set, which is the common case.
+    basePaths(),
   ],
 
   markdown: {
@@ -32,8 +41,10 @@ export default defineConfig({
   },
 
   // Deploying to https://<user>.github.io/<repo>/ rather than a domain of your
-  // own? Set `base` to '/<repo>' and make SITE.url the full origin. Every
-  // internal href in src/ is root-relative, so this is the only edit needed.
+  // own? Set `base` to '/<repo>' and point SITE.url at the full address
+  // including that path. The basePaths() integration above handles every
+  // internal link and asset, including the ones in markdown and YAML that no
+  // helper function could reach, and `npm run verify` proves it worked.
   // base: '/aca-theme',
 
   // Redirects for URLs you have already published elsewhere and cannot move:

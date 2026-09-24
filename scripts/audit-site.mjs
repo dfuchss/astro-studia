@@ -23,8 +23,9 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-const DIST = join(process.cwd(), 'dist');
-const SRC = join(process.cwd(), 'src');
+const ROOT = process.cwd();
+const DIST = join(ROOT, 'dist');
+const SRC = join(ROOT, 'src');
 
 let failed = 0;
 const fail = (msg) => {
@@ -43,6 +44,7 @@ if (!existsSync(DIST)) {
  * loader, and the two values it needs are unambiguous in the source.
  */
 const consts = readFileSync(join(SRC, 'consts.ts'), 'utf8');
+const astroConfig = readFileSync(join(ROOT, 'astro.config.ts'), 'utf8');
 
 const siteUrl = consts.match(/url:\s*'([^']+)'/)?.[1];
 if (!siteUrl) {
@@ -50,6 +52,16 @@ if (!siteUrl) {
   process.exit(1);
 }
 const OWN_HOST = new URL(siteUrl).host;
+
+/**
+ * The base path, when the site is deployed into a subdirectory.
+ *
+ * Astro rewrites the URLs it generates itself, but not an href you wrote by
+ * hand — so a site with a base is exactly where internal links silently point
+ * at the domain root. Check 4 below asserts that every one of them carries
+ * the base, which is the failure this whole file exists to make loud.
+ */
+const BASE = (astroConfig.match(/^\s*base:\s*'([^']+)'/m)?.[1] ?? '').replace(/\/$/, '');
 
 const ALLOWED = new Set(
   [
@@ -221,7 +233,12 @@ const real = pages.filter((p) => !isStub(p));
   }
 
   // A published URL maps to a file two ways: /a/b -> a/b.html, /a/b/ -> a/b/index.html
-  const resolve = (path) => {
+  //
+  // With a base configured, dist/ is still the root of what gets deployed --
+  // the subdirectory comes from where it is deployed TO -- so the base is
+  // stripped before looking anything up on disk.
+  const resolve = (raw) => {
+    const path = BASE && raw.startsWith(`${BASE}/`) ? raw.slice(BASE.length) : raw;
     const clean = path.replace(/\/+$/, '');
     for (const candidate of [
       join(DIST, path),
@@ -249,6 +266,18 @@ const real = pages.filter((p) => !isStub(p));
       }
       if (!raw.startsWith('/')) continue;
       links += 1;
+
+      // The base check. src/integrations/base-paths.ts should have prefixed
+      // every internal URL during the build; one that slipped through points
+      // at the domain root and 404s wherever the site actually lives.
+      if (BASE && raw !== BASE && !raw.startsWith(`${BASE}/`)) {
+        fail(
+          `${p.url}: link ${raw} is missing the base ${BASE} — ` +
+            'the base-paths integration did not reach it',
+        );
+        continue;
+      }
+
       const [path, hash] = raw.split('#');
       const target = resolve(decodeURIComponent(path));
       if (!target) {
@@ -265,8 +294,31 @@ const real = pages.filter((p) => !isStub(p));
       }
     }
   }
+  // Subresources are not links, but they carry the same base problem, and an
+  // <img> pointing at the domain root is a broken image rather than a broken
+  // link -- quieter, and so easier to ship.
+  let assets = 0;
+  if (BASE) {
+    for (const p of pages) {
+      for (const m of p.html.matchAll(/\ssrc="(\/[^"]*)"/g)) {
+        assets += 1;
+        if (!m[1].startsWith(`${BASE}/`)) {
+          fail(
+            `${p.url}: src ${m[1]} is missing the base ${BASE} — ` +
+              'the base-paths integration did not reach it',
+          );
+        }
+      }
+    }
+  }
+
   if (links < 1) fail('links: no internal links found at all — is this check stale?');
-  else ok(`links: ${links} internal links and ${frags} fragments resolve`);
+  else {
+    ok(
+      `links: ${links} internal links and ${frags} fragments resolve` +
+        (BASE ? `, ${assets} subresources carry the base ${BASE}/` : ''),
+    );
+  }
 }
 
 // ---- 5. per-page document basics -------------------------------------------

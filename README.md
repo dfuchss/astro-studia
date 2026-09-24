@@ -47,6 +47,7 @@ src/
   data/               papers.bib, venues, authors, people, cv, socials, repositories
   content/            papers/, projects/, posts/
   components/ layouts/ lib/ pages/ styles/
+  integrations/       base-paths: makes `base` work for hand-written links
 public/               copied verbatim; everything here is a permanent URL
 scripts/              the audit, the asset baseline, the data refreshers
 verification/         committed SHA-256 baseline for the published assets
