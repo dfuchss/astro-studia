@@ -23,6 +23,7 @@
     "audit": "node scripts/audit-site.mjs",
     "verify": "node scripts/verify-invariants.mjs && npm run audit",
     "baseline": "node scripts/generate-asset-baseline.mjs",
+    "favicons": "node scripts/generate-favicons.mjs",
     "data:github": "node scripts/fetch-github-metadata.mjs",
     "bib:check": "python3 scripts/update_bib.py"
   },

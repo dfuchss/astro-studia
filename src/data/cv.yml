@@ -30,8 +30,11 @@ sections:
       - title: Writing and private study
         org: Tusculum
         start: '46 BC'
-        # No `end`: this is the current entry, which /cv/ marks as such and the
-        # home page reads for the "office" line.
+        # `current` is explicit rather than inferred from a missing `end`,
+        # because a degree or a prize also has one date and no end — and
+        # inferring would label those "now" too. This is the entry /cv/ badges
+        # and the home page reads for its "where" line.
+        current: true
         details:
           - Composed the philosophical works in under two years.
           - Corresponded with Atticus at a rate that has no modern equivalent.

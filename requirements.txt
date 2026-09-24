@@ -1,0 +1,9 @@
+# Only for scripts/update_scholar_citations.py, which is opt-in. Nothing in
+# `npm run build`, `npm run check` or `npm run verify` needs Python at all, and
+# scripts/update_bib.py is standard library only.
+pyyaml
+scholarly
+# scholarly 1.7.11 imports bibtexparser.bibdatabase, removed in bibtexparser
+# 2.x, and declares the dependency without an upper bound. Pin until scholarly
+# catches up.
+bibtexparser<2

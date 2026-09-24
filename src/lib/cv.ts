@@ -8,6 +8,8 @@ export type CvEntry = {
   url?: string;
   start?: string;
   end?: string;
+  /** Still going. Renders "– present" and a `now` badge. */
+  current?: boolean;
   location?: string;
   note?: string;
   details?: string[];
@@ -54,13 +56,20 @@ export function formatDate(value: string): string {
 export function dateRange(entry: CvEntry): string {
   if (!entry.start) return entry.end ? formatDate(entry.end) : '';
   const from = formatDate(entry.start);
-  if (!entry.end) return `${from} – present`;
+  if (entry.current) return `${from} – present`;
+  if (!entry.end) return from;
   const to = formatDate(entry.end);
   return from === to ? from : `${from} – ${to}`;
 }
 
-/** An entry with a start and no end is the one you currently hold. */
-export const isCurrent = (entry: CvEntry) => Boolean(entry.start && !entry.end);
+/**
+ * Explicit, not inferred.
+ *
+ * "Has a start and no end" looks like it means ongoing, and does for a job —
+ * but a degree, a prize and a certificate all carry one date and no end, and
+ * inferring from the shape of the data labels every one of them "now".
+ */
+export const isCurrent = (entry: CvEntry) => entry.current === true;
 
 /**
  * The first current entry anywhere in the CV. The home page uses it for the

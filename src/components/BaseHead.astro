@@ -25,7 +25,18 @@ const canonical = new URL(Astro.url.pathname, SITE.url);
 <meta name="description" content={desc} />
 <link rel="canonical" href={canonical} />
 
+{
+  /* Three icons, in the order a browser should prefer them. The SVG scales to
+    any size and follows the palette; the 32px PNG is the fallback for the few
+    browsers that still ignore SVG icons; apple-touch-icon is what iOS uses
+    when someone adds the site to their home screen and is the one that looks
+    wrong by its absence. Regenerate the PNGs with `npm run favicons` after
+    editing public/favicon.svg. */
+}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+<link rel="manifest" href="/site.webmanifest" />
 
 {/* Delete this line along with src/pages/feed.xml.ts if you drop the blog. */}
 <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/feed.xml" />
