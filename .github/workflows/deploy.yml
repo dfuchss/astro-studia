@@ -1,0 +1,53 @@
+name: Build, verify and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Formatting and type-checking run in this job rather than one of their
+      # own: they need exactly the install that has already happened here.
+      - name: Check formatting
+        run: npx prettier . --check
+
+      - name: Type-check
+        run: npx astro check
+
+      - name: Build
+        run: npm run build
+
+      # Asset byte-identity, plus the structural and accessibility audit.
+      # Deliberately before the deploy step, so a regression fails the workflow
+      # instead of reaching the site.
+      - name: Verify
+        run: npm run verify
+
+      - name: Deploy to gh-pages
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages
+          clean: true

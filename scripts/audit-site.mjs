@@ -380,7 +380,14 @@ const real = pages.filter((p) => !isStub(p));
 
   const found = new Map();
   for (const p of pages) {
-    const stripped = p.html.replace(/<script[\s\S]*?<\/script>/g, '');
+    /*
+     * Blank the BODY of an inline script, but keep its opening tag. Stripping
+     * whole <script> elements — the obvious way to write this — also removes
+     * every <script src="https://…">, which is the single highest-risk
+     * subresource there is. The bodies still have to go, because a URL in a
+     * string literal is not a subresource.
+     */
+    const stripped = p.html.replace(/(<script\b[^>]*>)[\s\S]*?<\/script>/g, '$1</script>');
     for (const m of stripped.matchAll(SUBRESOURCE)) {
       const host = m[1];
       if (host === OWN_HOST || ALLOWED.has(host)) continue;
@@ -436,7 +443,11 @@ const real = pages.filter((p) => !isStub(p));
     else ok(`${name}: ${n} <${itemTag}> entries, well-formed`);
   };
 
-  checkXml('feed.xml', 'item');
+  // Only expected when the blog is still here. Removing the blog removes the
+  // feed, and an audit that then demanded one would be telling you off for
+  // following the documented removal recipe. A feed that *should* exist and
+  // does not is still a failure.
+  if (existsSync(join(SRC, 'pages/feed.xml.ts'))) checkXml('feed.xml', 'item');
   // @astrojs/sitemap emits an index that points at one or more sitemap files.
   checkXml('sitemap-index.xml', 'sitemap');
   checkXml('sitemap-0.xml', 'url');
