@@ -16,6 +16,7 @@
   "scripts": {
     "init": "node scripts/init.mjs",
     "dev": "astro dev",
+    "dev:fresh": "astro dev stop 2>/dev/null; rm -rf .astro node_modules/.vite && astro dev",
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",

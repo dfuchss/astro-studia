@@ -50,6 +50,15 @@ export const SITE = {
   repo: 'https://github.com/dfuchss/aca-theme',
 
   /**
+   * The card image a link to this site renders with, 1200x630. Set it to null
+   * and BaseHead falls back to the small text-only card — which is the honest
+   * thing, because `summary_large_image` without an image is a blank rectangle.
+   *
+   * Regenerate or replace public/assets/img/og.png; the shipped one says so.
+   */
+  ogImage: '/assets/img/og.png',
+
+  /**
    * The footer's copyright holder — "© 2026 <this>".
    *
    * Your own name, or your group's or institution's if the site is theirs.

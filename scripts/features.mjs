@@ -284,6 +284,32 @@ export const FEATURES = [
   },
 
   {
+    id: 'demo',
+    label: 'Demo switcher',
+    blurb: 'The two-button switcher and the second entry page that show both styles.',
+    /*
+     * In NO preset, on purpose — this is the only feature like that.
+     *
+     * It exists so someone evaluating the template can click between the two
+     * entry-page styles and see both, which a single index.astro cannot show:
+     * it imports one of two interchangeable heroes. The moment you pick a
+     * preset you have chosen one, so the switcher and the page it switches to
+     * are scaffolding, and init always takes them out.
+     *
+     * This is also why the profile preset would otherwise break: the second
+     * entry page imports ProjectHero, which init deletes as the unused hero.
+     */
+    presets: [],
+    requires: [],
+    paths: ['src/pages/demo', 'src/components/DemoSwitch.astro'],
+    collections: [],
+    sections: [],
+    nav: [],
+    footer: [],
+    manual: [],
+  },
+
+  {
     id: 'imprint',
     label: 'Imprint',
     blurb: 'A site notice. Several jurisdictions require one; Germany certainly does.',

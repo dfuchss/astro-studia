@@ -476,10 +476,30 @@ const real = pages.filter((p) => !isStub(p));
    * normal in review.
    */
   const ADDRESS = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}\b/g;
+
+  /*
+   * Entity references are decoded first. `&#64;` and `&commat;` are both an @
+   * to a browser and to a scraper, so an address "protected" by writing the
+   * symbol as an entity is not protected at all — it is just invisible to a
+   * naive grep. That is the exact failure mode of the hand-rolled obfuscation
+   * every academic theme ships, and checking the raw bytes alone would have
+   * declared it safe.
+   */
+  const decode = (text) =>
+    text
+      .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+      .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+      .replace(/&(?:commat|at);/gi, '@')
+      .replace(/&period;/gi, '.')
+      .replace(/&amp;/gi, '&');
+
   const found = new Map();
   for (const f of [...htmlFiles, ...files.filter((x) => x.endsWith('.xml'))]) {
-    for (const m of readFileSync(f, 'utf8').matchAll(ADDRESS)) {
-      if (!found.has(m[0])) found.set(m[0], relative(DIST, f));
+    const raw = readFileSync(f, 'utf8');
+    for (const text of [raw, decode(raw)]) {
+      for (const m of text.matchAll(ADDRESS)) {
+        if (!found.has(m[0])) found.set(m[0], relative(DIST, f));
+      }
     }
   }
   if (found.size) for (const [a, w] of found) fail(`email address ${a} in the served bytes (${w})`);

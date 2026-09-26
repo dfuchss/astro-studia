@@ -48,10 +48,21 @@ const canonical = new URL(Astro.url.pathname, SITE.url);
 <meta property="og:url" content={canonical} />
 
 {
-  /* summary, not summary_large_image: nothing here ships an og:image, so the
-    large card would render as a blank rectangle. docs/deploying.md covers
-    adding one. */
+  /* The card type follows whether there is actually an image to put in it.
+     summary_large_image with no image renders as a blank rectangle, which is
+     worse than the small card it replaced — so SITE.ogImage: null gets the
+     small one, honestly. */
 }
-<meta name="twitter:card" content="summary" />
+{
+  SITE.ogImage ? (
+    <>
+      <meta property="og:image" content={new URL(SITE.ogImage, SITE.url)} />
+      <meta name="twitter:image" content={new URL(SITE.ogImage, SITE.url)} />
+      <meta name="twitter:card" content="summary_large_image" />
+    </>
+  ) : (
+    <meta name="twitter:card" content="summary" />
+  )
+}
 
 <meta name="generator" content={Astro.generator} />

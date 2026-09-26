@@ -1,0 +1,217 @@
+---
+import { getCollection } from 'astro:content';
+
+import Base from '../../../layouts/Base.astro';
+import DemoNotice from '../../../components/DemoNotice.astro';
+import DemoSwitch from '../../../components/DemoSwitch.astro';
+import Hero from '../../../components/hero/ProjectHero.astro';
+import Email from '../../../components/Email.astro';
+
+import { SITE } from '../../../consts.ts';
+
+/*
+ * The project-style twin of src/pages/index.astro: same idea — a hero, then a
+ * few sections a visitor of this kind of site actually wants — read from the
+ * other side. See that file for the ▼/▲ FEATURE:<id> convention; init deletes
+ * exactly what a matching pair encloses.
+ *
+ * This whole page is what a `project` preset init keeps at `/`, once
+ * DemoSwitch and this directory are gone — so unlike index.astro, nothing
+ * here is fenced for its own sake. Each section is still fenced by the
+ * feature that owns its data, for the same reason: prune `people` and the
+ * roster below has to go with it.
+ */
+
+/* ▼ FEATURE:projects ▼ */
+import ProjectCard from '../../../components/project/ProjectCard.astro';
+
+const projects = (await getCollection('projects')).sort(
+  (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),
+);
+
+/* DEMO COPY — see the note in src/pages/index.astro. */
+const subProjectsBlurb =
+  'Turning Greek philosophy into Latin took more than a translator: a vocabulary that ' +
+  'did not exist yet, source texts worth basing a version on, and a way to get the ' +
+  'result down as fast as it was dictated.';
+/* ▲ FEATURE:projects ▲ */
+
+/* ▼ FEATURE:publications ▼ */
+import PubEntry from '../../../components/pub/PubEntry.astro';
+import { byNewest } from '../../../lib/publications.ts';
+
+const pubs = await getCollection('publications');
+
+// The treatises: publications with a page of their own, newest first. Same
+// derivation as index.astro's "Paper pages" — this depends on `publications`
+// alone, not on the `papers` feature, so it survives papers being pruned on
+// its own.
+const treatises = pubs.filter((p) => p.data.pageSlug).sort(byNewest);
+/* ▲ FEATURE:publications ▲ */
+
+/* ▼ FEATURE:people ▼ */
+import PersonCard from '../../../components/people/PersonCard.astro';
+import { members } from '../../../lib/people.ts';
+
+const team = await members();
+/* ▲ FEATURE:people ▲ */
+---
+
+<Base
+  title="project demo"
+  description="The academic-project entry page this template can also open with."
+  section="home"
+>
+  {
+    /* Both entry pages carry it. Whichever one someone lands on first has to say
+      it is a demo — the notice being on only the other page is the same as not
+      having it. It disappears with SITE.demoNotice, on both. */
+  }
+  <DemoNotice />
+  <DemoSwitch current="project" />
+  <Hero />
+
+  <!-- Same accent-per-section mechanism as index.astro. -->
+
+  {/* ▼ FEATURE:projects ▼ */}
+  <section class="wrap section" id="subprojects" data-section="projects">
+    <p class="kicker" data-sigil="##">sub-projects</p>
+    <h2>What the programme runs on</h2>
+    <p class="blurb">{subProjectsBlurb}</p>
+
+    <ul class="grid">
+      {projects.map((project) => <ProjectCard project={project} />)}
+    </ul>
+
+    <p class="more mono">
+      <a href="/projects/">all {projects.length} sub-projects →</a>
+    </p>
+  </section>
+  {/* ▲ FEATURE:projects ▲ */}
+
+  {/* ▼ FEATURE:publications ▼ */}
+  <section class="wrap section" id="treatises" data-section="publications">
+    <p class="kicker" data-sigil="##">treatises</p>
+    <h2>The works themselves</h2>
+    <p class="blurb">
+      {treatises.length} of the {pubs.length} publications carry a page of their own — the argument, not
+      just the citation.
+    </p>
+
+    <ul class="bare">
+      {treatises.map((pub) => <PubEntry pub={pub} compact />)}
+    </ul>
+
+    <p class="more mono">
+      <a href="/publications/">all {pubs.length} publications →</a>
+    </p>
+  </section>
+  {/* ▲ FEATURE:publications ▲ */}
+
+  {/* ▼ FEATURE:people ▼ */}
+  <section class="wrap section" id="circle" data-section="people">
+    <p class="kicker" data-sigil="##">circle</p>
+    <h2>Who it passed through</h2>
+    <p class="blurb">
+      Correspondent, secretary, editor: {team.length} people the work relied on, none of them the author.
+    </p>
+
+    <ul class="grid people">
+      {team.map((member) => <PersonCard member={member} />)}
+    </ul>
+
+    <p class="more mono">
+      <a href="/people/">all {team.length} people →</a>
+    </p>
+  </section>
+  {/* ▲ FEATURE:people ▲ */}
+
+  <section class="wrap section" id="contact" data-section="contact">
+    <p class="kicker" data-sigil="##">contact</p>
+    <h2>Get in touch</h2>
+    <p class="blurb">Questions, corrections, manuscripts — all welcome.</p>
+
+    <dl class="contact">
+      <div class="line">
+        <dt class="mono">email</dt>
+        <dd><Email address={SITE.email} /></dd>
+      </div>
+      <div class="line">
+        <dt class="mono">code</dt>
+        <dd>
+          <a href={SITE.repo} rel="noopener">{SITE.repo.replace(/^https:\/\//, '')}</a>
+        </dd>
+      </div>
+    </dl>
+  </section>
+</Base>
+
+<style>
+  .blurb {
+    max-width: 60ch;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+  }
+
+  .bare {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .more {
+    margin: 1.25rem 0 0;
+  }
+  .more a {
+    text-decoration: none;
+  }
+
+  .grid {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: 0.9rem;
+  }
+  /* PersonCard rows read better wide than square — same minimum index.astro's
+     sibling pages (/people/) use for the identical grid. */
+  .grid.people {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: 0.75rem 2rem;
+  }
+
+  .contact {
+    margin: 1.25rem 0 0;
+    max-width: 46rem;
+  }
+  /* Same label-on-a-hairline-rule idiom as index.astro's contact block. */
+  .contact .line {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    gap: 0 1.25rem;
+    padding: 0.6rem 0.5rem;
+    border-top: 1px solid var(--border);
+    align-items: baseline;
+    font-size: var(--fs-small);
+    transition: border-color var(--dur) var(--ease);
+  }
+  .contact .line:hover {
+    border-top-color: var(--sec-line);
+  }
+  .contact dt {
+    color: var(--text-faint);
+  }
+  .contact dd {
+    margin: 0;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 44rem) {
+    .contact .line {
+      grid-template-columns: 1fr;
+      gap: 0.15rem;
+    }
+  }
+</style>

@@ -3,6 +3,9 @@ import { getCollection } from 'astro:content';
 
 import Base from '../layouts/Base.astro';
 import DemoNotice from '../components/DemoNotice.astro';
+/* ▼ FEATURE:demo ▼ */
+import DemoSwitch from '../components/DemoSwitch.astro';
+/* ▲ FEATURE:demo ▲ */
 import Hero from '../components/hero/PersonHero.astro';
 import Email from '../components/Email.astro';
 import PubEntry from '../components/pub/PubEntry.astro';
@@ -90,6 +93,10 @@ const pgp = keyId();
 
 <Base section="home">
   <DemoNotice />
+
+  {/* ▼ FEATURE:demo ▼ */}
+  <DemoSwitch current="person" />
+  {/* ▲ FEATURE:demo ▲ */}
 
   <Hero />
 

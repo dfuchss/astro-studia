@@ -1,4 +1,6 @@
 // @ts-check
+import { readdirSync, existsSync } from 'node:fs';
+import { posix } from 'node:path';
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
@@ -22,10 +24,12 @@ export default defineConfig({
     // Emits /sitemap-index.xml plus /sitemap-0.xml. src/pages/robots.txt.ts
     // points at the index, so the two cannot drift apart.
     //
-    // It lists pages Astro builds, and nothing else. If you serve PDFs out of
-    // public/ and want them indexed, add them explicitly — see docs/deploying.md:
-    //   sitemap({ customPages: [`${SITE.url}/assets/pdf/paper.pdf`] })
-    sitemap(),
+    // customPages carries the PDFs, because the integration lists pages Astro
+    // builds and a file in public/ is not one. On an academic site those files
+    // are the single highest-value thing to have indexed — Google Scholar and
+    // DBLP find papers that way — and a list maintained by hand is a list that
+    // silently stops matching the directory.
+    sitemap({ customPages: publicPdfs() }),
 
     // Makes `base` below actually work for hand-written links. Astro prefixes
     // the URLs it generates itself but not a `/cv/` you typed, and there is no
@@ -52,3 +56,26 @@ export default defineConfig({
 
   devToolbar: { enabled: false },
 });
+
+/**
+ * Every PDF under public/assets/pdf/, as absolute URLs.
+ *
+ * Walked at config time rather than listed, so adding a paper needs no upkeep
+ * here. Both sites this template came from hand-rolled their whole sitemap for
+ * exactly this one capability; this keeps the integration and gets it anyway.
+ *
+ * Nested directories are included because PDFs are usually filed by year, and
+ * posix.join builds the paths because a URL is never backslash-separated —
+ * node:path's join would produce Windows separators on Windows.
+ */
+function publicPdfs(dir: string = 'public/assets/pdf', out: string[] = []): string[] {
+  if (!existsSync(dir)) return out;
+  for (const name of readdirSync(dir, { withFileTypes: true })) {
+    const rel = posix.join(dir, name.name);
+    if (name.isDirectory()) publicPdfs(rel, out);
+    else if (name.name.toLowerCase().endsWith('.pdf')) {
+      out.push(new URL(rel.replace(/^public/, ''), SITE.url).href);
+    }
+  }
+  return out;
+}

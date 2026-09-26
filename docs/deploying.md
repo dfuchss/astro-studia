@@ -111,32 +111,29 @@ Commit both together, so the change and its authorisation are one commit.
 and any further pages. `src/pages/robots.txt.ts` is generated from `SITE.url`
 and points at the index, so the two cannot drift apart.
 
-The integration lists pages Astro builds and nothing else. If you serve PDFs
-out of `public/` and want them indexed, add them explicitly:
+The integration lists pages Astro builds and nothing else, and a file in
+`public/` is not one — so `astro.config.ts` walks `public/assets/pdf/`
+(recursively, since PDFs are usually filed by year) and feeds the result to
+`customPages`. Adding a paper needs no upkeep there.
 
-```js
-import { readdirSync } from 'node:fs';
+That matters more on an academic site than it sounds: those PDFs are the single
+highest-value thing to have indexed, because Google Scholar and DBLP find papers
+that way. Both sites this template came from hand-rolled their entire sitemap
+for this one capability.
 
-sitemap({
-  customPages: readdirSync('public/assets/pdf').map((f) => `${SITE.url}/assets/pdf/${f}`),
-});
-```
+## The og:image
 
-## Adding an og:image
+`public/assets/img/og.png` is the card a link to your site renders with, and the
+shipped one says "replace this" in 76px type so you notice. It is 1200×630,
+which is what every platform crops from.
 
-Nothing here ships one, which is why `BaseHead.astro` emits
-`twitter:card: summary` rather than `summary_large_image` — the large card
-renders as a blank rectangle without an image.
+`SITE.ogImage` points at it. Set that to `null` and `BaseHead.astro` falls back
+to `twitter:card: summary` — the small text-only card — because
+`summary_large_image` with no image is a blank rectangle, which is worse than
+the card it replaced.
 
-Put a 1200×630 PNG at `public/assets/img/og.png` and add:
-
-```astro
-<meta property="og:image" content={new URL('/assets/img/og.png', SITE.url)} />
-```
-
-switching the card type at the same time. For a per-page image, take an
-optional `image` prop through `BaseHead` the way `title` and `description`
-already work.
+For a per-page image, take an optional `image` prop through `BaseHead` the way
+`title` and `description` already work.
 
 ## The two opt-in workflows
 

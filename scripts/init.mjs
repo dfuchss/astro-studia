@@ -823,23 +823,24 @@ function prune(drop, dryRun) {
 // formatting and the checks
 // ---------------------------------------------------------------------------
 
+/**
+ * Format what we edited, using the project's OWN prettier invocation.
+ *
+ * Not prettier's API: `npm run check` shells out to `prettier . --check` with
+ * the plugins from .prettierrc, and the programmatic call resolves that config
+ * differently enough that the two can disagree — which showed up as init
+ * leaving `export type Section` on one 105-character line and then reporting
+ * its own prune as broken. Running the same command the check runs means they
+ * cannot disagree by construction.
+ */
 async function formatFiles(rels) {
   const targets = rels.filter((r) => read(r) !== null);
   if (targets.length === 0) return;
-  try {
-    const prettier = await import('prettier');
-    for (const rel of targets) {
-      const abs = join(ROOT, rel);
-      const config = (await prettier.resolveConfig(abs)) ?? {};
-      const formatted = await prettier.format(readFileSync(abs, 'utf8'), {
-        ...config,
-        filepath: abs,
-      });
-      writeFileSync(abs, formatted);
-    }
-    step(`formatted ${targets.length} edited file${targets.length === 1 ? '' : 's'} with prettier`);
-  } catch (err) {
-    warn(`prettier could not format the edited files (${err.message}) — run \`npm run format\``);
+  const r = spawnSync('npm', ['run', '--silent', 'format'], { cwd: ROOT, stdio: 'pipe' });
+  if (r.status === 0) {
+    step(`formatted ${targets.length} edited file${targets.length === 1 ? '' : 's'}`);
+  } else {
+    warn('`npm run format` failed — run it by hand before `npm run check`');
   }
 }
 
