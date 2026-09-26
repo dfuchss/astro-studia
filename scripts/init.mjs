@@ -35,7 +35,15 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath, sep } from 'node:path';
 
-import { FEATURES, PRESETS, PRESET_HERO, byId, featuresFor, resolve } from './features.mjs';
+import {
+  FEATURES,
+  PRESETS,
+  PRESET_HERO,
+  PRESET_FEED,
+  byId,
+  featuresFor,
+  resolve,
+} from './features.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -44,6 +52,9 @@ const CONTENT_CONFIG = 'src/content.config.ts';
 const TOKENS = 'src/styles/tokens.css';
 const INDEX = 'src/pages/index.astro';
 const HERO_DIR = 'src/components/hero';
+const FEED_DIR = 'src/lib/feed';
+const FEED_ENDPOINT = 'src/pages/feed.xml.ts';
+const BASELINE = 'verification/asset-sha256.txt';
 const SCAFFOLDING = ['scripts/init.mjs', 'scripts/features.mjs', 'scripts/gen-docs.mjs'];
 
 // ---------------------------------------------------------------------------
@@ -70,7 +81,7 @@ const hard = (msg) => {
   throw new Abort(msg);
 };
 
-const bold = (s) => (output.isTTY ? `[1m${s}[0m` : s);
+const bold = (s) => (output.isTTY ? `\u001b[1m${s}\u001b[0m` : s);
 
 // ---------------------------------------------------------------------------
 // arguments
@@ -270,7 +281,7 @@ function walk(src, from, stop) {
 
 /** Index just past the `;` that ends the statement starting at `from`. */
 function statementEnd(src, from) {
-  const { index } = walk(src, from, (i, depth, c) => c === ';' && depth === 0);
+  const { index } = walk(src, from, (_i, depth, c) => c === ';' && depth === 0);
   return index === -1 ? -1 : index + 1;
 }
 
@@ -286,7 +297,7 @@ function splitTopLevel(src, from, to) {
   let start = from;
   let i = from;
   while (i < to) {
-    const { index } = walk(src.slice(0, to), i, (k, depth, c) => c === ',' && depth === 0);
+    const { index } = walk(src.slice(0, to), i, (_k, depth, c) => c === ',' && depth === 0);
     if (index === -1) break;
     parts.push({ start, end: index, comma: index });
     i = index + 1;
@@ -349,7 +360,9 @@ function removeCollectionExport(src, name, rel) {
   const landmark = 'export const collections';
   const at = src.indexOf(landmark);
   if (at === -1) hard(`${rel}: no \`${landmark}\` — this script cannot edit it safely.`);
-  const open = src.indexOf('{', at);
+  // After the `=`, so a type annotation on the declaration is not mistaken for
+  // the initialiser — `NAV: { … }[] = [` is exactly that trap.
+  const open = src.indexOf('{', src.indexOf('=', at));
   const close = matchBracket(src, open);
   if (open === -1 || close === -1) hard(`${rel}: the \`collections\` object is not balanced.`);
 
@@ -358,7 +371,7 @@ function removeCollectionExport(src, name, rel) {
   const inline = new RegExp(`(,[ \\t]*)?\\b${name}\\b[ \\t]*(,[ \\t]*)?`);
   let next = null;
   if (onePerLine.test(inner)) next = inner.replace(onePerLine, '');
-  else if (inline.test(inner)) next = inner.replace(inline, (mm, a, b) => (a && b ? ', ' : ''));
+  else if (inline.test(inner)) next = inner.replace(inline, (_m, a, b) => (a && b ? ', ' : ''));
   if (next === null) return null;
   return src.slice(0, open + 1) + next + src.slice(close);
 }
@@ -389,8 +402,11 @@ function removeSections(src, names, rel) {
 function removeRowsByLabel(src, landmark, labels, rel) {
   const at = src.indexOf(landmark);
   if (at === -1) hard(`${rel}: no \`${landmark}\` — this script cannot edit it safely.`);
-  const open = src.indexOf('[', at);
-  const close = matchBracket(src, open);
+  // `export const NAV: { label: string; … }[] = [` — the first `[` in that line
+  // belongs to the TYPE. Anchor on the `=` so the array found is the value.
+  const eq = src.indexOf('=', at);
+  const open = eq === -1 ? -1 : src.indexOf('[', eq);
+  const close = open === -1 ? -1 : matchBracket(src, open);
   if (open === -1 || close === -1) hard(`${rel}: \`${landmark}\` is not a balanced array.`);
 
   const rows = splitTopLevel(src, open + 1, close);
@@ -590,6 +606,72 @@ function applyHero(target, dryRun) {
   }
 }
 
+/**
+ * Every source file a fence could live in. Fences are comments, so only files
+ * Astro compiles are worth scanning.
+ */
+function sourceFiles(dir = 'src', out = []) {
+  const abs = join(ROOT, dir);
+  if (!existsSync(abs)) return out;
+  for (const name of readdirSync(abs)) {
+    const rel = `${dir}/${name}`;
+    if (statSync(join(ROOT, rel)).isDirectory()) sourceFiles(rel, out);
+    else if (/\.(astro|ts|mjs)$/.test(name)) out.push(rel);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// the feed source
+//
+// Same shape as the hero above: two interchangeable modules, one import line in
+// the endpoint, and the unused one deleted. Kept separate from the feature loop
+// because this is a CHOICE between variants, not a removal — a project site has
+// no blog and still wants a feed, of its paper pages.
+// ---------------------------------------------------------------------------
+
+function feedSources() {
+  const abs = join(ROOT, FEED_DIR);
+  if (!existsSync(abs)) return [];
+  return readdirSync(abs)
+    .filter((f) => /^from[A-Za-z]+\.ts$/.test(f))
+    .map((f) => f.replace(/\.ts$/, ''));
+}
+
+function applyFeed(target, dryRun) {
+  if (!existsSync(join(ROOT, FEED_ENDPOINT))) {
+    step('feed not kept — nothing to point anywhere');
+    return;
+  }
+  const available = feedSources();
+  if (available.length === 0) {
+    warn(`no from*.ts modules in ${FEED_DIR}/ — feed source left alone`);
+    return;
+  }
+  if (!available.includes(target)) {
+    warn(
+      `${FEED_DIR}/${target}.ts does not exist (have: ${available.join(', ')}) — feed left alone`,
+    );
+    return;
+  }
+
+  const src = read(FEED_ENDPOINT);
+  if (src === null) hard(`${FEED_ENDPOINT} is missing — cannot set the feed source.`);
+  const re = /(import\s+\{\s*feedItems\s*\}\s+from\s+')([^']*\/feed\/)([A-Za-z0-9_]+)(\.ts';)/;
+  const m = re.exec(src);
+  if (!m) {
+    warn(`${FEED_ENDPOINT}: no \`import { feedItems } from '…/feed/….ts'\` line — left alone`);
+  } else if (m[3] === target) {
+    step(`feed source already ${target}`);
+  } else {
+    put(FEED_ENDPOINT, src.replace(re, `$1$2${target}$4`));
+    step(`feed source set to ${target} in ${FEED_ENDPOINT} (was ${m[3]})`);
+  }
+  for (const name of available) {
+    if (name !== target) deletePath(`${FEED_DIR}/${name}.ts`, dryRun);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // the plan
 // ---------------------------------------------------------------------------
@@ -703,24 +785,31 @@ function prune(drop, dryRun) {
     if (out !== src) put(CONSTS, out);
   }
 
-  // 4. fenced regions on the home page
-  const blocks = drop.flatMap((f) => f.homeBlocks);
-  if (blocks.length > 0) {
-    say(bold('\nhome page'));
-    const src = read(INDEX);
-    if (src === null) warn(`${INDEX} is missing — skipped ${blocks.join(', ')}`);
-    else {
-      let out = src;
-      for (const id of blocks) {
-        const { next, count, unbalanced } = removeFences(out, id);
-        out = next;
-        if (unbalanced)
-          warn(`${INDEX}: \`▼ FEATURE:${id} ▼\` has no matching \`▲ FEATURE:${id} ▲\``);
-        if (count > 0)
-          step(`removed ${count} fenced \`${id}\` region${count === 1 ? '' : 's'} from ${INDEX}`);
-        else if (!unbalanced) warn(`${INDEX}: no \`FEATURE:${id}\` fence found (already gone?)`);
+  /*
+   * 4. fenced regions, anywhere under src/.
+   *
+   * Keyed by feature id, and scanned across every source file rather than only
+   * the home page. The home-page-only version of this is what let
+   * publications/index.astro keep a dangling import of a deleted lib/people.ts:
+   * a feature's code does not only live on the front page.
+   */
+  const fenceable = sourceFiles();
+  let fencesRemoved = 0;
+  for (const f of drop) {
+    for (const file of fenceable) {
+      const src = read(file);
+      if (src === null || !src.includes(`FEATURE:${f.id}`)) continue;
+      const { next, count, unbalanced } = removeFences(src, f.id);
+      if (unbalanced) {
+        warn(`${file}: \`▼ FEATURE:${f.id} ▼\` has no matching \`▲ FEATURE:${f.id} ▲\``);
+        continue;
       }
-      if (out !== src) put(INDEX, out);
+      if (count > 0) {
+        if (fencesRemoved === 0) say(bold('\nfenced regions'));
+        put(file, next);
+        step(`removed ${count} \`${f.id}\` region${count === 1 ? '' : 's'} from ${file}`);
+        fencesRemoved += count;
+      }
     }
   }
 
@@ -777,8 +866,15 @@ function runCommands(names) {
  */
 async function ask(rl, question) {
   if (!rl) return null;
-  const answer = await rl.question(question);
-  return answer.trim();
+  try {
+    const answer = await rl.question(question);
+    return answer.trim();
+  } catch (err) {
+    // Ctrl+D (or a closed stdin) arrives here as AbortError. That is somebody
+    // leaving, not a crash, so it must not print a stack trace.
+    if (err?.name === 'AbortError') throw new Abort('cancelled — nothing was changed');
+    throw err;
+  }
 }
 
 const yes = (s) => /^(y|yes)$/i.test(s ?? '');
@@ -793,7 +889,7 @@ async function chooseInteractively(rl) {
 
   let preset = null;
   for (;;) {
-    const a = (await ask(rl, `\nStart from [1-${PRESETS.length + 1}, default 1]: `, '1')) || '1';
+    const a = (await ask(rl, `\nStart from [1-${PRESETS.length + 1}, default 1]: `)) || '1';
     const n = Number(a);
     if (Number.isInteger(n) && n >= 1 && n <= PRESETS.length) {
       preset = PRESETS[n - 1];
@@ -819,7 +915,7 @@ async function chooseInteractively(rl) {
       const mark = selected.has(f.id) ? 'x' : ' ';
       say(`  ${String(i + 1).padStart(2)}) [${mark}] ${f.label.padEnd(16)} ${f.blurb}`);
     });
-    const answer = await ask(rl, '\n> ', 'd');
+    const answer = (await ask(rl, '\n> ')) ?? 'd';
     if (answer === '' || /^(d|done)$/i.test(answer)) break;
     if (/^(a|all)$/i.test(answer)) {
       FEATURES.forEach((f) => selected.add(f.id));
@@ -900,8 +996,11 @@ async function main() {
       const a = await ask(
         rl,
         `\nThis deletes files in ${ROOT}. It is not undoable outside git. Proceed? [y/N] `,
-        'n',
       );
+      if (a === null) {
+        say('\n✗ not a terminal, and --yes was not given — nothing was changed.');
+        return 1;
+      }
       if (!yes(a)) {
         say('Cancelled — nothing was changed.');
         return 0;
@@ -915,12 +1014,17 @@ async function main() {
       const target = PRESET_HERO[preset];
       if (!target) warn(`PRESET_HERO has no entry for \`${preset}\` — hero left alone`);
       else applyHero(target, opts.dryRun);
+
+      say(bold('\nfeed source'));
+      const feed = PRESET_FEED[preset];
+      if (!feed) warn(`PRESET_FEED has no entry for \`${preset}\` — feed left alone`);
+      else applyFeed(feed, opts.dryRun);
     } else {
       const available = heroComponents();
       if (available.length > 1 && interactive) {
         say(bold('\nhero'));
         say(`  ${available.map((h, i) => `${i + 1}) ${h}`).join('   ')}`);
-        const a = await ask(rl, `  Which hero? [1-${available.length}, default 1] `, '1');
+        const a = await ask(rl, `  Which hero? [1-${available.length}, default 1] `);
         const n = Number(a) || 1;
         applyHero(available[n - 1] ?? available[0], opts.dryRun);
       } else if (available.length > 1) {
@@ -929,6 +1033,22 @@ async function main() {
             ', ',
           )} in ${INDEX} and delete the other`,
         );
+      }
+
+      /*
+       * Without a preset the feed source still has to be decided, and getting
+       * it wrong is a build error rather than a cosmetic one: fromPosts imports
+       * lib/blog.ts, so keeping it without the blog does not compile.
+       */
+      const feeds = feedSources();
+      if (feeds.length > 1) {
+        const hasBlog = keep.includes('blog');
+        const target = hasBlog ? 'fromPosts' : 'fromPapers';
+        say(bold('\nfeed source'));
+        step(
+          `no preset, so choosing ${target} from your selection (blog ${hasBlog ? 'kept' : 'dropped'})`,
+        );
+        applyFeed(target, opts.dryRun);
       }
     }
 
@@ -965,6 +1085,25 @@ async function main() {
       return 0;
     }
 
+    /*
+     * ---- reset the asset baseline ----
+     *
+     * It pins the demo's published files by hash, and a removed feature takes
+     * its images with it — so verify would fail on assets that are meant to be
+     * gone. Resetting it HERE is correct because the prune is the
+     * authorisation, and it is the one moment that is true. Never on a later
+     * run: the whole point of the baseline is that a published asset cannot
+     * change without someone saying so, and a script that re-pinned it
+     * automatically would be a baseline that checks nothing.
+     */
+    if (existsSync(join(ROOT, BASELINE))) {
+      say('');
+      say(bold('asset baseline'));
+      const r = spawnSync('npm', ['run', '--silent', 'baseline'], { cwd: ROOT, stdio: 'pipe' });
+      if (r.status === 0) step(`re-pinned ${BASELINE} for the files this site now publishes`);
+      else warn(`could not run \`npm run baseline\` — run it by hand, then verify again`);
+    }
+
     // ---- check, build, verify ----
     const results = runCommands(['check', 'build', 'verify']);
     say('');
@@ -976,6 +1115,7 @@ async function main() {
       say('');
       say(bold('✗ THE PRUNE LEFT SOMETHING DANGLING.'));
       say(`  ${failed.map((r) => `npm run ${r.name}`).join(' and ')} failed.`);
+      for (const line of baselineAdvice(failed)) say(line);
       say('  Read the output above: something still refers to a feature that is gone,');
       say('  or one of the TODO items above is now load-bearing. This script will not');
       say('  guess at a repair — fix it by hand (git diff shows everything it did).');
@@ -990,17 +1130,47 @@ async function main() {
     say('  These exist only to set the template up, and a site owner does not need them:');
     for (const s of SCAFFOLDING) say(`    ${s}`);
     say('    the `init`, `docs` and `docs:check` scripts in package.json');
-    if (!input.isTTY) {
+    const a = await ask(rl, '  Delete them now? [y/N] ');
+    if (a === null) {
       say('  Not a terminal, so they were kept. Delete them by hand when you are happy.');
+    } else if (yes(a)) {
+      removeScaffolding();
     } else {
-      const a = await ask(rl, '  Delete them now? [y/N] ', 'n');
-      if (yes(a)) removeScaffolding();
-      else say('  Kept. Delete them by hand whenever you like.');
+      say('  Kept. Delete them by hand whenever you like.');
     }
     return 0;
   } finally {
-    rl.close();
+    rl?.close();
   }
+}
+
+/**
+ * One failure is expected rather than dangling: `verification/asset-sha256.txt`
+ * pins published assets by hash, and a removed feature takes its images with
+ * it. Saying so beats letting the site owner read it as a broken prune.
+ */
+function baselineAdvice(failed) {
+  // Only meaningful when the build itself succeeded: with no fresh dist/ every
+  // pinned asset looks missing, and the advice would be noise on top of a real
+  // failure.
+  if (!failed.some((r) => r.name === 'verify')) return [];
+  if (failed.some((r) => r.name === 'build')) return [];
+  const baseline = read('verification/asset-sha256.txt');
+  if (baseline === null) return [];
+  const gone = baseline
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'))
+    .map((l) => l.split(/\s+/).slice(1).join(' '))
+    .filter((rel) => rel && !existsSync(join(ROOT, 'dist', rel)));
+  if (gone.length === 0) return [];
+  return [
+    '',
+    `  ${gone.length} asset${gone.length === 1 ? '' : 's'} pinned in verification/asset-sha256.txt`,
+    `  belonged to a feature you removed (${gone.slice(0, 3).join(', ')}${gone.length > 3 ? ', …' : ''}).`,
+    '  That part is expected: run `npm run baseline` to re-pin what the site now',
+    '  publishes, then `npm run verify` again.',
+  ];
 }
 
 function removeScaffolding() {

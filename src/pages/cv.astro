@@ -4,19 +4,28 @@ import Base from '../layouts/Base.astro';
 import Email from '../components/Email.astro';
 import SocialRow from '../components/SocialRow.astro';
 import { SITE, SELF } from '../consts.ts';
-import { cv, dateRange, isCurrent } from '../lib/cv.ts';
+import {
+  cv,
+  dateRange,
+  formatDate,
+  isCurrent,
+  layoutOf,
+  splitMinor,
+  groupCourses,
+  parseDetail,
+} from '../lib/cv.ts';
 import portrait from '../assets/portrait.svg';
 
 /*
- * Each section picks its own shape from its data: a section whose entries
- * carry dates gets the timeline with the rail, one whose entries do not — a
- * language list, a set of honours — gets plain rows. Deciding per section
- * rather than per site means adding "Grants" to cv.yml needs no code here.
+ * Each section picks its own shape from its data unless `layout:` in cv.yml
+ * says otherwise: a section whose entries carry dates gets the timeline with
+ * the rail, one whose entries do not — a language list, a set of honours —
+ * gets plain rows. Deciding per section rather than per site means adding
+ * "Grants" to cv.yml needs no code here. `cards` and `courses` are always
+ * explicit, because nothing about a plain entry implies a highlight-chip
+ * grid or a semester grid.
  */
-const shaped = cv.sections.map((section) => ({
-  ...section,
-  timeline: section.entries.some((e) => e.start || e.end),
-}));
+const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(section) }));
 ---
 
 <Base title="Curriculum vitae" description={cv.summary} section="cv">
@@ -26,6 +35,15 @@ const shaped = cv.sections.map((section) => ({
         <p class="kicker" data-sigil="##">cv</p>
         <h1>Curriculum vitae</h1>
         {cv.summary && <p class="summary">{cv.summary}</p>}
+        {
+          cv.interests && cv.interests.length > 0 && (
+            <ul class="interests">
+              {cv.interests.map((i) => (
+                <li class="chip">{i}</li>
+              ))}
+            </ul>
+          )
+        }
         <p class="contact mono">
           <span class="muted">{SELF.first} {SELF.last}</span>
           <span aria-hidden="true">·</span>
@@ -47,47 +65,210 @@ const shaped = cv.sections.map((section) => ({
     </nav>
 
     {
-      shaped.map((section) => (
-        <section class="block" id={section.id}>
-          <h2>
-            {section.heading} <span class="count mono">{section.entries.length}</span>
-          </h2>
+      shaped.map((section) => {
+        const { main, minor } = splitMinor(section.entries);
+        const courses = section.layout === 'courses' ? groupCourses(section.entries) : undefined;
+        return (
+          <section class="block" id={section.id}>
+            <h2>
+              {section.heading} <span class="count mono">{section.entries.length}</span>
+            </h2>
 
-          <ol class:list={['entries', section.timeline ? 'timeline' : 'rows']}>
-            {section.entries.map((entry) => (
-              <li>
-                <span class="when mono">{dateRange(entry)}</span>
-                <div class="what">
-                  <h3>
-                    {entry.title}
-                    {isCurrent(entry) && <span class="now mono">now</span>}
-                  </h3>
-                  {entry.org && (
-                    <p class="where">
-                      {entry.url ? (
-                        <a href={entry.url} rel="noopener">
-                          {entry.org}
-                        </a>
-                      ) : (
-                        entry.org
+            {section.layout === 'cards' && (
+              <>
+                <ul class="cards">
+                  {main.map((entry) => (
+                    <li>
+                      <h3>
+                        {entry.url ? <a href={entry.url}>{entry.title}</a> : entry.title}
+                        {entry.start && (
+                          <span class="since mono">since {formatDate(entry.start)}</span>
+                        )}
+                      </h3>
+                      {entry.note && <p class="detail">{entry.note}</p>}
+                      {entry.highlights && entry.highlights.length > 0 && (
+                        <p class="hl">
+                          {entry.highlights.map((h) => (
+                            <span class="chip">{h}</span>
+                          ))}
+                        </p>
                       )}
-                      {entry.location && <span class="muted">, {entry.location}</span>}
-                    </p>
-                  )}
-                  {entry.note && <p class="detail note">{entry.note}</p>}
-                  {entry.details && entry.details.length > 0 && (
-                    <ul class="details">
-                      {entry.details.map((d) => (
-                        <li>{d}</li>
+                    </li>
+                  ))}
+                </ul>
+                {minor.length > 0 && (
+                  <details class="more">
+                    <summary>{minor.length} more</summary>
+                    <ul class="cards">
+                      {minor.map((entry) => (
+                        <li>
+                          <h3>
+                            {entry.url ? <a href={entry.url}>{entry.title}</a> : entry.title}
+                            {entry.start && (
+                              <span class="since mono">since {formatDate(entry.start)}</span>
+                            )}
+                          </h3>
+                          {entry.note && <p class="detail">{entry.note}</p>}
+                          {entry.highlights && entry.highlights.length > 0 && (
+                            <p class="hl">
+                              {entry.highlights.map((h) => (
+                                <span class="chip">{h}</span>
+                              ))}
+                            </p>
+                          )}
+                        </li>
                       ))}
                     </ul>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ))
+                  </details>
+                )}
+              </>
+            )}
+
+            {section.layout === 'courses' && courses && (
+              <>
+                <ul class="courses">
+                  {courses.current.map((c) => (
+                    <li class="course now">
+                      <span class="sem mono">{c.semester}</span>
+                      <span class="cname">
+                        {c.url ? (
+                          <a href={c.url} rel="noopener">
+                            {c.title}
+                          </a>
+                        ) : (
+                          c.title
+                        )}
+                      </span>
+                      {c.type && <span class="ctype mono">{c.type}</span>}
+                    </li>
+                  ))}
+                </ul>
+                {courses.past.length > 0 && (
+                  <details class="more">
+                    <summary>
+                      {courses.past.length} earlier{' '}
+                      {courses.past.length === 1 ? 'course' : 'courses'}
+                    </summary>
+                    <ul class="courses">
+                      {courses.past.map((c) => (
+                        <li class="course">
+                          <span class="sem mono">{c.semester}</span>
+                          <span class="cname">
+                            {c.url ? (
+                              <a href={c.url} rel="noopener">
+                                {c.title}
+                              </a>
+                            ) : (
+                              c.title
+                            )}
+                          </span>
+                          {c.type && <span class="ctype mono">{c.type}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </>
+            )}
+
+            {(section.layout === 'timeline' || section.layout === 'rows') && (
+              <>
+                <ol class:list={['entries', section.layout]}>
+                  {main.map((entry) => (
+                    <li>
+                      <span class="when mono">{dateRange(entry)}</span>
+                      <div class="what">
+                        <h3>
+                          {entry.title}
+                          {isCurrent(entry) && <span class="now mono">now</span>}
+                        </h3>
+                        {entry.org && (
+                          <p class="where">
+                            {entry.url ? (
+                              <a href={entry.url} rel="noopener">
+                                {entry.org}
+                              </a>
+                            ) : (
+                              entry.org
+                            )}
+                            {entry.location && <span class="muted">, {entry.location}</span>}
+                          </p>
+                        )}
+                        {entry.note && <p class="detail note">{entry.note}</p>}
+                        {entry.details && entry.details.length > 0 && (
+                          <ul class="details">
+                            {entry.details.map((d) => (
+                              <li>
+                                {parseDetail(d).map((part) =>
+                                  part.url ? (
+                                    <a href={part.url} rel="noopener">
+                                      {part.text}
+                                    </a>
+                                  ) : (
+                                    part.text
+                                  ),
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                {minor.length > 0 && (
+                  <details class="more">
+                    <summary>{minor.length} more</summary>
+                    <ol class:list={['entries', section.layout, 'compact']}>
+                      {minor.map((entry) => (
+                        <li>
+                          <span class="when mono">{dateRange(entry)}</span>
+                          <div class="what">
+                            <h3>
+                              {entry.title}
+                              {isCurrent(entry) && <span class="now mono">now</span>}
+                            </h3>
+                            {entry.org && (
+                              <p class="where">
+                                {entry.url ? (
+                                  <a href={entry.url} rel="noopener">
+                                    {entry.org}
+                                  </a>
+                                ) : (
+                                  entry.org
+                                )}
+                                {entry.location && <span class="muted">, {entry.location}</span>}
+                              </p>
+                            )}
+                            {entry.note && <p class="detail note">{entry.note}</p>}
+                            {entry.details && entry.details.length > 0 && (
+                              <ul class="details">
+                                {entry.details.map((d) => (
+                                  <li>
+                                    {parseDetail(d).map((part) =>
+                                      part.url ? (
+                                        <a href={part.url} rel="noopener">
+                                          {part.text}
+                                        </a>
+                                      ) : (
+                                        part.text
+                                      ),
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                )}
+              </>
+            )}
+          </section>
+        );
+      })
     }
   </section>
 </Base>
@@ -120,12 +301,20 @@ const shaped = cv.sections.map((section) => ({
     color: var(--text-muted);
     max-width: 62ch;
   }
+  .interests {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+  }
   .contact {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5ch;
     align-items: center;
-    margin: 0;
+    margin: 1rem 0 0;
     color: var(--text-faint);
   }
   .jump span {
@@ -148,7 +337,8 @@ const shaped = cv.sections.map((section) => ({
     font-weight: 400;
   }
 
-  .entries {
+  .entries,
+  .courses {
     list-style: none;
     margin: 1.25rem 0 0;
     padding: 0;
@@ -186,6 +376,9 @@ const shaped = cv.sections.map((section) => ({
     margin-left: -0.5px;
     width: 1px;
     background: var(--border);
+  }
+  .timeline.compact > li {
+    padding-bottom: 1rem;
   }
 
   /* Rows: for a section whose entries have no dates, where a rail would be a
@@ -250,6 +443,87 @@ const shaped = cv.sections.map((section) => ({
     color: var(--text-faint);
   }
 
+  /* The disclosure toggle for a collapsed tail (mechanism 1) and for the
+     past-semester run in `courses` (mechanism 2). One style for both, since
+     both are "here is more of the same, folded away". */
+  .more {
+    margin-top: 0.5rem;
+  }
+  .more summary {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--fs-mono);
+    color: var(--sec);
+    cursor: pointer;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--sec-line);
+    border-radius: 999px;
+    background: var(--sec-dim);
+  }
+  .more summary:hover {
+    background: color-mix(in srgb, var(--sec-dim) 160%, transparent);
+  }
+
+  /* Courses: a semester column, the course name, and its kind — a row shape
+     of its own because none of `timeline`, `rows` or `cards` has a natural
+     place for a term that is not a date. */
+  .course {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr auto;
+    gap: 0 1rem;
+    padding: 0.55rem 0;
+    border-top: 1px solid var(--border);
+    font-size: var(--fs-small);
+    align-items: baseline;
+  }
+  .course .sem {
+    color: var(--text-faint);
+  }
+  .course.now .sem {
+    color: var(--sec);
+  }
+  .ctype {
+    color: var(--text-faint);
+    font-size: 0.6875rem;
+  }
+
+  /* Cards: the one place on this site that reaches for a grid of tiles
+     instead of a hairline list — a project needs room for a name, a "since"
+     date and a row of highlight chips together, which a rail-and-row shape
+     has nowhere to put. Still no filled box: the border is the same hairline
+     the rest of the page uses, just on top instead of on the side. */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+    gap: 1.4rem 1.6rem;
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+  }
+  .cards > li {
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+  .cards h3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 0 0 0.4rem;
+    font-size: 1rem;
+  }
+  .since {
+    color: var(--text-faint);
+    font-weight: 400;
+    font-size: 0.6875rem;
+  }
+  .hl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.6rem 0 0;
+  }
+
   @media (max-width: 44rem) {
     .profile {
       grid-template-columns: 1fr;
@@ -270,6 +544,28 @@ const shaped = cv.sections.map((section) => ({
     .timeline > li::before,
     .timeline > li::after {
       display: none;
+    }
+    .course {
+      grid-template-columns: 5rem 1fr;
+    }
+    .ctype {
+      grid-column: 2;
+    }
+  }
+
+  /* The CV is the one page people print, and a collapsed disclosure prints
+     as collapsed — so force every one open and hide the toggle that would
+     otherwise sit uselessly on paper. */
+  @media print {
+    .more[open] summary,
+    .more summary {
+      display: none;
+    }
+    .more {
+      display: block;
+    }
+    .more > *:not(summary) {
+      display: block !important;
     }
   }
 </style>

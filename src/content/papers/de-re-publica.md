@@ -18,6 +18,26 @@ authors: [cicero, keyes]
 order: 1
 featured: true
 
+# The conference series' own homepage, which is a third thing: `abbr` in
+# papers.bib badges the edition this text was printed in, `links.paper` below
+# points at the text itself, and this points at the event where the work was
+# presented. Only the last of the three tells a reader whether it runs again.
+conferenceName: Symposium Ciceronianum Arpinas
+conferenceUrl: https://www.tulliana.eu/
+
+# The same work, presented again at venues that publish nothing — so there is
+# no BibTeX entry to point at and nothing for /publications/ to list.
+additionalPresentations:
+  - name: Colloquium on the Roman Constitution
+    shortName: Colloquium Constitutionis
+    url: https://classics.org/
+  - name: Collegium Politicum
+    url: https://www.collegiumpoliticum.org/
+
+# Keys from src/content/projects/. Written here and nowhere else: the project
+# page derives its own list of papers by scanning this field.
+projects: [latin-vocabulary]
+
 figure:
   src: /assets/img/papers/mixed-constitution.svg
   alt: >-

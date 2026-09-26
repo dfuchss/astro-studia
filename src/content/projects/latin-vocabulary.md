@@ -7,6 +7,16 @@ description: >-
 category: research
 order: 1
 logo: ../../assets/projects/vocabulary.svg
+
+# This project's own repositories, rendered as chips on its page. Different
+# from the site-wide /repositories/ page, which lists everything an
+# organisation owns: these are the two or three that belong to THIS work, and
+# the second one here is somebody else's.
+repositories:
+  - name: wordlist
+    url: https://github.com/example/latin-wordlist
+  - name: perseus-treebank
+    url: https://github.com/gcelano/LemmatizedAncientGreekXML
 ---
 
 Writing philosophy in Latin in the 40s BC meant inventing most of the words for

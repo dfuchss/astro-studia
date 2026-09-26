@@ -184,6 +184,48 @@ const papers = defineCollection({
      */
     authors: z.array(reference('authors')).default([]),
 
+    /**
+     * Where this paper is in the pipeline, spelled out. The sites this template
+     * came from each had a boolean here — one `inPress`, the other
+     * `alreadyPublished` — and a boolean has to be read as a negation half the
+     * time: `inPress: false` is true of a paper that is out and of one that was
+     * never submitted. A name per state also leaves room for the third one
+     * (withdrawn, retracted) that a flag has nowhere to put.
+     */
+    status: z.enum(['published', 'to-appear']).default('published'),
+
+    /**
+     * The conference or series' OWN homepage. It is none of the three things
+     * next to it: `abbr` badges the proceedings the paper was printed in,
+     * `links.paper` points at the paper in a publisher's library, and the DOI
+     * is the record. This one answers "what is this venue, and does it run
+     * again next year", which none of the others can.
+     */
+    conferenceName: z.string().optional(),
+    conferenceUrl: z.url().optional(),
+
+    /**
+     * Second and later outings for the same work: a doctoral symposium, a
+     * national workshop, an invited talk. Deliberately not in papers.bib —
+     * those venues are usually non-archival, so there is nothing to cite, and
+     * one BibTeX entry per talk would show the same paper twice or five times
+     * on /publications/.
+     */
+    additionalPresentations: z
+      .array(z.object({ name: z.string(), shortName: z.string().optional(), url: z.url() }))
+      .default([]),
+
+    /**
+     * The projects this work came out of. Stated here and nowhere else: each
+     * project page derives its own publication list by scanning this field, so
+     * the two directions cannot drift apart the way two hand-kept lists do.
+     * Pointing at a project that has a `redirect` is fine — the paper page
+     * links out to it instead of to a page that was never generated. Dropping
+     * the projects collection means dropping this field in the same edit;
+     * reference() makes the dependency real rather than advisory.
+     */
+    projects: z.array(reference('projects')).default([]),
+
     /** Sort key for /papers/. Lower comes first. */
     order: z.number().int().default(100),
     featured: z.boolean().default(false),
@@ -219,6 +261,14 @@ const projects = defineCollection({
       order: z.number().int().default(100),
       /** When set, the entry links straight out and no page is generated. */
       redirect: z.url().optional(),
+      /**
+       * Where this project's code lives, as chips on its page. Not the site-wide
+       * /repositories/ page: that one lists an organisation's repositories from
+       * the GitHub API, all of them, ranked by stars. This is the two or three a
+       * reader of THIS project needs, named by you, and some of them will belong
+       * to somebody else's org.
+       */
+      repositories: z.array(z.object({ name: z.string(), url: z.url() })).default([]),
       logo: image().optional(),
     }),
 });

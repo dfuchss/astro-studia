@@ -4,17 +4,38 @@
 # so adding "Service" or "Grants" is a new block here and no code at all. Order
 # on this page is the order in this file.
 #
+# A section renders as a `timeline` (a date rail) if any entry carries a date,
+# or `rows` (no rail) otherwise — unless `layout:` names one of the two other
+# shapes explicitly:
+#
+#   layout   timeline | rows | cards | courses   (optional; see above)
+#
+#   cards    a grid for entries with a name, an optional "since" date and a
+#            row of highlight chips — built for Projects.
+#   courses  a semester-grouped grid — the current semester's entries stay
+#            visible, everything from an earlier one collapses behind a
+#            disclosure. Built for Teaching; needs each entry's `semester`.
+#
 # Every field of an entry except `title` is optional:
 #
 #   title     what it was                             (required)
 #   org       who it was with
-#   url       link on the org
+#   url       link on the org (or, for `cards`, on the title)
 #   start     "2020-03", "2020", or anything else — a value that looks like a
 #   end       date is formatted, anything else is printed verbatim. Omitting
 #             `end` means "to the present" and marks the entry as current.
 #   location  city, country
-#   note      one short line, e.g. a thesis title
-#   details   bullets
+#   note      one short line, e.g. a thesis title (or a `cards` summary)
+#   details   bullets. A bullet is plain text unless it embeds a markdown
+#             link — "Reviewer for [ACM TOSEM](https://…)" — which renders as
+#             a real hyperlink without needing `set:html` for the whole field.
+#   minor     true sends this entry to a collapsed "N more" disclosure at the
+#             end of the section instead of its main list — for a long run of
+#             repeated low-value entries (teaching assistantships, retired
+#             course editions) that would otherwise bury the ones that do.
+#   highlights  chips under a `cards` entry.
+#   semester    a `courses` entry's term, e.g. "WS 26/27" or "SS 2026".
+#   type        a `courses` entry's kind, e.g. "Lecture / Practice".
 #
 # DEMO CONTENT.
 
@@ -22,6 +43,12 @@ summary: >-
   Advocate, magistrate and translator. Brought Greek philosophy into Latin, and
   in the process supplied much of the technical vocabulary European philosophy
   still runs on.
+
+interests:
+  - Rhetoric
+  - Stoic & Academic philosophy
+  - Roman constitutional law
+  - Latin philosophical vocabulary
 
 sections:
   - id: experience
@@ -69,6 +96,43 @@ sections:
         end: '75 BC'
         location: Lilybaeum, Sicily
 
+      # Five recurring courtroom appearances, none of which needs to sit
+      # beside a consulship to be worth keeping on the page.
+      - title: Advocate
+        org: Roman law courts
+        start: '80 BC'
+        end: '80 BC'
+        minor: true
+        note: 'Pro Roscio Amerino — defended Sextus Roscius against a charge of parricide.'
+
+      - title: Advocate
+        org: Roman law courts
+        start: '70 BC'
+        end: '70 BC'
+        minor: true
+        note: 'In Verrem — prosecuted the former governor of Sicily for corruption.'
+
+      - title: Advocate
+        org: Roman law courts
+        start: '66 BC'
+        end: '66 BC'
+        minor: true
+        note: 'Pro Cluentio — defended Aulus Cluentius against a charge of poisoning.'
+
+      - title: Advocate
+        org: Roman law courts
+        start: '62 BC'
+        end: '62 BC'
+        minor: true
+        note: 'Pro Sulla — defended Publius Sulla against a charge of conspiracy.'
+
+      - title: Advocate
+        org: Roman law courts
+        start: '56 BC'
+        end: '56 BC'
+        minor: true
+        note: 'Pro Caelio — defended Marcus Caelius Rufus.'
+
   - id: education
     heading: Education
     entries:
@@ -83,6 +147,62 @@ sections:
         start: '90 BC'
         note: Under Quintus Mucius Scaevola.
 
+  - id: teaching
+    heading: Rhetorical instruction
+    layout: courses
+    entries:
+      - title: Rhetorica ad discipulos
+        type: Declamation practice
+        semester: 'WS 46/45'
+        url: https://en.wikipedia.org/wiki/Rhetorica_ad_Herennium
+
+      - title: Advocacy practicum
+        type: Practicum
+        semester: 'WS 46/45'
+
+      - title: De Officiis seminar
+        type: Seminar
+        semester: 'SS 46'
+
+      - title: Forensic composition
+        type: Practicum
+        semester: 'WS 45/44'
+
+      - title: De Oratore readings
+        type: Seminar
+        semester: 'SS 45'
+
+      - title: Rhetorica ad discipulos
+        type: Declamation practice
+        semester: 'WS 44/43'
+
+  - id: projects
+    heading: Projects
+    layout: cards
+    entries:
+      - title: De Re Publica
+        note: A dialogue reconstructing the ideal constitution of Rome, modelled on Plato and adapted to Roman practice.
+        start: '54 BC'
+        highlights:
+          - Political theory
+          - Dialogue form
+        url: https://en.wikipedia.org/wiki/De_re_publica_(Cicero)
+
+      - title: Academy at Tusculum
+        note: A private library and philosophical circle, built to translate Greek schools of thought into a Latin vocabulary that did not yet exist.
+        start: '55 BC'
+        highlights:
+          - Translation
+          - Stoicism
+          - Academic Skepticism
+
+      - title: Corpus of forensic speeches
+        note: Assembling and revising the courtroom speeches for publication, so the arguments would outlast the cases.
+        start: '80 BC'
+        highlights:
+          - Rhetoric
+          - Publication
+
   - id: awards
     heading: Honours
     entries:
@@ -90,6 +210,19 @@ sections:
         org: Roman Senate
         start: '63 BC'
         note: Voted after the conspiracy.
+
+  - id: community
+    heading: Public life
+    entries:
+      - title: Augur
+        org: College of Augurs
+        start: '53 BC'
+        note: Elected to one of the four great priestly colleges.
+
+      - title: Correspondent
+        details:
+          - 'Extensive correspondence with [Atticus](https://en.wikipedia.org/wiki/Titus_Pomponius_Atticus), later published as the Epistulae ad Atticum.'
+          - 'Exchanged letters with [Julius Caesar](https://en.wikipedia.org/wiki/Julius_Caesar) even after backing the opposing side in the civil war.'
 
   - id: languages
     heading: Languages

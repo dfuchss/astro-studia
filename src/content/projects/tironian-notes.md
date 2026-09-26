@@ -7,6 +7,12 @@ description: >-
 category: tools
 order: 2
 logo: ../../assets/projects/notae.svg
+
+# One repository and no papers pointing here: both blocks on a project page are
+# independent, and each renders only when there is something in it.
+repositories:
+  - name: notae-font
+    url: https://github.com/example/notae-tironianae
 ---
 
 Built by Tiro, who as secretary had the problem before anyone else did: speech

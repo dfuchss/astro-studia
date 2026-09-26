@@ -8,22 +8,36 @@
  * it only appears in CI. Inlining sidesteps path resolution entirely, and gives
  * hot reload on a data file for free.
  *
- * Delete the import and the export together when you remove a feature; an
- * unused `?raw` import still inlines the file into the bundle.
+ * Each data file's import, its type and its export are fenced together under
+ * the feature that owns them, so `npm run init` takes all three out at once.
+ * That matters more here than anywhere else: an unused `?raw` import still
+ * inlines a file, and once the file is gone it is a build error rather than
+ * dead weight — which is exactly how this file used to break every prune.
  */
 import { parse } from 'yaml';
 
+/* ▼ FEATURE:citations ▼ */
 import citationsRaw from '../data/citations.yml?raw';
+/* ▲ FEATURE:citations ▲ */
+
+/* ▼ FEATURE:socials ▼ */
 import socialsRaw from '../data/socials.yml?raw';
+/* ▲ FEATURE:socials ▲ */
+
+/* ▼ FEATURE:repositories ▼ */
 import repositoriesRaw from '../data/repositories.yml?raw';
 import languageColorsRaw from '../data/language_colors.yml?raw';
 import githubMetadata from '../data/github-metadata.json';
+/* ▲ FEATURE:repositories ▲ */
 
+/* ▼ FEATURE:citations ▼ */
 export type CitationsFile = {
   metadata: { last_updated: string };
   papers: Record<string, { citations?: number; title?: string; year?: number }>;
 };
+/* ▲ FEATURE:citations ▲ */
 
+/* ▼ FEATURE:socials ▼ */
 export type Socials = {
   orcid_id: string | null;
   scholar_userid: string | null;
@@ -42,13 +56,17 @@ export type Socials = {
    */
   extra?: { label: string; url: string; icon?: string }[] | null;
 };
+/* ▲ FEATURE:socials ▲ */
 
+/* ▼ FEATURE:repositories ▼ */
 export type Repositories = {
   github_users?: string[];
   github_repos?: string[];
   zenodo_repos?: { name: string; doi: string }[];
 };
+/* ▲ FEATURE:repositories ▲ */
 
+/* ▼ FEATURE:repositories ▼ */
 export type GithubMetadata = {
   fetched: string;
   users: Record<
@@ -78,14 +96,23 @@ export type GithubMetadata = {
     }
   >;
 };
+/* ▲ FEATURE:repositories ▲ */
 
+/* ▼ FEATURE:citations ▼ */
 export const citations = parse(citationsRaw) as CitationsFile;
+/* ▲ FEATURE:citations ▲ */
+/* ▼ FEATURE:socials ▼ */
 export const socials = parse(socialsRaw) as Socials;
+/* ▲ FEATURE:socials ▲ */
+/* ▼ FEATURE:repositories ▼ */
 export const repositories = parse(repositoriesRaw) as Repositories;
 export const languageColors = parse(languageColorsRaw) as Record<string, string>;
+/* ▲ FEATURE:repositories ▲ */
 
 /**
  * Written by scripts/fetch-github-metadata.mjs and committed, rather than
  * fetched during the build. See that script's header for why.
  */
+/* ▼ FEATURE:repositories ▼ */
 export const github = githubMetadata as GithubMetadata;
+/* ▲ FEATURE:repositories ▲ */

@@ -9,6 +9,16 @@ publication: cicero_de_amicitia_2021
 authors: [cicero, marek]
 order: 3
 
+# Not out yet: the paper page badges this as "to appear" and /papers/ marks the
+# row. An enum rather than a flag, so front matter never has to be read as a
+# negation — see the `status` field in src/content.config.ts.
+status: to-appear
+
+# Two projects, one of which — the Perseus letters — has a `redirect` and so no
+# page on this site. The chip for it links straight out; the one for the
+# vocabulary links to its page here.
+projects: [latin-vocabulary, perseus-corpus]
+
 figure:
   src: /assets/img/papers/officia-plate.svg
   alt: The four sources of duty, drawn as four linked circles.

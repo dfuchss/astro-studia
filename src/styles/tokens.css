@@ -201,7 +201,8 @@
 }
 
 [data-section='people'],
-[data-section='cv'] {
+[data-section='cv'],
+[data-section='contact'] {
   --sec: var(--amber);
   --sec-strong: var(--amber-strong);
   --sec-line: var(--amber-line);

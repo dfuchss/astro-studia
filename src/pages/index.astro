@@ -9,25 +9,18 @@ import PubEntry from '../components/pub/PubEntry.astro';
 
 import { SITE } from '../consts.ts';
 import { byNewest } from '../lib/publications.ts';
-import { peopleLinks } from '../lib/people.ts';
-import { publishedPosts, permalink, formatPostDate } from '../lib/blog.ts';
-import { currentPosition, dateRange } from '../lib/cv.ts';
-import { keyId } from '../lib/pgp.ts';
-
-const position = currentPosition();
-const pgp = keyId();
 
 /*
- * The ▼/▲ FEATURE:<id> pairs below mark the frontmatter and markup that exist
+ * The ▼/▲ FEATURE:<id> pairs below are named after the feature in
+ * scripts/features.mjs that owns them, and mark the frontmatter and markup that exist
  * only for one optional area of the site. `scripts/features.mjs` lists them
  * as `homeBlocks`, and `npm run init` deletes exactly what a matching pair
  * encloses — so they are load-bearing, not noise; leave them even when you
  * are editing the code right next to them.
  */
 
-/* ▼ FEATURE:research ▼ */
+/* ▼ FEATURE:publications ▼ */
 const pubs = await getCollection('publications');
-const links = await peopleLinks();
 
 // The publications that have a page of their own, newest first.
 const featured = pubs
@@ -50,9 +43,9 @@ const interests = [
   'Constitutional theory',
 ];
 /* ──────────────────────────── end of demo copy ─────────────────────────── */
-/* ▲ FEATURE:research ▲ */
+/* ▲ FEATURE:publications ▲ */
 
-/* ▼ FEATURE:building ▼ */
+/* ▼ FEATURE:projects ▼ */
 /* DEMO COPY — see the note above. */
 const involvement = [
   {
@@ -65,13 +58,34 @@ const involvement = [
     link: { label: 'Senate', href: 'https://www.perseus.tufts.edu/' },
     tail: 'and, in 63 BC, consul',
   },
-  { text: 'Correspondent of', link: { label: 'Atticus', href: '/people/#atticus' } },
+  /*
+   * Deliberately an external link rather than /people/#atticus: this block
+   * belongs to the projects feature, and pointing it at the people page made
+   * the two features depend on each other through nothing but demo prose. The
+   * audit caught it as a dangling link the moment people was pruned.
+   */
+  {
+    text: 'Correspondent of',
+    link: { label: 'Atticus', href: 'https://en.wikipedia.org/wiki/Titus_Pomponius_Atticus' },
+  },
 ];
-/* ▲ FEATURE:building ▲ */
+/* ▲ FEATURE:projects ▲ */
 
-/* ▼ FEATURE:writing ▼ */
+/* ▼ FEATURE:blog ▼ */
+import { publishedPosts, permalink, formatPostDate } from '../lib/blog.ts';
+
 const posts = (await publishedPosts()).slice(0, 3);
-/* ▲ FEATURE:writing ▲ */
+/* ▲ FEATURE:blog ▲ */
+
+/* ▼ FEATURE:cv ▼ */
+import { currentPosition, dateRange } from '../lib/cv.ts';
+const position = currentPosition();
+/* ▲ FEATURE:cv ▲ */
+
+/* ▼ FEATURE:pgp ▼ */
+import { keyId } from '../lib/pgp.ts';
+const pgp = keyId();
+/* ▲ FEATURE:pgp ▲ */
 ---
 
 <Base section="home">
@@ -82,7 +96,7 @@ const posts = (await publishedPosts()).slice(0, 3);
   <!-- Each section carries its own data-section, so the accent changes as you
        move down the page — the same mechanism the nav uses. -->
 
-  {/* ▼ FEATURE:research ▼ */}
+  {/* ▼ FEATURE:publications ▼ */}
   <section class="wrap section" id="research" data-section="publications">
     <p class="kicker" data-sigil="##">research</p>
     <h2>What I work on</h2>
@@ -99,7 +113,7 @@ const posts = (await publishedPosts()).slice(0, 3);
           </p>
           <ul class="bare">
             {featured.map((pub) => (
-              <PubEntry pub={pub} links={links} compact />
+              <PubEntry pub={pub} compact />
             ))}
           </ul>
         </>
@@ -112,9 +126,9 @@ const posts = (await publishedPosts()).slice(0, 3);
       </a>
     </p>
   </section>
-  {/* ▲ FEATURE:research ▲ */}
+  {/* ▲ FEATURE:publications ▲ */}
 
-  {/* ▼ FEATURE:building ▼ */}
+  {/* ▼ FEATURE:projects ▼ */}
   <section class="wrap section" id="building" data-section="projects">
     <p class="kicker" data-sigil="##">building</p>
     <h2>Also involved in</h2>
@@ -133,9 +147,9 @@ const posts = (await publishedPosts()).slice(0, 3);
     </ul>
     <p class="more mono"><a href="/projects/">my own projects →</a></p>
   </section>
-  {/* ▲ FEATURE:building ▲ */}
+  {/* ▲ FEATURE:projects ▲ */}
 
-  {/* ▼ FEATURE:writing ▼ */}
+  {/* ▼ FEATURE:blog ▼ */}
   {
     posts.length > 0 && (
       <section class="wrap section" id="writing" data-section="blog">
@@ -161,9 +175,9 @@ const posts = (await publishedPosts()).slice(0, 3);
       </section>
     )
   }
-  {/* ▲ FEATURE:writing ▲ */}
+  {/* ▲ FEATURE:blog ▲ */}
 
-  <section class="wrap section" id="contact" data-section="cv">
+  <section class="wrap section" id="contact" data-section="contact">
     <p class="kicker" data-sigil="##">contact</p>
     <h2>Get in touch</h2>
     <p class="blurb">Happy to argue about any of the above.</p>
@@ -173,6 +187,7 @@ const posts = (await publishedPosts()).slice(0, 3);
         <dt class="mono">email</dt>
         <dd><Email address={SITE.email} /></dd>
       </div>
+      {/* ▼ FEATURE:pgp ▼ */}
       {
         pgp && (
           <div class="line">
@@ -184,6 +199,8 @@ const posts = (await publishedPosts()).slice(0, 3);
           </div>
         )
       }
+      {/* ▲ FEATURE:pgp ▲ */}
+      {/* ▼ FEATURE:cv ▼ */}
       {
         position && (
           /* Read from cv.yml rather than written twice, so this line cannot
@@ -203,8 +220,11 @@ const posts = (await publishedPosts()).slice(0, 3);
           </div>
         )
       }
+      {/* ▲ FEATURE:cv ▲ */}
     </dl>
+    {/* ▼ FEATURE:cv ▼ */}
     <p class="more mono"><a href="/cv/">full cv →</a></p>
+    {/* ▲ FEATURE:cv ▲ */}
   </section>
 </Base>
 

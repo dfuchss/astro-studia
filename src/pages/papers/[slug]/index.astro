@@ -5,8 +5,9 @@ import Base from '../../../layouts/Base.astro';
 import Prose from '../../../components/Prose.astro';
 import Figure from '../../../components/Figure.astro';
 import VenueBadge from '../../../components/pub/VenueBadge.astro';
-import CopyButton from '../../../components/pub/CopyButton.astro';
+import PubEntry from '../../../components/pub/PubEntry.astro';
 import ScholarMeta from '../../../components/pub/ScholarMeta.astro';
+import { projectPath } from '../../../lib/paths.ts';
 
 export const getStaticPaths = (async () => {
   const papers = await getCollection('papers');
@@ -24,6 +25,21 @@ if (!pub) throw new Error(`${paper.id}: publication ${paper.data.publication.id}
 const d = pub.data;
 
 const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
+
+/*
+ * The projects this paper came out of. The other direction of the same edge —
+ * every paper on a project's page — is computed on /projects/<slug>/, so this
+ * front matter is the only place the relationship is written down.
+ *
+ * A project with `redirect` has no page of its own, and linking to the path it
+ * would have had is a 404 the build cannot see: reference() proves the entry
+ * exists, not that a page was generated for it.
+ */
+const projects = (await Promise.all(paper.data.projects.map((ref) => getEntry(ref)))).map((p) => ({
+  title: p.data.title,
+  href: p.data.redirect ?? projectPath(p.id),
+  external: Boolean(p.data.redirect),
+}));
 
 /**
  * Pretty names for the link keys used in front matter. A key with no entry
@@ -53,7 +69,11 @@ const linkRows = [
 ].filter((row) => row.map && Object.keys(row.map).length > 0);
 
 const inParts = [d.booktitle ?? d.journal ?? d.school ?? d.institution, d.location].filter(Boolean);
-const bibId = `bib-${pub.id}`;
+
+// The two links a reader actually came for. They are repeated further down in
+// the link rows, which is the point: those rows are an index of everywhere the
+// work lives, and nobody should have to read an index to find the PDF.
+const hasActions = Boolean(d.pdfUrl || d.doi);
 ---
 
 <Base title={paper.data.title} description={paper.data.description} section="papers">
@@ -64,6 +84,12 @@ const bibId = `bib-${pub.id}`;
       <div class="meta">
         <VenueBadge abbr={d.abbr} />
         <span class="mono year">{d.year}</span>
+        {
+          /* Only the unpublished state is worth saying. A "published" badge on
+             forty pages out of forty-one is noise that makes the one page that
+             needs it harder to spot, not easier. */
+          paper.data.status === 'to-appear' && <span class="chip status">to appear</span>
+        }
       </div>
 
       <h1>{paper.data.title}</h1>
@@ -88,6 +114,54 @@ const bibId = `bib-${pub.id}`;
       }
 
       {inParts.length > 0 && <p class="venue-line">{inParts.join(', ')}</p>}
+
+      {
+        paper.data.conferenceName && (
+          <p class="conf">
+            {paper.data.status === 'to-appear' ? 'To appear at' : 'Published at'}{' '}
+            {paper.data.conferenceUrl ? (
+              <a href={paper.data.conferenceUrl} rel="noopener">
+                {paper.data.conferenceName}
+              </a>
+            ) : (
+              <span>{paper.data.conferenceName}</span>
+            )}
+          </p>
+        )
+      }
+
+      {
+        paper.data.additionalPresentations.length > 0 && (
+          <p class="conf">
+            Also presented at{' '}
+            {paper.data.additionalPresentations.map((p, i) => (
+              <>
+                {i > 0 && <span aria-hidden="true">, </span>}
+                <a href={p.url} rel="noopener" title={p.shortName ? p.name : undefined}>
+                  {p.shortName ?? p.name}
+                </a>
+              </>
+            ))}
+          </p>
+        )
+      }
+
+      {
+        hasActions && (
+          <p class="actions">
+            {d.pdfUrl && (
+              <a class="chip primary" href={d.pdfUrl}>
+                Read the PDF
+              </a>
+            )}
+            {d.doi && (
+              <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
+                DOI
+              </a>
+            )}
+          </p>
+        )
+      }
     </header>
 
     {
@@ -105,8 +179,21 @@ const bibId = `bib-${pub.id}`;
     </Prose>
 
     {
-      linkRows.length > 0 && (
+      (projects.length > 0 || linkRows.length > 0) && (
         <section class="links" aria-label="Links">
+          {projects.length > 0 && (
+            <div class="row">
+              <h2 class="mono row-title">Projects</h2>
+              <div class="chips">
+                {projects.map((p) => (
+                  <a class="chip" href={p.href} rel={p.external ? 'noopener' : undefined}>
+                    {p.title}
+                    {p.external && <span aria-hidden="true">↗</span>}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           {linkRows.map((row) => (
             <div class="row">
               <h2 class="mono row-title">{row.title}</h2>
@@ -125,10 +212,15 @@ const bibId = `bib-${pub.id}`;
 
     <section class="cite" aria-labelledby="cite-h">
       <h2 class="mono" id="cite-h">Cite</h2>
-      <div class="cite-body">
-        <CopyButton target={bibId} />
-        <pre id={bibId}>{d.bibtex}</pre>
-      </div>
+      {
+        /* The whole publication entry rather than a bare <pre>: the venue
+           badge, the full author list and the citation count are the context
+           that tells you whether this is the thing you meant to cite, and it
+           is the same row a reader already met on /publications/. */
+      }
+      <ol class="bare">
+        <PubEntry pub={pub} />
+      </ol>
     </section>
   </article>
 </Base>
@@ -152,19 +244,39 @@ const bibId = `bib-${pub.id}`;
   .year {
     color: var(--text-faint);
   }
+  .status {
+    border-color: var(--sec-line);
+    background: var(--sec-dim);
+    color: var(--sec-strong);
+  }
 
   h1 {
     margin-bottom: 0.5rem;
   }
 
   .authors,
-  .venue-line {
+  .venue-line,
+  .conf {
     margin: 0 0 0.35rem;
     color: var(--text-muted);
     font-size: var(--fs-small);
   }
   .venue-line {
     font-style: italic;
+  }
+
+  /* The one emphatic element on the page, because it is the one thing most
+     readers arrived to do. Everything else here is a hairline. */
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.1rem 0 0;
+  }
+  .actions .primary {
+    border-color: var(--sec-line);
+    background: var(--sec-dim);
+    color: var(--sec-strong);
   }
 
   .links {
@@ -202,11 +314,16 @@ const bibId = `bib-${pub.id}`;
     color: var(--text-faint);
     margin-bottom: 0.5rem;
   }
-  .cite-body {
-    position: relative;
-  }
-  .cite-body pre {
+  .bare {
+    list-style: none;
     margin: 0;
-    font-size: 0.75rem;
+    padding: 0;
+  }
+  /* PubEntry derives its "Paper page →" chip from the bib entry's `page` field,
+     which on this page points at this page. The component takes no prop to
+     suppress it, and one caller's redundancy is not a reason to add a prop to
+     something /publications/ renders forty times. */
+  .cite :global(.paper-page) {
+    display: none;
   }
 </style>

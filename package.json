@@ -14,6 +14,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "init": "node scripts/init.mjs",
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
@@ -25,7 +26,9 @@
     "baseline": "node scripts/generate-asset-baseline.mjs",
     "favicons": "node scripts/generate-favicons.mjs",
     "data:github": "node scripts/fetch-github-metadata.mjs",
-    "bib:check": "python3 scripts/update_bib.py"
+    "bib:check": "python3 scripts/update_bib.py",
+    "docs": "node scripts/gen-docs.mjs",
+    "docs:check": "node scripts/gen-docs.mjs --check"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",

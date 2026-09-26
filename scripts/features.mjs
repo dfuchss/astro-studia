@@ -9,6 +9,11 @@
  * that list drifts from the code the first time either changes. Written down
  * here, it has two consumers that cannot disagree:
  *
+ * A feature's fenced code needs no declaration: init scans src/ for
+ * `▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲` pairs named after the feature's own id
+ * and removes them wherever they are. Put a fence around anything that exists
+ * only because a feature does — an import, a const, a markup block.
+ *
  *   scripts/init.mjs      prunes what you do not want
  *   scripts/gen-docs.mjs  regenerates the table in docs/removing-features.md
  *
@@ -24,6 +29,12 @@
  *
  * `profile`  one person: publications, a CV, a blog, software, a GitHub list.
  * `project`  a project or group: sub-projects, paper pages, a team.
+ *
+ * NOTE: `npm run verify` fails after ANY prune until `npm run baseline` is run.
+ * verification/asset-sha256.txt pins the demo images, some belonging to a
+ * feature you just removed — which is the baseline doing its job, since it
+ * exists so a published asset cannot vanish unnoticed. init says so when it
+ * happens.
  *
  * A real site is usually neither. That is the point of the checkboxes.
  */
@@ -42,7 +53,6 @@
  * @property {string[]} sections  `Section` members and their [data-section] blocks
  * @property {string[]} nav       NAV rows to drop, matched on `label`
  * @property {string[]} footer    FOOTER_LINKS rows to drop, matched on `label`
- * @property {string[]} homeBlocks  fenced regions in src/pages/index.astro, by id
  * @property {string[]} manual    edits a human still has to make, in prose
  */
 
@@ -67,7 +77,6 @@ export const FEATURES = [
     sections: ['publications'],
     nav: ['publications'],
     footer: [],
-    homeBlocks: ['research'],
     manual: [],
   },
 
@@ -82,7 +91,6 @@ export const FEATURES = [
     sections: ['papers'],
     nav: ['papers'],
     footer: [],
-    homeBlocks: [],
     manual: [
       'drop the `page = {…}` fields from src/data/papers.bib',
       'drop the second links[] entry from the bibtexLoader options in src/content.config.ts',
@@ -105,7 +113,6 @@ export const FEATURES = [
     sections: ['projects'],
     nav: ['projects'],
     footer: [],
-    homeBlocks: ['building'],
     manual: [
       'a group site usually calls these `approaches` — rename the collection in src/content.config.ts, the directory under src/pages/, and the NAV label',
     ],
@@ -117,15 +124,20 @@ export const FEATURES = [
     blurb: 'Dated posts with tags, per-tag pages, drafts, and an RSS feed.',
     presets: ['profile'],
     requires: [],
-    paths: ['src/pages/blog', 'src/lib/blog.ts', 'src/content/posts', 'public/assets/img/posts'],
+    paths: [
+      'src/pages/blog',
+      'src/lib/blog.ts',
+      // Imports lib/blog.ts, so it cannot outlive it. If you keep the feed,
+      // init repoints it at fromPapers.ts — see PRESET_FEED below.
+      'src/lib/feed/fromPosts.ts',
+      'src/content/posts',
+      'public/assets/img/posts',
+    ],
     collections: ['posts'],
     sections: ['blog'],
     nav: ['blog'],
     footer: [],
-    homeBlocks: ['writing'],
-    manual: [
-      'if you keep the feed, point src/pages/feed.xml.ts at another collection — it defaults to posts',
-    ],
+    manual: [],
   },
 
   {
@@ -134,12 +146,11 @@ export const FEATURES = [
     blurb: 'An Atom/RSS feed at /feed.xml, so people can follow the site.',
     presets: ['profile', 'project'],
     requires: [],
-    paths: ['src/pages/feed.xml.ts'],
+    paths: ['src/pages/feed.xml.ts', 'src/lib/feed'],
     collections: [],
     sections: [],
     nav: [],
     footer: ['Feed'],
-    homeBlocks: [],
     /*
      * Deliberately NOT owned by the blog. ardoco.de has no blog at all and
      * still publishes a feed, built from its paper pages — which is the right
@@ -147,7 +158,9 @@ export const FEATURES = [
      * to the blog would have deleted it from exactly the site that needs it
      * most obviously.
      */
-    manual: ['the feed reads `posts` by default; without a blog, point it at `papers` instead'],
+    manual: [
+      'drop the feed <link rel="alternate"> from src/components/BaseHead.astro — without it you advertise a 404',
+    ],
   },
 
   {
@@ -161,8 +174,7 @@ export const FEATURES = [
     sections: ['cv'],
     nav: ['cv'],
     footer: [],
-    homeBlocks: [],
-    manual: ['drop the `where` row from the contact list in src/pages/index.astro'],
+    manual: [],
   },
 
   {
@@ -183,7 +195,6 @@ export const FEATURES = [
     sections: ['repositories'],
     nav: ['repositories'],
     footer: [],
-    homeBlocks: [],
     manual: ['drop the `data:github` script from package.json'],
   },
 
@@ -204,8 +215,7 @@ export const FEATURES = [
     sections: ['people'],
     nav: ['people'],
     footer: [],
-    homeBlocks: [],
-    manual: ['drop the `links` prop passed to <PubEntry> in src/pages/publications/index.astro'],
+    manual: [],
   },
 
   {
@@ -219,7 +229,6 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: [],
-    homeBlocks: [],
     manual: ['drop the `authors` field from the papers schema in src/content.config.ts'],
   },
 
@@ -240,7 +249,6 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: [],
-    homeBlocks: [],
     manual: [
       'drop the citation chip from src/components/pub/PubEntry.astro and the metrics block from src/pages/publications/index.astro',
       'replace formatCount() usages — it lives in lib/citations.ts',
@@ -258,8 +266,7 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: [],
-    homeBlocks: [],
-    manual: ['remove <SocialRow /> from src/pages/index.astro and src/pages/cv.astro'],
+    manual: ['remove <SocialRow /> from src/components/hero/ and src/pages/cv.astro'],
   },
 
   {
@@ -273,8 +280,7 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: ['PGP'],
-    homeBlocks: [],
-    manual: ['drop the `pgp` row from the contact list in src/pages/index.astro'],
+    manual: [],
   },
 
   {
@@ -288,12 +294,20 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: ['Imprint'],
-    homeBlocks: [],
     manual: [],
   },
 ];
 
 /** The hero each preset starts from. See src/components/hero/. */
+/**
+ * The feed source each preset starts from, swapped the same way as the hero:
+ * one import line in src/pages/feed.xml.ts, and the unused variant deleted.
+ */
+export const PRESET_FEED = {
+  profile: 'fromPosts',
+  project: 'fromPapers',
+};
+
 export const PRESET_HERO = {
   profile: 'PersonHero',
   project: 'ProjectHero',

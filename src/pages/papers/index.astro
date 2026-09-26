@@ -45,7 +45,15 @@ const rows = await Promise.all(
                 <a href={paperPath(paper.id)}>{paper.data.title}</a>
               </h2>
               {paper.data.description && <p class="desc">{paper.data.description}</p>}
-              {pub && <p class="mono meta">{pub.data.year}</p>}
+              {pub && (
+                <p class="mono meta">
+                  {pub.data.year}
+                  {/* The one thing about a paper that changes after it is
+                      written, so it belongs in the list and not only on the
+                      page: a reader scanning for what is new wants it here. */}
+                  {paper.data.status === 'to-appear' && <span class="soon"> · to appear</span>}
+                </p>
+              )}
             </div>
           </li>
         ))
@@ -93,6 +101,9 @@ const rows = await Promise.all(
   .meta {
     margin: 0;
     color: var(--text-faint);
+  }
+  .soon {
+    color: var(--sec);
   }
 
   @media (max-width: 34rem) {
