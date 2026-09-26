@@ -383,10 +383,15 @@ const real = pages.filter((p) => !isStub(p));
    * source and is easy to miss in review, so check the rendered bytes: a word
    * character or a comma immediately against a link boundary, with no space.
    */
-  // Chips and badges are spaced by CSS margin or flex gap rather than by a
-  // text node, so a word sitting flush against their markup is correct. Only
-  // prose links are checked.
-  const STYLED = /class="[^"]*\b(?:chip|venue|who|title-link|brand)\b/;
+  // Chips, badges and icon links are spaced by CSS margin or flex gap rather
+  // than by a text node, so a word sitting flush against their markup is
+  // correct. Only prose links are checked.
+  //
+  // `orcid` is here because an ORCID icon immediately after an author's name
+  // is the standard academic pattern — `Jan Keim<a class="orcid">` is exactly
+  // what you want, and without this entry every author on every paper page is
+  // reported.
+  const STYLED = /class="[^"]*\b(?:chip|venue|who|title-link|brand|orcid|icon)\b/;
   const OPEN = /([A-Za-z0-9,.;:])(<a\s[^>]*>)/g;
   const CLOSE = /<\/a>([A-Za-z0-9])/g;
 
@@ -427,8 +432,14 @@ const real = pages.filter((p) => !isStub(p));
    * A site embedding a talk would put 'www.youtube.com' there and nothing
    * else; naming it means a second origin cannot appear unnoticed.
    */
-  const SUBRESOURCE =
-    /<(?:img|script|iframe|source|link|video|audio)\b[^>]*\b(?:src|href)="https?:\/\/([^"/]+)/g;
+  const SUBRESOURCE = /<(?:img|script|iframe|source|video|audio)\b[^>]*\bsrc="https?:\/\/([^"/]+)/g;
+  /*
+   * <link> is separate, because most of them fetch nothing. rel="canonical"
+   * and rel="alternate" are metadata and routinely point at another origin on
+   * purpose; only these rel values cause a request.
+   */
+  const FETCHING_LINK =
+    /<link\b[^>]*\brel="(?:stylesheet|preload|prefetch|preconnect|icon|apple-touch-icon|manifest|modulepreload)"[^>]*\bhref="https?:\/\/([^"/]+)/g;
 
   const found = new Map();
   for (const p of pages) {
@@ -440,10 +451,12 @@ const real = pages.filter((p) => !isStub(p));
      * string literal is not a subresource.
      */
     const stripped = p.html.replace(/(<script\b[^>]*>)[\s\S]*?<\/script>/g, '$1</script>');
-    for (const m of stripped.matchAll(SUBRESOURCE)) {
-      const host = m[1];
-      if (host === OWN_HOST || ALLOWED.has(host)) continue;
-      if (!found.has(host)) found.set(host, p.url);
+    for (const re of [SUBRESOURCE, FETCHING_LINK]) {
+      for (const m of stripped.matchAll(re)) {
+        const host = m[1];
+        if (host === OWN_HOST || ALLOWED.has(host)) continue;
+        if (!found.has(host)) found.set(host, p.url);
+      }
     }
   }
   if (found.size) for (const [h, u] of found) fail(`third-party subresource origin ${h} on ${u}`);
@@ -500,9 +513,20 @@ const real = pages.filter((p) => !isStub(p));
   // following the documented removal recipe. A feed that *should* exist and
   // does not is still a failure.
   if (existsSync(join(SRC, 'pages/feed.xml.ts'))) checkXml('feed.xml', 'item');
-  // @astrojs/sitemap emits an index that points at one or more sitemap files.
-  checkXml('sitemap-index.xml', 'sitemap');
-  checkXml('sitemap-0.xml', 'url');
+  /*
+   * Whichever shape the sitemap takes. @astrojs/sitemap emits an index plus one
+   * or more numbered files; a hand-rolled endpoint is usually a single
+   * sitemap.xml. Either is fine and nothing here should prefer one — but having
+   * neither means nothing is telling a crawler what exists.
+   */
+  if (existsSync(join(DIST, 'sitemap-index.xml'))) {
+    checkXml('sitemap-index.xml', 'sitemap');
+    checkXml('sitemap-0.xml', 'url');
+  } else if (existsSync(join(DIST, 'sitemap.xml'))) {
+    checkXml('sitemap.xml', 'url');
+  } else {
+    fail('no sitemap was generated (expected sitemap-index.xml or sitemap.xml)');
+  }
 }
 
 // ---- 10. weight --------------------------------------------------------------

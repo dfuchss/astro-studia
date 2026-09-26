@@ -118,9 +118,9 @@
      all the way down instead of every block picking its own width. */
   --measure: 72ch;
 
-  --radius-s: 6px;
-  --radius-m: 12px;
-  --radius-l: 18px;
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 22px;
 
   /* ── TYPE ───────────────────────────────────────────────────────────────
      Two faces, self-hosted through @fontsource and imported in

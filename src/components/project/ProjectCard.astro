@@ -38,17 +38,18 @@ const initials = d.title
           </span>
         )
       }
-      <h3>
-        {d.title}
-        {
-          external && (
-            <span class="out" aria-label="(external link)">
-              {' '}
-              ↗
-            </span>
-          )
-        }
-      </h3>
+      <h3>{d.title}</h3>
+      {
+        /* A sibling of the heading, not a child of it: `.head` is the flex
+           container, so margin-left:auto here floats the arrow to the right
+           edge of the card. Inside the <h3> it is an inline span and the auto
+           margin computes to zero, which silently parks it against the title. */
+        external && (
+          <span class="out" aria-label="(external link)">
+            ↗
+          </span>
+        )
+      }
     </div>
     <p>{d.description}</p>
   </a>
