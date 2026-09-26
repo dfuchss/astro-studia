@@ -1,30 +1,33 @@
 ---
 import { getCollection } from 'astro:content';
-import { Image } from 'astro:assets';
 
 import Base from '../layouts/Base.astro';
 import DemoNotice from '../components/DemoNotice.astro';
-import SocialRow from '../components/SocialRow.astro';
+import Hero from '../components/hero/PersonHero.astro';
 import Email from '../components/Email.astro';
 import PubEntry from '../components/pub/PubEntry.astro';
 
-import { SITE, SELF } from '../consts.ts';
+import { SITE } from '../consts.ts';
 import { byNewest } from '../lib/publications.ts';
 import { peopleLinks } from '../lib/people.ts';
-import { scholarMetrics, formatCount } from '../lib/citations.ts';
 import { publishedPosts, permalink, formatPostDate } from '../lib/blog.ts';
 import { currentPosition, dateRange } from '../lib/cv.ts';
 import { keyId } from '../lib/pgp.ts';
 
-import portrait from '../assets/portrait.svg';
-
-const pubs = await getCollection('publications');
-const projects = await getCollection('projects');
-const posts = (await publishedPosts()).slice(0, 3);
-const links = await peopleLinks();
-const m = scholarMetrics();
 const position = currentPosition();
 const pgp = keyId();
+
+/*
+ * The ▼/▲ FEATURE:<id> pairs below mark the frontmatter and markup that exist
+ * only for one optional area of the site. `scripts/features.mjs` lists them
+ * as `homeBlocks`, and `npm run init` deletes exactly what a matching pair
+ * encloses — so they are load-bearing, not noise; leave them even when you
+ * are editing the code right next to them.
+ */
+
+/* ▼ FEATURE:research ▼ */
+const pubs = await getCollection('publications');
+const links = await peopleLinks();
 
 // The publications that have a page of their own, newest first.
 const featured = pubs
@@ -33,22 +36,6 @@ const featured = pubs
   .slice(0, 3);
 
 const latestYear = pubs.length > 0 ? Math.max(...pubs.map((p) => p.data.year)) : undefined;
-
-/*
- * Counted, never typed in.
- *
- * A hardcoded "35 publications" is wrong the day you add the thirty-sixth, and
- * nothing tells you. Every number on this page is derived from the collection
- * it describes, so the page cannot disagree with the rest of the site.
- *
- * A stat whose value is 0 is dropped rather than shown as a zero.
- */
-const stats = [
-  { value: pubs.length, label: 'publications', href: '/publications/' },
-  { value: m.total, label: 'citations', href: '/publications/' },
-  { value: m.hIndex, label: 'h-index', href: '/publications/' },
-  { value: projects.length, label: 'projects', href: '/projects/' },
-].filter((s) => s.value > 0);
 
 /* ──────────────────────────────────────────────────────────────────────────
    DEMO COPY. Everything from here to the end of this block is page text, not
@@ -62,7 +49,11 @@ const interests = [
   'Translation as a technical problem',
   'Constitutional theory',
 ];
+/* ──────────────────────────── end of demo copy ─────────────────────────── */
+/* ▲ FEATURE:research ▲ */
 
+/* ▼ FEATURE:building ▼ */
+/* DEMO COPY — see the note above. */
 const involvement = [
   {
     text: 'Advocate before the',
@@ -76,50 +67,22 @@ const involvement = [
   },
   { text: 'Correspondent of', link: { label: 'Atticus', href: '/people/#atticus' } },
 ];
-/* ──────────────────────────── end of demo copy ─────────────────────────── */
+/* ▲ FEATURE:building ▲ */
+
+/* ▼ FEATURE:writing ▼ */
+const posts = (await publishedPosts()).slice(0, 3);
+/* ▲ FEATURE:writing ▲ */
 ---
 
 <Base section="home">
   <DemoNotice />
 
-  <!-- hero -->
-  <section class="wrap hero">
-    <div class="hero-grid">
-      <div>
-        <p class="kicker">whoami</p>
-        <h1>{SELF.first}&nbsp;{SELF.last}</h1>
-        <p class="role">{SITE.tagline}</p>
-        <p class="pitch">
-          I write about <strong>duty</strong>, <strong>friendship</strong> and what holds a republic together,
-          and I argue that Latin is perfectly capable of the job — which is a claim you can only make
-          by doing it.
-        </p>
-        <SocialRow />
-      </div>
-
-      <figure class="portrait">
-        <Image src={portrait} alt="" width={320} height={320} loading="eager" />
-      </figure>
-    </div>
-
-    {
-      stats.length > 0 && (
-        <ul class="stats">
-          {stats.map((s) => (
-            <li>
-              <a href={s.href}>
-                <span class="stat-value">{formatCount(s.value)}</span>
-                <span class="stat-label mono">{s.label}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )
-    }
-  </section>
+  <Hero />
 
   <!-- Each section carries its own data-section, so the accent changes as you
        move down the page — the same mechanism the nav uses. -->
+
+  {/* ▼ FEATURE:research ▼ */}
   <section class="wrap section" id="research" data-section="publications">
     <p class="kicker" data-sigil="##">research</p>
     <h2>What I work on</h2>
@@ -149,7 +112,9 @@ const involvement = [
       </a>
     </p>
   </section>
+  {/* ▲ FEATURE:research ▲ */}
 
+  {/* ▼ FEATURE:building ▼ */}
   <section class="wrap section" id="building" data-section="projects">
     <p class="kicker" data-sigil="##">building</p>
     <h2>Also involved in</h2>
@@ -168,7 +133,9 @@ const involvement = [
     </ul>
     <p class="more mono"><a href="/projects/">my own projects →</a></p>
   </section>
+  {/* ▲ FEATURE:building ▲ */}
 
+  {/* ▼ FEATURE:writing ▼ */}
   {
     posts.length > 0 && (
       <section class="wrap section" id="writing" data-section="blog">
@@ -194,6 +161,7 @@ const involvement = [
       </section>
     )
   }
+  {/* ▲ FEATURE:writing ▲ */}
 
   <section class="wrap section" id="contact" data-section="cv">
     <p class="kicker" data-sigil="##">contact</p>
@@ -241,88 +209,6 @@ const involvement = [
 </Base>
 
 <style>
-  .hero {
-    padding-block: clamp(2.5rem, 7vw, 5rem) 0;
-  }
-  .hero-grid {
-    display: grid;
-    /* Cap the text column at its reading measure. With `1fr` the column eats
-       all the free width and pushes the portrait to the far edge, leaving a
-       void between the two. `start` keeps the pair together, left-aligned like
-       every other section on the page. */
-    grid-template-columns: minmax(0, 64ch) auto;
-    justify-content: start;
-    gap: 2.5rem;
-    align-items: center;
-  }
-
-  h1 {
-    margin-bottom: 0.35rem;
-  }
-  .role {
-    font-size: 1.0625rem;
-    color: var(--text-muted);
-    margin-bottom: 0.9rem;
-  }
-  .pitch {
-    max-width: 56ch;
-    color: var(--text-muted);
-    margin-bottom: 1.5rem;
-  }
-  .pitch strong {
-    color: var(--text);
-    font-weight: 600;
-  }
-
-  .portrait {
-    margin: 0;
-    text-align: center;
-  }
-  .portrait :global(img) {
-    width: 11rem;
-    height: 11rem;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid var(--sec-line);
-    box-shadow: 0 0 0 6px var(--sec-dim);
-  }
-
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: 0.75rem;
-    list-style: none;
-    margin: 2.5rem 0 0;
-    padding: 0;
-  }
-  /* No box: a hairline rule over each figure, matching the dividers the rest
-     of the site uses. The number carries the emphasis, not a border. */
-  .stats a {
-    display: grid;
-    gap: 0.1rem;
-    padding: 0.85rem 0 0;
-    border-top: 1px solid var(--border);
-    text-decoration: none;
-    transition: border-color var(--dur) var(--ease);
-  }
-  .stats a:hover {
-    border-top-color: var(--sec-line);
-  }
-  .stats a:hover .stat-label {
-    color: var(--sec);
-  }
-  .stat-value {
-    font-family: var(--font-head);
-    font-size: 1.75rem;
-    font-weight: 700;
-    line-height: 1.15;
-    color: var(--sec);
-  }
-  .stat-label {
-    color: var(--text-faint);
-    font-size: 0.6875rem;
-  }
-
   .interests {
     display: flex;
     flex-wrap: wrap;
@@ -428,21 +314,6 @@ const involvement = [
   }
 
   @media (max-width: 44rem) {
-    .hero-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-    /* Portrait above the text on a phone: an 11rem image beside a paragraph at
-       that width leaves the paragraph a few characters wide. It also shrinks —
-       full desktop size on a phone eats the fold. cv.astro does the same. */
-    .portrait {
-      order: -1;
-      text-align: left;
-    }
-    .portrait :global(img) {
-      width: 7rem;
-      height: 7rem;
-    }
     .postlist a,
     .contact .line {
       grid-template-columns: 1fr;

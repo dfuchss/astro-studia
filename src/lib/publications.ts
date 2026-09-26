@@ -34,3 +34,25 @@ export function byYear(pubs: Pub[]): { year: number; items: Pub[] }[] {
     .sort((a, b) => b[0] - a[0])
     .map(([year, items]) => ({ year, items }));
 }
+
+/**
+ * A Date for a publication, from its year and month.
+ *
+ * A paper has a month, not a day, so this lands mid-month: that keeps an
+ * ordering honest without implying a precision the source does not have.
+ *
+ * TWO TRAPS, both of which this template shipped before they were noticed:
+ *
+ *   Date.UTC takes a ZERO-BASED month. The schema stores 1-12, so passing it
+ *   straight through dates every September paper to October — and hardcoding 0
+ *   "because the month is optional" dates the entire bibliography to January,
+ *   which is what ardoco.de's feed did: every item 15 January of its year, so
+ *   nothing within a year could be ordered at all.
+ *
+ *   UTC, not local. Constructing this in a local zone west of UTC shifts the
+ *   day backwards, so the same commit produces different dates depending on
+ *   where it was built.
+ */
+export function publicationDate(d: { year: number; month?: number }): Date {
+  return new Date(Date.UTC(d.year, (d.month ?? 1) - 1, 15));
+}

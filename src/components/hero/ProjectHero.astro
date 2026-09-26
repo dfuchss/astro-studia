@@ -1,0 +1,145 @@
+---
+import { getCollection } from 'astro:content';
+
+import { SITE } from '../../consts.ts';
+import { intrinsic } from '../../lib/images.ts';
+import { scholarMetrics, formatCount } from '../../lib/citations.ts';
+
+/*
+ * The hero for a project or group site: a mark, a name, a tagline, and the
+ * actions a visitor is most likely to want. See PersonHero.astro for the
+ * shape a person's site wants instead — the two take no props, so
+ * src/pages/index.astro switches between them by changing one import line.
+ */
+const logo = '/favicon.svg';
+const { width: logoWidth, height: logoHeight } = intrinsic(logo);
+
+const actions = [
+  { label: 'Explore projects', href: '/projects/', primary: true },
+  { label: 'Publications', href: '/publications/' },
+  { label: 'GitHub', href: SITE.repo },
+];
+
+const pubs = await getCollection('publications');
+const people = await getCollection('people');
+const m = scholarMetrics();
+
+/*
+ * Counted, never typed in — same reasoning as PersonHero.astro. A group page
+ * that says "12 people" by hand is wrong the day someone joins, and nothing
+ * would tell you.
+ */
+const stats = [
+  { value: pubs.length, label: 'publications', href: '/publications/' },
+  { value: m.total, label: 'citations', href: '/publications/' },
+  { value: m.hIndex, label: 'h-index', href: '/publications/' },
+  { value: people.length, label: 'people', href: '/people/' },
+].filter((s) => s.value > 0);
+---
+
+<section class="wrap hero">
+  <img class="logo" src={logo} alt="" width={logoWidth} height={logoHeight} />
+  <h1>{SITE.title}</h1>
+  <p class="tagline">{SITE.tagline}</p>
+  <p class="actions">
+    {
+      actions.map((a) => (
+        <a
+          class:list={['chip', a.primary && 'primary']}
+          href={a.href}
+          rel={a.href.startsWith('http') ? 'noopener' : undefined}
+        >
+          {a.label}
+        </a>
+      ))
+    }
+  </p>
+
+  {
+    stats.length > 0 && (
+      <ul class="stats">
+        {stats.map((s) => (
+          <li>
+            <a href={s.href}>
+              <span class="stat-value">{formatCount(s.value)}</span>
+              <span class="stat-label mono">{s.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</section>
+
+<style>
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-block: clamp(2.5rem, 7vw, 5rem) 0;
+  }
+  .logo {
+    width: auto;
+    height: clamp(4.5rem, 10vw, 6rem);
+    margin-bottom: 1.5rem;
+  }
+  h1 {
+    margin-bottom: 0.35rem;
+  }
+  .tagline {
+    max-width: 42ch;
+    margin: 0 0 1.5rem;
+    color: var(--text-muted);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: 0;
+  }
+  .chip.primary {
+    border-color: var(--sec-line);
+    background: var(--sec-dim);
+    color: var(--sec-strong);
+  }
+
+  /* Same hairline idiom as PersonHero.astro's stats row — a rule over each
+     figure rather than a boxed tile, centred here to match the hero above it. */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.75rem;
+    list-style: none;
+    margin: 2.75rem 0 0;
+    padding: 0;
+    max-width: 40rem;
+    width: 100%;
+  }
+  .stats a {
+    display: grid;
+    gap: 0.1rem;
+    padding: 0.85rem 0 0;
+    border-top: 1px solid var(--border);
+    text-decoration: none;
+    transition: border-color var(--dur) var(--ease);
+  }
+  .stats a:hover {
+    border-top-color: var(--sec-line);
+  }
+  .stats a:hover .stat-label {
+    color: var(--sec);
+  }
+  .stat-value {
+    font-family: var(--font-head);
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--sec);
+  }
+  .stat-label {
+    color: var(--text-faint);
+    font-size: 0.6875rem;
+  }
+</style>
