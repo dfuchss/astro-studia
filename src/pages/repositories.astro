@@ -46,9 +46,14 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
       user && (
         /* Three figures, each saying something different: reach, breadth, and
            research output. No total star count — the per-repo numbers below
-           already carry that. */
-        <div class="ghuser">
-          <div>
+           already carry that.
+
+           This one IS a filled card, unlike the repo cells below it. The site is
+           mostly hairlines, but this block is a single summary panel rather than
+           one item in a list — a rule above it would read as a divider between
+           things that are not a series. */
+        <div class="ghuser card">
+          <div class="ghuser-main">
             <p class="ghname mono">
               <a href={user.htmlUrl} rel="noopener me">
                 @{user.login}
@@ -247,6 +252,8 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
   .repo-name {
     margin: 0;
     font-size: 0.875rem;
+    /* A repo name has no spaces to break at, and this cell is only 18rem wide.
+       Whoever clones this has repositories whose names I cannot see. */
     overflow-wrap: anywhere;
   }
   .owner {
