@@ -38,8 +38,10 @@ export function byYear(pubs: Pub[]): { year: number; items: Pub[] }[] {
 /**
  * A Date for a publication, from its year and month.
  *
- * A paper has a month, not a day, so this lands mid-month: that keeps an
- * ordering honest without implying a precision the source does not have.
+ * A paper has a month, not a day, so this lands on the FIRST of the month —
+ * the conventional expansion of a month-precision date, and what truncating an
+ * ISO timestamp to YYYY-MM already implies. Picking a mid-point would invent a
+ * day the source does not have.
  *
  * TWO TRAPS, both of which this template shipped before they were noticed:
  *
@@ -54,5 +56,5 @@ export function byYear(pubs: Pub[]): { year: number; items: Pub[] }[] {
  *   where it was built.
  */
 export function publicationDate(d: { year: number; month?: number }): Date {
-  return new Date(Date.UTC(d.year, (d.month ?? 1) - 1, 15));
+  return new Date(Date.UTC(d.year, (d.month ?? 1) - 1, 1));
 }
