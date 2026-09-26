@@ -433,10 +433,15 @@ const involvement = [
       gap: 1.5rem;
     }
     /* Portrait above the text on a phone: an 11rem image beside a paragraph at
-       that width leaves the paragraph a few characters wide. */
+       that width leaves the paragraph a few characters wide. It also shrinks —
+       full desktop size on a phone eats the fold. cv.astro does the same. */
     .portrait {
       order: -1;
       text-align: left;
+    }
+    .portrait :global(img) {
+      width: 7rem;
+      height: 7rem;
     }
     .postlist a,
     .contact .line {
