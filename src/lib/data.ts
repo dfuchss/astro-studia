@@ -30,7 +30,17 @@ export type Socials = {
   github_username: string | null;
   dblp_url: string | null;
   linkedin_username: string | null;
+  semanticscholar_id: string | null;
   pgp_fingerprint: string | null;
+  /**
+   * Anything the fixed fields above do not cover — Mastodon, ResearchGate,
+   * Codeberg, an institutional page. `icon` names one of the marks in
+   * SocialRow.astro; leave it out and the entry renders as a text chip.
+   *
+   * The fixed list is a convenience, not a whitelist. Where an academic keeps
+   * a profile is not something a template gets to decide.
+   */
+  extra?: { label: string; url: string; icon?: string }[] | null;
 };
 
 export type Repositories = {

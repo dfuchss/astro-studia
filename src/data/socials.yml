@@ -26,6 +26,22 @@ github_username: octocat
 dblp_url: null
 linkedin_username: null
 
+# Semantic Scholar's author id, from the number in your profile URL.
+semanticscholar_id: null
+
+# Anything the fields above do not cover. `icon` may name one of the marks in
+# components/SocialRow.astro — orcid, scholar, dblp, github, codeberg, linkedin,
+# semanticscholar — and without one the entry renders as a text chip instead, so
+# an unfamiliar platform still looks deliberate.
+extra:
+  - label: Codeberg
+    url: https://codeberg.org/
+    icon: codeberg
+  # No icon for this one, so it renders as a text chip. That is the escape
+  # hatch: the set of places an academic keeps a profile is open-ended.
+  - label: Perseus
+    url: https://www.perseus.tufts.edu/
+
 # Your PGP key fingerprint, no spaces. When set, /pgp-key/ renders it and
 # SocialRow links there; when null, both quietly stand down.
 pgp_fingerprint: null
