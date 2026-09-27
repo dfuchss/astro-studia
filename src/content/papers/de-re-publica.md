@@ -45,6 +45,9 @@ figure:
     constituting the res publica.
   # Dark line art on a transparent background, so it needs the white plate.
   plate: true
+  # And a window frame, so the plate has an edge to sit against rather than
+  # floating as a bright rectangle. The string is the titlebar label.
+  frame: approach overview
 
 # Label -> URL. The labels are yours; they render in the order written.
 links:
@@ -85,3 +88,34 @@ third of the rest was recovered in 1819 from a palimpsest in the Vatican Library
 — the text had been scraped off and written over with Augustine on the Psalms.
 
 That recovery is why this page can cite a 1928 edition of a work from 51 BC.
+
+<figure class="compare">
+  <div class="compare-pair">
+    <a href="/assets/img/papers/palimpsest-before.svg">
+      <img
+        src="/assets/img/papers/palimpsest-before.svg"
+        alt="A parchment leaf: the original text faint and horizontal, Augustine's commentary written darkly across it at right angles."
+        width="640"
+        height="400"
+        loading="lazy"
+      />
+    </a>
+    <a href="/assets/img/papers/palimpsest-after.svg">
+      <img
+        src="/assets/img/papers/palimpsest-after.svg"
+        alt="The same leaf as a printed page: numbered lines, a gap where the reading is lost, and an apparatus below the rule."
+        width="640"
+        height="400"
+        loading="lazy"
+      />
+    </a>
+  </div>
+  <figcaption>
+    The same leaf. Left: the palimpsest as Angelo Mai found it. Right: as the 1928 edition sets
+    it. Click either for full size.
+  </figcaption>
+</figure>
+
+The gap in the right-hand column is not a printing error. It is a passage the
+scraping took and the recovery did not give back, and the convention is to show
+it rather than to guess.

@@ -74,6 +74,21 @@ property of GitHub Pages, not of this template — the `sitemap-index.xml` URL
 in it is still correct, and submitting the sitemap directly to Search Console
 works regardless.
 
+## Serving your own 404
+
+GitHub Pages serves `/404.html` for a miss automatically, so nothing is needed
+there. Other hosts do not: Apache hands a miss to whatever `ErrorDocument` says,
+which by default is the hosting panel's generic page rather than yours. Put this
+in `public/.htaccess` and it is copied into the build verbatim:
+
+```apache
+ErrorDocument 404 /404.html
+```
+
+`ErrorDocument` needs `AllowOverride FileInfo`, so check that is on before
+assuming it worked — a silently ignored directive looks exactly like a working
+one until someone mistypes a URL.
+
 ## Another host
 
 Nothing here needs GitHub. The build is a directory of static files with no

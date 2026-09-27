@@ -5,9 +5,10 @@ import Base from '../../../layouts/Base.astro';
 import Prose from '../../../components/Prose.astro';
 import Figure from '../../../components/Figure.astro';
 import VenueBadge from '../../../components/pub/VenueBadge.astro';
-import PubEntry from '../../../components/pub/PubEntry.astro';
 import ScholarMeta from '../../../components/pub/ScholarMeta.astro';
+import CopyButton from '../../../components/pub/CopyButton.astro';
 import { projectPath } from '../../../lib/paths.ts';
+import { isSelf } from '../../../lib/authors.ts';
 
 export const getStaticPaths = (async () => {
   const papers = await getCollection('papers');
@@ -25,6 +26,15 @@ if (!pub) throw new Error(`${paper.id}: publication ${paper.data.publication.id}
 const d = pub.data;
 
 const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
+
+/*
+ * authors.yml holds one display name per person, while isSelf() matches on a
+ * surname — so the surname is the last whitespace-separated word. That is right
+ * for everyone except a compound name ("van der Aalst" reduces to "Aalst"), and
+ * the fix when it bites is to list that spelling in SELF.surnames, which is
+ * exactly what that list is for.
+ */
+const surname = (a: { name: string }) => a.name.split(/\s+/).at(-1) ?? a.name;
 
 /*
  * The projects this paper came out of. The other direction of the same edge —
@@ -74,6 +84,9 @@ const inParts = [d.booktitle ?? d.journal ?? d.school ?? d.institution, d.locati
 // the link rows, which is the point: those rows are an index of everywhere the
 // work lives, and nobody should have to read an index to find the PDF.
 const hasActions = Boolean(d.pdfUrl || d.doi);
+
+// The id CopyButton copies from, in the cite section below.
+const bibId = `bib-${pub.id}`;
 ---
 
 <Base title={paper.data.title} description={paper.data.description} section="papers">
@@ -100,13 +113,30 @@ const hasActions = Boolean(d.pdfUrl || d.doi);
             {authors.map((a, i) => (
               <>
                 {i > 0 && <span aria-hidden="true">, </span>}
-                {a.data.orcid ? (
-                  <a href={`https://orcid.org/${a.data.orcid}`} rel="noopener">
-                    {a.data.name}
-                  </a>
-                ) : (
-                  <span>{a.data.name}</span>
-                )}
+                <span
+                  class:list={['author', { self: isSelf({ first: '', last: surname(a.data) }) }]}
+                >
+                  {a.data.name}
+                  {/*
+                   * The badge is the link, not the name. A name that is a link
+                   * promises the person's page; this one goes to a registry
+                   * record, and the 4x16-digit identifier next to a name is the
+                   * convention every publisher's author line already uses. It
+                   * also leaves the name free to become a link to something of
+                   * yours later without the two fighting.
+                   */}
+                  {a.data.orcid && (
+                    <a
+                      class="orcid"
+                      href={`https://orcid.org/${a.data.orcid}`}
+                      rel="noopener"
+                      aria-label={`ORCID record for ${a.data.name}`}
+                      title={`ORCID ${a.data.orcid}`}
+                    >
+                      iD
+                    </a>
+                  )}
+                </span>
               </>
             ))}
           </p>
@@ -170,6 +200,7 @@ const hasActions = Boolean(d.pdfUrl || d.doi);
           src={paper.data.figure.src}
           alt={paper.data.figure.alt}
           plate={paper.data.figure.plate}
+          frame={paper.data.figure.frame}
         />
       )
     }
@@ -213,14 +244,23 @@ const hasActions = Boolean(d.pdfUrl || d.doi);
     <section class="cite" aria-labelledby="cite-h">
       <h2 class="mono" id="cite-h">Cite</h2>
       {
-        /* The whole publication entry rather than a bare <pre>: the venue
-           badge, the full author list and the citation count are the context
-           that tells you whether this is the thing you meant to cite, and it
-           is the same row a reader already met on /publications/. */
+        /* BibTeX alone, deliberately.
+         *
+         * This section held a full <PubEntry> for a while, on the theory that
+         * the badge, authors and citation count tell you whether this is the
+         * thing you meant to cite. On a page that opens with exactly that
+         * header it repeats all of it a screen further down, and it buries the
+         * one thing the section is FOR behind a disclosure toggle. It also
+         * needed a rule to hide the entry's own "Paper page" chip, which
+         * pointed at the page you were already on — a component needing to be
+         * partly hidden is the component being wrong for the place.
+         *
+         * Both sites this template came from tried it and moved back. */
       }
-      <ol class="bare">
-        <PubEntry pub={pub} />
-      </ol>
+      <div class="cite-body">
+        <CopyButton target={bibId} />
+        <pre id={bibId}>{d.bibtex}</pre>
+      </div>
     </section>
   </article>
 </Base>
@@ -263,6 +303,31 @@ const hasActions = Boolean(d.pdfUrl || d.doi);
   }
   .venue-line {
     font-style: italic;
+  }
+  /* The site's own author reads at full strength; the co-authors are context.
+     Which one is "own" comes from SELF.surnames in src/consts.ts, so a group
+     site that deletes SELF loses the emphasis and nothing else. */
+  .author.self {
+    color: var(--text);
+    font-weight: 600;
+  }
+  /* The ORCID badge: the registry's own "iD" mark, small enough to read as a
+     superscript on the name rather than as a second word in the author list.
+     3px rather than --radius-s, because at this size the token's 8px is a pill. */
+  .orcid {
+    display: inline-block;
+    margin-left: 0.35ch;
+    padding: 0 0.3em;
+    border: 1px solid var(--sec-line);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    vertical-align: 0.15em;
+    color: var(--sec);
+    text-decoration: none;
+  }
+  .orcid:hover {
+    background: var(--sec-dim);
   }
 
   /* The one emphatic element on the page, because it is the one thing most
@@ -318,12 +383,5 @@ const hasActions = Boolean(d.pdfUrl || d.doi);
     list-style: none;
     margin: 0;
     padding: 0;
-  }
-  /* PubEntry derives its "Paper page →" chip from the bib entry's `page` field,
-     which on this page points at this page. The component takes no prop to
-     suppress it, and one caller's redundancy is not a reason to add a prop to
-     something /publications/ renders forty times. */
-  .cite :global(.paper-page) {
-    display: none;
   }
 </style>

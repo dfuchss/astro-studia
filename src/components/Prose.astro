@@ -105,6 +105,132 @@
     text-align: center;
   }
 
+  /*
+   * A before/after pair, side by side:
+   *
+   *   <figure class="compare">
+   *     <div class="compare-pair">
+   *       <a href="/assets/img/…/before.svg"><img src="…" width="…" height="…" alt="…"></a>
+   *       <a href="/assets/img/…/after.svg"><img src="…" width="…" height="…" alt="…"></a>
+   *     </div>
+   *     <figcaption>What changed. Click either for full size.</figcaption>
+   *   </figure>
+   *
+   * Each image links to its own file, because two screenshots at half the
+   * reading measure are too small to read and the only useful thing to do with
+   * one is open it. They stack below 40rem, where half a column is no longer a
+   * screenshot but a smudge.
+   *
+   * The images here are deliberately outside the plate-and-halo treatment
+   * below: those rules only match an <img> that is a direct child of a <p> or a
+   * <figure>, and these sit inside the grid and their links. A pair wants a
+   * hairline and nothing more — two glowing panels side by side read as two
+   * separate figures rather than one comparison.
+   */
+  .prose .compare {
+    margin: 1.75rem 0;
+  }
+  .prose .compare-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  /* The anchor is the image's box: line-height 0 keeps the inline baseline's
+     descender gap from showing up as a stripe under each screenshot. */
+  .prose .compare a {
+    display: block;
+    line-height: 0;
+  }
+  .prose .compare img {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-s);
+    transition: border-color var(--dur) var(--ease);
+  }
+  /* The only affordance saying these are clickable, so it is on the border
+     rather than on the image — a hover that dims or scales a screenshot makes
+     the thing you are trying to look at harder to see. */
+  .prose .compare a:hover img {
+    border-color: var(--sec-line);
+  }
+  .prose .compare figcaption {
+    line-height: 1.5;
+  }
+  @media (max-width: 40rem) {
+    .prose .compare-pair {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /*
+   * An inline icon, written into the markdown as a 24x24 SVG with
+   * `class="ti"`:
+   *
+   *   <svg class="ti" width="20" height="20" style="--ti: #5cc8e8"
+   *        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+   *        stroke-width="1.75" aria-hidden="true"><path d="…"/></svg>
+   *
+   * Sized in em so it tracks whatever text it sits in, and coloured through
+   * one custom property so a body can tint an icon per row without a class per
+   * colour. The fallback is the muted ink, which is what an untinted icon
+   * should be: an icon is decoration next to a label, and every one of them
+   * shouting in an accent colour is noise.
+   *
+   * `width`/`height` attributes stay on the tag as well — the audit does not
+   * require them on an <svg>, but a browser with CSS still loading otherwise
+   * lays the icon out at 300x150.
+   *
+   * There is no icon dependency here on purpose. Take the path data from
+   * whatever set you like and paste it in; that is the whole mechanism.
+   */
+  .prose .ti {
+    width: 1.05em;
+    height: 1.05em;
+    vertical-align: -0.18em;
+    color: var(--ti, var(--text-faint));
+    flex: none;
+  }
+
+  /*
+   * An icon-led list, for a set of things each of which has a name, a sentence
+   * and somewhere to go:
+   *
+   *   <ul class="tool-landscape">
+   *     <li>
+   *       <svg class="ti" style="--ti: #5cc8e8" …/>
+   *       <strong>Name</strong> — what it is.<br>
+   *       <span class="tool-links"><svg class="ti" …/> <a href="…">Link</a></span>
+   *     </li>
+   *   </ul>
+   *
+   * The leading icon replaces the bullet, so the list loses its marker and its
+   * indent. The links row is indented to the text's left edge instead of the
+   * icon's, which is what keeps the column of names readable when several rows
+   * each carry a link run.
+   *
+   * Spacing is between items rather than after each one, matching the `li + li`
+   * rule above — a trailing gap on the last row doubles with the margin of
+   * whatever paragraph follows.
+   */
+  .prose ul.tool-landscape {
+    padding-left: 0;
+    list-style: none;
+  }
+  .prose ul.tool-landscape > li + li {
+    margin-top: 1.1rem;
+  }
+  .prose ul.tool-landscape > li > .ti:first-child {
+    width: 1.2em;
+    height: 1.2em;
+    margin-right: 0.4em;
+  }
+  .prose .tool-links {
+    display: inline-block;
+    margin-left: 1.6em;
+    font-size: var(--fs-small);
+  }
+
   /* A wide table scrolls inside its own box, never the page body. */
   .prose table {
     display: block;

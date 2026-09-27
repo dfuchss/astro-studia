@@ -99,6 +99,7 @@ figure:
   src: /assets/img/papers/overview.svg
   alt: A description someone who cannot see it would want.
   plate: true # white plate behind dark-on-transparent line art
+  frame: approach overview # window frame, with this as its titlebar label
 links:
   paper: { acm: https://…, arxiv: https://… }
   replication: { zenodo: https://… }
@@ -137,6 +138,68 @@ where it was built.
 sitemap — it is not built at all.
 
 `tags` accepts both `tags: one` and `tags: [one, two]`.
+
+### What else markdown can express
+
+Because remark passes HTML through untouched, prose can reach for a handful of
+affordances `.prose` styles. All of them are plain markup in the `.md` — there is
+no component to import and no plugin involved.
+
+**A before/after pair.** Two images side by side, each linking to its full-size
+file, stacking on a narrow screen:
+
+```html
+<figure class="compare">
+  <div class="compare-pair">
+    <a href="/assets/img/papers/before.svg"><img src="…" width="640" height="400" alt="…" /></a>
+    <a href="/assets/img/papers/after.svg"><img src="…" width="640" height="400" alt="…" /></a>
+  </div>
+  <figcaption>What changed.</figcaption>
+</figure>
+```
+
+**An icon-led list**, for a set of tools or components — each row an inline icon,
+a name, a description, and a row of links:
+
+```html
+<ul class="tool-landscape">
+  <li>
+    <svg
+      class="ti"
+      style="--ti: #5cc8e8"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      <path d="…" />
+    </svg>
+    <strong>Some tool</strong> — what it does.<br />
+    <span class="tool-links">
+      <svg class="ti" …><path d="…" /></svg> <a href="…">Service</a>
+      &nbsp;&middot;&nbsp;
+      <svg class="ti" …><path d="…" /></svg> <a href="…">GitHub</a>
+    </span>
+  </li>
+</ul>
+```
+
+`.ti` is a 24×24 inline SVG at `1.05em`, drawn in `currentColor` unless you set
+`--ti` to a colour. Inline the path yourself — there is no icon dependency here,
+deliberately, and a colour you pick has to clear the contrast check like any
+other.
+
+**An embedded video**, 16:9 and framed:
+
+```html
+<div class="video"><iframe src="…" title="…" loading="lazy" allowfullscreen></iframe></div>
+```
+
+That one needs its host added to `ALLOWED_THIRD_PARTY` in `src/consts.ts`, or
+`npm run verify` fails — on purpose. An iframe is the one thing in prose that
+sees your readers' IP addresses, so it should take a deliberate edit.
 
 ### Images in a post
 

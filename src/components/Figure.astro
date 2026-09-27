@@ -12,10 +12,21 @@ interface Props {
    * that carries its own background.
    */
   plate?: boolean;
+  /**
+   * Draw the figure inside a fake window — a titlebar with three dots and this
+   * string as its label. For an approach diagram or a screenshot of a running
+   * tool, where the frame says "this is a thing on a screen" and gives a
+   * light-plated image an edge to sit against instead of floating on the page.
+   *
+   * Off by default, and it should stay that way: framing a scan, a photo or a
+   * plot claims something about it that is not true, and a page where every
+   * figure is a window is a page of windows.
+   */
+  frame?: string;
   caption?: string;
 }
 
-const { src, alt, plate = true, caption } = Astro.props;
+const { src, alt, plate = true, frame, caption } = Astro.props;
 
 const { width, height } = intrinsic(src);
 
@@ -33,8 +44,28 @@ const isVector = src.endsWith('.svg');
 const maxWidth = isVector ? 'var(--measure)' : `${width}px`;
 ---
 
-<figure class:list={['figure', plate && 'has-plate']} style={`--fig-max: ${maxWidth}`}>
-  <img src={src} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
+<figure
+  class:list={['figure', plate && 'has-plate', frame && 'framed']}
+  style={`--fig-max: ${maxWidth}`}
+>
+  {
+    /* The wrapper is here whether or not the figure is framed, so that there is
+       one <img> in this file rather than one per branch. Unstyled it is an inert
+       block div and the unframed figure renders exactly as it did before. */
+  }
+  <div class="frame">
+    {
+      frame && (
+        <div class="frame-bar" aria-hidden="true">
+          <span class="dot" />
+          <span class="dot" />
+          <span class="dot" />
+          <span class="frame-label mono">{frame}</span>
+        </div>
+      )
+    }
+    <img src={src} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
+  </div>
   {caption && <figcaption>{caption}</figcaption>}
 </figure>
 
@@ -53,6 +84,47 @@ const maxWidth = isVector ? 'var(--measure)' : `${width}px`;
   .has-plate img {
     background: #fff;
     padding: 0.9rem;
+  }
+
+  /* The frame owns the border, the corners and the clipping, so the image gives
+     all three up — a rounded border inside a rounded border is two frames. */
+  .framed .frame {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    background: var(--bg-2);
+    box-shadow: 0 20px 45px -30px var(--sec-glow);
+  }
+  .framed img {
+    border: 0;
+    border-radius: 0;
+  }
+  .framed.has-plate img {
+    /* A hair more than the unframed plate, because here the white runs to the
+       frame's inside edge and needs the margin to read as a page. */
+    padding: 1rem;
+  }
+  .frame-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.7rem;
+    background: var(--bg-3);
+    border-bottom: 1px solid var(--border);
+  }
+  /* Decoration, and aria-hidden on the bar for that reason: three dots and a
+     window title say nothing a screen reader needs, and the alt text already
+     says what the image is. */
+  .dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--border-strong);
+  }
+  .frame-label {
+    margin-left: 0.5rem;
+    color: var(--text-faint);
+    font-size: 0.6875rem;
   }
   figcaption {
     margin-top: 0.6rem;

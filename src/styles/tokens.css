@@ -106,17 +106,18 @@
   --gutter: clamp(1rem, 4vw, 2.5rem);
 
   /* THE READING COLUMN, which is a different question from --max: how wide a
-     column of prose may get before the eye loses the start of the next line.
+     line of text may get inside the page before the eye loses the start of the
+     next one. Article pages — a paper page, a post — hold their header, figure,
+     prose, link list, cite block and pager to it, so the column has ONE right
+     edge all the way down instead of every block picking its own.
 
-     In `ch`, not rem, because the answer is a number of characters and not a
-     number of pixels — so it follows the font you choose rather than needing
-     to be re-tuned when you change one. Custom properties resolve at the point
-     of use, so this is 72 characters of whatever the element is set in.
-
-     Article pages — a paper page, a post — size their header, figure, prose,
-     link list and cite block to this, so their left and right edges line up
-     all the way down instead of every block picking its own width. */
-  --measure: 72ch;
+     In rem, not ch, precisely because those blocks are not all set in the body
+     font: `ch` is the width of "0" in the element's own font, so the same 72ch
+     is ~738px on a paragraph and ~562px on a `.mono` line — and the edges this
+     exists to line up would not. 46rem is the 72ch of the body font at the body
+     size, so the prose measure is unchanged; it is only now expressed in a unit
+     that means the same thing everywhere it is used. */
+  --measure: 46rem;
 
   --radius-s: 8px;
   --radius-m: 14px;

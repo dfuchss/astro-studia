@@ -143,6 +143,16 @@ const figure = z.object({
    * on this background. Set false when the image has its own background.
    */
   plate: z.boolean().default(true),
+  /**
+   * Wrap it in a window frame, with this string as the titlebar label. For a
+   * diagram of record: the frame gives a white plate an edge to sit against
+   * instead of floating as a bright rectangle on a near-black page.
+   *
+   * Omit it for no frame. An explicit label beats deriving the frame from
+   * `plate` — the two happen to coincide often, which is exactly what makes a
+   * derived version look right until the first figure where it does not.
+   */
+  frame: z.string().optional(),
 });
 
 /**
