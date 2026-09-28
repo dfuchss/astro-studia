@@ -60,7 +60,7 @@ export default defineConfig({
   // including that path. The basePaths() integration above handles every
   // internal link and asset, including the ones in markdown and YAML that no
   // helper function could reach, and `npm run verify` proves it worked.
-  // base: '/aca-theme',
+  // base: '/astro-studia',
 
   // Redirects for URLs you have already published elsewhere and cannot move:
   // redirects: { '/old-path/': '/new-path/' },

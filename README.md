@@ -1,6 +1,6 @@
 <p align="center"><img src="public/favicon.svg" alt="" height="96"></p>
 
-<h1 align="center">aca-theme</h1>
+<h1 align="center">Studia Theme</h1>
 
 <p align="center">
 An academic website template: publications from BibTeX, paper pages, projects,
@@ -19,7 +19,7 @@ Extracted from two production sites, [fuchss.org](https://fuchss.org) and
 ## Getting started in five minutes
 
 ```bash
-npx degit dfuchss/aca-theme my-site   # or "Use this template" on GitHub
+npx degit dfuchss/astro-studia my-site   # or "Use this template" on GitHub
 cd my-site && npm install && npm run dev
 ```
 

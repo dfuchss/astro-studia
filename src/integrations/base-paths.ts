@@ -59,7 +59,7 @@ export default function basePaths(): AstroIntegration {
   let base = '';
 
   return {
-    name: 'aca-theme:base-paths',
+    name: 'astro-studia:base-paths',
     hooks: {
       'astro:config:done': ({ config }) => {
         base = config.base.replace(/\/$/, '');

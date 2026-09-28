@@ -1,6 +1,6 @@
 {
-  "name": "aca-theme",
-  "short_name": "aca-theme",
+  "name": "M. T. Cicero",
+  "short_name": "Cicero",
   "icons": [
     { "src": "/favicon-32.png", "sizes": "32x32", "type": "image/png" },
     { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },

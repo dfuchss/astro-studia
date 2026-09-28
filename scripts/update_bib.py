@@ -44,7 +44,7 @@ DEFAULT_BIB = os.path.join(
 # Crossref asks for a contact address so they can reach you if a script
 # misbehaves; requests that supply one are also routed to a faster pool.
 MAILTO = os.environ.get("CROSSREF_MAILTO", "you@example.com")
-USER_AGENT = f"aca-theme-bib-check/1.0 (mailto:{MAILTO})"
+USER_AGENT = f"astro-studia-bib-check/1.0 (mailto:{MAILTO})"
 
 # Purely factual fields, safe to auto-write (plain values, no LaTeX needed).
 SAFE_FIELDS = ["pages", "volume", "number", "year", "month", "isbn", "issn"]

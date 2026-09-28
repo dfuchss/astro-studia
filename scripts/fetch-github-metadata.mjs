@@ -24,7 +24,7 @@ const OUT = join(ROOT, 'src/data/github-metadata.json');
 const token = process.env.GITHUB_TOKEN;
 const headers = {
   accept: 'application/vnd.github+json',
-  'user-agent': 'aca-theme/fetch-github-metadata',
+  'user-agent': 'astro-studia/fetch-github-metadata',
   ...(token ? { authorization: `Bearer ${token}` } : {}),
 };
 

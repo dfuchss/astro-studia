@@ -72,11 +72,12 @@ const year = new Date().getFullYear();
 
     {
       /* The {' '} is load-bearing: Astro strips the newline between a word and
-        a following <a>, so without it this renders "Astro andaca-theme".
+        a following <a>, so without it this renders "Astro andStudia Theme".
         scripts/audit-site.mjs fails the build on exactly this. */
       FOOTER.credit && (
         <p class="mono built">
-          Built with <a href="https://astro.build/">Astro</a> and <a href={SITE.repo}>aca-theme</a>
+          Built with <a href="https://astro.build/">Astro</a> and{' '}
+          <a href={SITE.repo}>Studia Theme</a>
         </p>
       )
     }

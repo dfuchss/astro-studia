@@ -1,12 +1,12 @@
 {
-  "name": "aca-theme",
+  "name": "astro-studia",
   "version": "0.1.0",
   "description": "An academic Astro starter: publications from BibTeX, paper pages, projects, blog, CV, people. No UI framework, no CSS framework, dark only.",
   "license": "MIT",
   "author": "Dominik Fuchß",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dfuchss/aca-theme"
+    "url": "https://github.com/dfuchss/astro-studia"
   },
   "type": "module",
   "private": true,

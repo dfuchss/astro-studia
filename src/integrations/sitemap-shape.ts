@@ -43,7 +43,7 @@ export default function sitemapShape(): AstroIntegration {
   let base = '/';
 
   return {
-    name: 'aca-theme:sitemap-shape',
+    name: 'astro-studia:sitemap-shape',
     hooks: {
       'astro:config:done': ({ config }) => {
         site = config.site ?? '';

@@ -111,7 +111,7 @@ function parseArgs(argv) {
 }
 
 const HELP = `
-Prune aca-theme to a feature set. See scripts/features.mjs for the manifest.
+Prune Studia Theme to a feature set. See scripts/features.mjs for the manifest.
 
   node scripts/init.mjs                      pick interactively
   node scripts/init.mjs --preset <${PRESETS.join('|')}>

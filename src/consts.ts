@@ -29,7 +29,7 @@ export const SITE = {
    */
   url: 'https://example.com',
 
-  title: 'Marcus Tullius Cicero — aca-theme demo',
+  title: 'Marcus Tullius Cicero — Studia Theme demo',
 
   /**
    * What the nav shows. A <title> and a brand mark have different length
@@ -82,7 +82,7 @@ export const SITE = {
   } as Tagline,
 
   description:
-    'Demo content for aca-theme, an academic Astro starter. Replace src/consts.ts, src/data/ and src/content/ with your own.',
+    'Demo content for Studia Theme, an academic Astro starter. Replace src/consts.ts, src/data/ and src/content/ with your own.',
 
   /** Used for <html lang>. */
   lang: 'en',
@@ -96,7 +96,7 @@ export const SITE = {
 
   email: 'cicero@example.org',
 
-  repo: 'https://github.com/dfuchss/aca-theme',
+  repo: 'https://github.com/dfuchss/astro-studia',
 
   /**
    * The card image a link to this site renders with, 1200x630. Set it to null
@@ -129,7 +129,7 @@ export const SITE = {
    * when it is null.
    */
   demoNotice:
-    "Demo content for the aca-theme starter — the works are Cicero's, the website is not.",
+    "Demo content for the Studia Theme starter — the works are Cicero's, the website is not.",
 } as const;
 
 /**
@@ -202,7 +202,7 @@ export const FOOTER_LINKS: { label: string; href: string }[] = [
  * is the only way an address is allowed into a page: the audit greps the
  * built output for anything address-shaped and fails on a plain mailto.
  *
- * `credit` is the "Built with Astro and aca-theme" line. The licence is MIT
+ * `credit` is the "Built with Astro and Studia Theme" line. The licence is MIT
  * and turning this off is expected, not a breach — a credit that cannot be
  * switched off is one people delete from the component on day one.
  *
