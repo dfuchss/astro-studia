@@ -3,7 +3,7 @@
  * uses. Everything else is a scoped <style> block in the component that needs
  * it — there is no utility framework here and no class soup in the markup.
  *
- * The primitives, all documented in docs/theming.md:
+ * The primitives, all documented in docs/Theming.md:
  *   .wrap .section .card .chip .kicker .mono .jump .scroll-x
  *   .sr-only .skip-link .reveal
  */

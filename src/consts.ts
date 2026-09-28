@@ -170,7 +170,7 @@ export type Section =
  *
  * The demo ships every area the template knows how to render, which is more
  * than any real site wants. Your first edit is almost certainly deleting most
- * of these rows — see `docs/removing-features.md` for what else goes with each.
+ * of these rows — see `docs/Removing-Features.md` for what else goes with each.
  */
 export const NAV: { label: string; href: string; section: Section }[] = [
   { label: 'about', href: '/', section: 'home' },

@@ -35,7 +35,7 @@ with `--green-line: rgb(74 222 128 / 38%)` sitting next to `#4ade80`.
 **Keep each base at 3:1 against `--bg`, and the `--text*` values at 4.5:1.**
 `npm run verify` checks this and will tell you which token and by how much. The
 check derives its own list, so a sixth family is covered without your adding it
-anywhere.
+anywhere — see [Verification](Verification.md).
 
 ## Sections
 
@@ -113,7 +113,7 @@ Documented so you use them rather than reinventing them. All in `base.css`.
 
 `Nav.astro` renders a wordmark with an optional `SITE.brandPrompt` prefix, and a
 mark beside it when `SITE.brandLogo` is set. That is one line in `src/consts.ts`
-and no edit here:
+and no edit here — see [Configuration](Configuration.md):
 
 ```ts
 brandLogo: { src: '/assets/img/brand-mark.svg' },       // beside the wordmark

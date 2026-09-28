@@ -38,7 +38,7 @@
  * `PRESETS`.
  *
  *   scripts/init.mjs      prunes what you do not want
- *   scripts/gen-docs.mjs  regenerates the table in docs/removing-features.md
+ *   scripts/gen-docs.mjs  regenerates the table in docs/Removing-Features.md
  *
  * If you add a feature to this template, add it here too and both follow.
  *

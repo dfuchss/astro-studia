@@ -3,7 +3,9 @@
 Seven collections, defined in `src/content.config.ts`. Every cross-reference
 goes through Astro's `reference()`, which is the point of the whole file: a bad
 slug, an unknown venue or a BibTeX key pointing at a page that does not exist
-**stops the build and names the offender**.
+**stops the build and names the offender**. The single values and short lists
+that are not content live in `src/consts.ts` instead — see
+[Configuration](Configuration.md).
 
 What a failure looks like:
 
@@ -311,8 +313,8 @@ Drop `class="no-plate"` when the image _is_ dark-on-transparent line art.
 
 Nothing here assumes one author. List every member's surname in
 `SELF.surnames` so all of their names are emphasised in author lists, fill in
-`people.yml`, and give the entry page the project shape — `npm run init
---preset project`, or the `▼ PRESET:project ▼` regions of
+`people.yml`, and give the entry page the project shape —
+`npm run init -- --preset project`, or the `▼ PRESET:project ▼` regions of
 `src/pages/index.astro` if you have already run init.
 
 ## Renaming a route
@@ -380,7 +382,7 @@ Neither is repeated here, because a second copy is a copy that can disagree
 with `/pgp-key/` and `/cv/`.
 
 It is its own file rather than a block in `cv.yml` because the contact block
-outlives the CV: `npm run init --preset project` deletes `src/data/cv.yml`, and
+outlives the CV: `npm run init -- --preset project` deletes `src/data/cv.yml`, and
 the entry page it produces still has a contact section.
 
 ## Your portrait — `src/assets/portrait.*`

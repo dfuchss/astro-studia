@@ -1,0 +1,169 @@
+# Publish docs/ to this repository's GitHub wiki.
+#
+# docs/ is written WIKI-NATIVE: flat, one file per page, and the filename is the
+# page name and the title (Removing-Features.md -> "Removing Features"). So this
+# workflow is a copy, not a build — the only transformation is the link rewrite
+# below.
+#
+# ── Two things that will bite you on the first run ─────────────────────────
+#
+# 1. THE WIKI REPOSITORY DOES NOT EXIST until somebody creates the first page in
+#    the web UI. There is no API and no git command that brings it into being;
+#    `git clone <repo>.wiki.git` against a repository whose wiki has never been
+#    opened fails with "repository not found". Go to the Wiki tab, create a page
+#    with any content, save it. This workflow replaces everything anyway.
+#
+# 2. THE DEFAULT GITHUB_TOKEN CANNOT PUSH TO A WIKI. It has no permission that
+#    covers <repo>.wiki.git, and neither does a fine-grained personal access
+#    token: GitHub's fine-grained permission list has no wiki entry at all, so
+#    there is nothing to grant — a fine-grained token with Contents: Read and
+#    write still cannot push here.
+#
+#    So: a CLASSIC personal access token.
+#      Settings -> Developer settings -> Personal access tokens -> Tokens (classic)
+#      Scope:  `repo`          for a private repository (or any org repository)
+#              `public_repo`   is enough for a public one
+#    Store it as the repository secret PAT.
+#
+#    That is the SAME secret update-citations.yml and update-github-metadata.yml
+#    read. One token covers all three: those two only need to write repository
+#    contents, which `repo` includes. So the wiki is the binding constraint on
+#    which KIND of token to create, and it wants the classic one.
+#
+#    Both failures produce almost the same checkout error, which is why the
+#    guard step below distinguishes them before actions/checkout runs.
+#
+# See docs/Deploying.md, "Publishing the docs to the wiki", for the four steps.
+name: Publish the wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - .github/workflows/docs.yml
+  workflow_dispatch:
+
+# Only the source checkout needs this. The wiki push uses PAT.
+permissions:
+  contents: read
+
+# Never cancel a run in progress: the wiki is emptied before it is refilled, so
+# a cancelled run is a wiki with nothing in it.
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # PINNED TO THE SOURCE REPOSITORY. In a fork, or in a site built from this
+    # template, this job is skipped and does nothing at all — rather than trying
+    # to push to somebody else's wiki, or failing on a PAT secret its owner never
+    # set and had no reason to.
+    #
+    # `github.repository`, not `github.event.repository.fork` and not
+    # `github.repository_owner`: a repository made with "Use this template" or
+    # `degit` is NOT a fork, so a fork check would let it through — and that is
+    # the case this guard exists for. The owner check would let every other
+    # repository of this account through, which is not the same promise.
+    #
+    # ADOPTING THIS TEMPLATE AND WANTING YOUR OWN WIKI? Change the line below to
+    # your own `owner/repo`, then follow the four steps in docs/Deploying.md,
+    # "Publishing the docs to the wiki". Nothing else needs an edit.
+    if: github.repository == 'dfuchss/astro-studia'
+    runs-on: ubuntu-latest
+    steps:
+      # Checked through env rather than `if: ${{ !secrets.PAT }}`: the
+      # secrets context is not available in a step-level if, so that form would
+      # never fire and the guard would not exist. Same reason as the two
+      # data-refresh workflows.
+      - name: Require PAT
+        env:
+          PAT: ${{ secrets.PAT }}
+        run: |
+          if [ -z "$PAT" ]; then
+            echo "::error::secrets.PAT is not set. Create a CLASSIC personal access token"
+            echo "::error::with the \`repo\` scope (\`public_repo\` suffices for a public repository)"
+            echo "::error::and add it as the repository secret PAT. See docs/Deploying.md."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      # Gotcha 1, told apart from gotcha 2. Without this step a wiki that has
+      # never been opened and a PAT that lacks the scope both surface as
+      # the same "repository not found" from actions/checkout, and the two want
+      # completely different fixes.
+      #
+      # On a PUBLIC repository this probe (and the checkout below) can also
+      # succeed with a token that has no write access, because anonymous read is
+      # allowed — so a fine-grained token gets this far and fails at the commit
+      # step instead, with git's own "Write access to repository not granted".
+      # If you see that, gotcha 2 is still the answer.
+      - name: Require an initialised wiki
+        env:
+          PAT: ${{ secrets.PAT }}
+        run: |
+          if ! git ls-remote "https://x-access-token:${PAT}@github.com/${{ github.repository }}.wiki.git" >/dev/null 2>&1; then
+            echo "::error::Cannot reach ${{ github.repository }}.wiki.git. Two possible causes:"
+            echo "::error::(1) the wiki has never been initialised — open the repository's Wiki tab"
+            echo "::error::    and create one page by hand. This workflow overwrites it afterwards."
+            echo "::error::(2) PAT is not a classic token with the \`repo\` scope. A fine-grained"
+            echo "::error::    token cannot push to a wiki: there is no wiki permission to grant."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}.wiki
+          token: ${{ secrets.PAT }}
+          path: wiki
+
+      # Replace rather than merge. docs/ is the source of truth, so a page
+      # deleted there has to disappear here, and a page somebody added in the
+      # web UI is not something to preserve — _Footer.md says so on every page.
+      # .git is kept, obviously: it is what the push goes through.
+      - name: Replace the wiki with docs/
+        run: |
+          find wiki -mindepth 1 -maxdepth 1 -not -name '.git' -exec rm -rf {} +
+          cp docs/*.md wiki/
+          ls -1 wiki/
+
+      # THE ONE TRANSFORMATION. Inside docs/ a link is written the way the
+      # repository needs it — [Deploying](Deploying.md) — because docs/ on
+      # GitHub is where most people read these pages, and there a bare
+      # `](Deploying)` resolves to nothing. In the wiki it is the other way
+      # round: `](Deploying.md)` opens a raw file view instead of the page. So
+      # the .md comes off here, and neither reader has to be broken for the
+      # other.
+      #
+      # Deliberately narrow, so it cannot touch anything else:
+      #   - the basename must start with an uppercase letter, which every page
+      #     here does and no repository file linked from prose does;
+      #   - it must contain no slash, so a link that reaches out of the page set
+      #     — one starting ../ or naming a directory — is left alone;
+      #   - an #anchor after the extension is preserved.
+      #
+      # Two expressions rather than one with an optional `(#…)?` group, and a
+      # redirect rather than `sed -i`, so this is the same command everywhere. BSD
+      # sed rejects a backreference to a group that did not participate, and its
+      # `-i` takes a mandatory suffix argument — so the obvious one-liner runs
+      # here and cannot be reproduced on a macOS laptop, which is exactly the
+      # shape of thing nobody checks before pushing.
+      - name: Rewrite intra-doc links for the wiki
+        run: |
+          for f in wiki/*.md; do
+            sed -E \
+              -e 's/\]\(([A-Z][A-Za-z0-9_-]*)\.md(#[^)]*)\)/](\1\2)/g' \
+              -e 's/\]\(([A-Z][A-Za-z0-9_-]*)\.md\)/](\1)/g' \
+              "$f" > "$f.wiki" && mv "$f.wiki" "$f"
+          done
+          echo '--- links after the rewrite ---'
+          grep -ohE '\]\([^)]+\)' wiki/*.md | sort -u
+
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          repository: wiki
+          commit_message: 'docs: sync the wiki from docs/ (${{ github.sha }})'
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com

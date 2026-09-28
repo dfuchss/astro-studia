@@ -1,9 +1,14 @@
 # Deploying
 
 `.github/workflows/deploy.yml` runs on every push and pull request to `main`:
-install, `prettier --check`, `astro check`, `build`, `verify`, then publish
-`dist/` to the `gh-pages` branch — the last step only on a non-PR push to
+install, `prettier --check`, `astro check`, `docs:check`, `build`, `verify`, then
+publish `dist/` to the `gh-pages` branch — the last step only on a non-PR push to
 `main`.
+
+A second workflow, `docs.yml`, copies `docs/` into the repository's wiki. It
+needs one secret and one thing done by hand first — see
+[Publishing the docs to the wiki](#publishing-the-docs-to-the-wiki) at the
+bottom.
 
 Verify runs **before** the publish. That ordering is the entire point: a
 broken link or a changed PDF fails the workflow instead of reaching the site.
@@ -11,8 +16,9 @@ broken link or a changed PDF fails the workflow instead of reaching the site.
 ## GitHub Pages
 
 1. Settings → Pages → deploy from the `gh-pages` branch.
-2. Set `SITE.url` in `src/consts.ts`. `astro.config.ts` and `robots.txt.ts`
-   both read it, so that is the only place it is written down.
+2. Set `SITE.url` in `src/consts.ts`. `astro.config.ts` and
+   `src/pages/robots.txt.ts` both read it, so that is the only place it is
+   written down.
 3. For a custom domain, add `public/CNAME` containing the bare hostname.
 
 `public/.nojekyll` is already there and must stay. Without it Pages runs Jekyll
@@ -224,3 +230,105 @@ as they are until next time.
 
 Neither is needed to build. Both output files are committed, which is what lets
 a fresh clone build with no network, no token and nothing to rate-limit.
+
+## Publishing the docs to the wiki
+
+`docs/` in this repository is the source of these pages, and
+`.github/workflows/docs.yml` copies it into the repository's GitHub wiki on every
+push to `main` that touches `docs/**` — plus on demand from the Actions tab.
+
+Four steps, once:
+
+1. **Initialise the wiki.** Open the repository's **Wiki** tab and create one page
+   by hand, with any content at all. The `<repo>.wiki.git` repository does not
+   exist until somebody does this, and nothing can create it from the API — so
+   before it exists the workflow's checkout fails with "repository not found".
+   Whatever you write is overwritten on the first run.
+
+2. **Create a CLASSIC personal access token.** Settings → Developer settings →
+   Personal access tokens → **Tokens (classic)** → Generate new token (classic).
+   Tick **`repo`** for a private or organisation repository; **`public_repo`** is
+   enough for a public one.
+
+   It has to be a classic token. GitHub's fine-grained permission list has **no
+   wiki entry** — go through "Permissions required for fine-grained personal
+   access tokens" and there is nothing to grant — so a fine-grained token that
+   looks correctly scoped, `Contents: Read and write` and all, still cannot push
+   to a wiki. Neither can the built-in `GITHUB_TOKEN`, for the same reason.
+
+3. **Add it as the repository secret `PAT`.** Settings → Secrets and variables →
+   Actions → New repository secret, named exactly `PAT` — the same secret the two
+   data-refresh workflows above read. One token covers all three: those two need
+   no more than write access to the repository's contents, which `repo` includes.
+   The wiki is therefore what decides _which kind_ of token to create.
+
+4. **Push to `main`.** Or run "Publish the wiki" from the Actions tab.
+
+The workflow checks for steps 1 and 3 before it does anything, and says which one
+is missing. It has to, because they otherwise produce the same "repository not
+found" from `actions/checkout` while wanting opposite fixes: one is "go and make a
+wiki page", the other is "the token is the wrong kind".
+
+One case those guards cannot catch, on a **public** repository: anonymous read of
+the wiki is allowed, so a token with no write access clears both of them and fails
+at the commit step with git's own "Write access to repository not granted". That is
+still step 2 — a fine-grained token, most likely.
+
+### What it does, and the one transformation
+
+It **replaces** the wiki wholesale: everything but `.git` is removed, then
+`docs/*.md` is copied in. `docs/` is the source of truth, so a page deleted there
+has to disappear from the wiki, and a page somebody typed into the web UI is not
+something to preserve. `_Footer.md` says so on every page.
+
+The filenames are already wiki page names — flat, `Title-Case-With-Hyphens.md`,
+which GitHub renders as "Title Case With Hyphens" — so there is nothing to
+generate and no index to maintain. `_Sidebar.md` and `_Footer.md` are the wiki's
+own conventions for the navigation column and the footer.
+
+One `sed` reconciles the two readers. Inside `docs/` a link is written
+`[Deploying](Deploying.md)`, because browsing `docs/` on GitHub is where most
+people will read these pages and there a bare `](Deploying)` resolves to nothing.
+On the wiki it is the other way round: `](Deploying.md)` opens a raw file view
+rather than the page. So the `.md` comes off on the way in, and neither reader has
+to be broken for the other.
+
+The rewrite is deliberately narrow — the basename must start with an uppercase
+letter and contain no slash — so a link that reaches outside the page set, such as
+one to `../README.md`, is left exactly as written. An `#anchor` survives.
+
+### If you adopted this template
+
+**The workflow is pinned to the upstream repository and does nothing in yours.**
+Its job carries
+
+```yaml
+if: github.repository == 'dfuchss/astro-studia'
+```
+
+so in a fork, or in a repository made with "Use this template" or `degit`, the job
+is skipped cleanly: it never tries to push to somebody else's wiki and never fails
+on a `PAT` secret you had no reason to set. `github.repository` rather than a fork
+check, because an adopted copy of a template is not a fork and a fork check would
+let it straight through.
+
+A skipped job with no explanation reads like a broken one, so: that is the whole
+reason. **To publish your own wiki**, change that one line to your own
+`owner/repo` and follow the four steps above. Nothing else in the file needs an
+edit.
+
+`docs/` and the workflow are both yours now, and `npm run init` does not offer to
+remove either. Six of these pages document code you now own and still have to
+operate — the URL policy, the contrast floor, the contact schema, the checks your
+CI runs — and the workflow publishes whatever is in `docs/`, so replacing the prose
+leaves you a working documentation pipeline rather than one to rebuild. Inert with
+a comment saying how to switch it on is a better default than gone: a file you did
+not ask for costs one `if` line to read, whereas a pipeline you have to rebuild
+from scratch costs an afternoon and is the thing people therefore never do.
+
+The exception is [Removing features](Removing-Features.md). Its table is generated
+from `scripts/features.mjs` by `scripts/gen-docs.mjs`, and `npm run init` offers to
+delete both of those when it finishes — after which that table is a hand-maintained
+file with a "do not edit by hand" marker on it. Either keep the generator or delete
+the page; keeping the page without the generator is the one combination that is
+simply wrong.

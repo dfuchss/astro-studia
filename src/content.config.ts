@@ -15,7 +15,7 @@ import { PAPERS } from './lib/paths.ts';
  * you find them when a reader tells you.
  *
  * To remove a collection, delete its block AND its name from the `collections`
- * export at the bottom. See docs/removing-features.md — some have a required
+ * export at the bottom. See docs/Removing-Features.md — some have a required
  * order, because `publications` needs `venues` and `papers` needs `authors`.
  */
 

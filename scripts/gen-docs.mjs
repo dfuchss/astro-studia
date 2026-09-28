@@ -1,5 +1,5 @@
 /**
- * Regenerate the removal table in docs/removing-features.md from the manifest.
+ * Regenerate the removal table in docs/Removing-Features.md from the manifest.
  *
  *   npm run docs         rewrite the table
  *   npm run docs:check   fail if the table is out of date (prints a diff)
@@ -28,8 +28,8 @@ import { dirname, join } from 'node:path';
 import { FEATURES } from './features.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DOC = join(ROOT, 'docs/removing-features.md');
-const DOC_REL = 'docs/removing-features.md';
+const DOC = join(ROOT, 'docs/Removing-Features.md');
+const DOC_REL = 'docs/Removing-Features.md';
 
 const BEGIN = '<!-- BEGIN GENERATED: features -->';
 const END = '<!-- END GENERATED: features -->';

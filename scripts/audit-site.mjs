@@ -103,7 +103,7 @@ const real = pages.filter((p) => !isStub(p));
 /*
  * The site's own address, with the base, as the string every absolute URL it
  * publishes about itself has to start with. SITE.url carries the base when
- * there is one (docs/deploying.md), so this is one prefix, not two.
+ * there is one (docs/Deploying.md), so this is one prefix, not two.
  */
 const SITE_ROOT = siteUrl.replace(/\/$/, '');
 

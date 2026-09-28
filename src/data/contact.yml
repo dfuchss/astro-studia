@@ -4,7 +4,7 @@
 #
 # ── Why this is its own file and not part of cv.yml ────────────────────────
 #
-# Because the contact block outlives the CV. `npm run init --preset project`
+# Because the contact block outlives the CV. `npm run init -- --preset project`
 # removes the `cv` feature, and that deletes src/data/cv.yml — while the home
 # page it produces still has a contact section. Putting these rows in cv.yml
 # would make "how do people reach us" a thing only a site with a CV may have,

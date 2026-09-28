@@ -4,8 +4,10 @@
 #
 # It needs a PAT rather than the built-in GITHUB_TOKEN: a push made with
 # GITHUB_TOKEN does not trigger other workflows, so the commit would land and
-# the site would never rebuild. Create a fine-grained token with contents:write
-# on this repository and store it as the PAT secret.
+# the site would never rebuild. This job needs no more than write access to the
+# repository's contents — but the PAT secret is shared with docs.yml, which
+# pushes to the wiki and so requires a CLASSIC token with the `repo` scope. Make
+# it that one and all three workflows are covered; see docs/Deploying.md.
 name: Update GitHub metadata
 
 on:

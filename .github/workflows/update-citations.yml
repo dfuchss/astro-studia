@@ -4,10 +4,12 @@
 #
 # Two things to know before enabling it. It needs a PAT, for the same reason as
 # update-github-metadata.yml: a push made with GITHUB_TOKEN triggers no other
-# workflow, so the site would never rebuild. And Scholar rate-limits hard and
-# has no API, so a run that cannot finish is routine rather than a failure —
-# the timeout below is treated as success and the counts simply stay as they
-# are until the next run.
+# workflow, so the site would never rebuild. (That secret is shared with
+# docs.yml, which pushes to the wiki and so needs a CLASSIC token with the `repo`
+# scope — see docs/Deploying.md.) And Scholar rate-limits hard and has no API, so
+# a run that cannot finish is routine rather than a failure — the timeout below
+# is treated as success and the counts simply stay as they are until the next
+# run.
 #
 # Set scholar_userid in src/data/socials.yml first, or the script exits saying so.
 name: Update Scholar citations

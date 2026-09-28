@@ -110,7 +110,7 @@ const MASKED = /<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi;
  * it is matched against the WHOLE tag rather than the attribute alone. An
  * earlier version tested the attribute match, which of course never contains
  * the sibling `property=` — so og:image was silently skipped, which is exactly
- * the case docs/deploying.md tells you to add.
+ * the case docs/Deploying.md tells you to add.
  */
 const URL_META = /<meta\b[^>]*\bcontent="(\/[^"]*)"[^>]*>/g;
 const IS_URL_META = /property="og:(url|image)"|name="twitter:image"/;

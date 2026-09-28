@@ -6,7 +6,9 @@ the test suite, and every code path this template contains is exercised by
 `npm run build && npm run verify`.
 
 The price is that your first half hour is deletion. So deletion is uniform, and
-the build catches anything you miss.
+the build catches anything you miss. `npm run init` performs the mechanical part
+of the recipe below for you — see [Quickstart](Quickstart.md) — and this page is
+what it is doing, plus the parts nobody can do mechanically.
 
 ## The recipe
 

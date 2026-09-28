@@ -35,6 +35,16 @@ jobs:
       - name: Type-check
         run: npx astro check
 
+      # The feature table in docs/Removing-Features.md is generated from
+      # scripts/features.mjs, and a generated file nobody checks is a file that
+      # is wrong the first time the manifest changes. Guarded on the generator
+      # still being here, because `npm run init` offers to delete it along with
+      # the rest of the template scaffolding — and a CI step demanding a script
+      # the documented setup path removes would be a trap.
+      - name: Check the generated docs are in sync
+        if: hashFiles('scripts/gen-docs.mjs') != ''
+        run: npm run docs:check
+
       - name: Build
         run: npm run build
 

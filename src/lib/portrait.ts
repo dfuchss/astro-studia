@@ -9,7 +9,7 @@ import type { ImageMetadata } from 'astro';
  * `portrait.jpg`, `portrait.png`, `portrait.webp`, `portrait.avif` and
  * `portrait.svg` all work, and nothing else has to change — which is the whole
  * point of this file. Both consumers, `src/components/hero/PersonHero.astro`
- * and `src/pages/cv.astro`, read the export below, so the extension is decided
+ * and `src/pages/cv/index.astro`, read the export below, so the extension is decided
  * once, by the filename on disk, rather than twice, in two `import` lines.
  *
  * ── Why a glob rather than a path in src/consts.ts ─────────────────────────
@@ -43,7 +43,7 @@ if (matches.length === 0) {
   throw new Error(
     'portrait: no src/assets/portrait.<ext> found — add one ' +
       '(portrait.jpg, .png, .webp, .avif or .svg). It is rendered by ' +
-      'src/components/hero/PersonHero.astro and src/pages/cv.astro.',
+      'src/components/hero/PersonHero.astro and src/pages/cv/index.astro.',
   );
 }
 if (matches.length > 1) {
