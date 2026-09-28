@@ -137,6 +137,30 @@ const hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url || cites > 0);
     }
 
     {
+      /* The work's other outings, in the paper page's own words and with its
+         serial separator: "A, B, and C". ardoco.de shows these on its entry
+         page too, and a row that hid them made a paper presented three times
+         look like one presented once. */
+      paper.data.additionalPresentations.length > 0 && (
+        <p class="also">
+          Also presented at{' '}
+          {paper.data.additionalPresentations.map((p, i) => (
+            <>
+              {i > 0 && (
+                <span aria-hidden="true">
+                  {i === paper.data.additionalPresentations.length - 1 ? ', and ' : ', '}
+                </span>
+              )}
+              <a href={p.url} rel="noopener" title={p.shortName ? p.name : undefined}>
+                {p.shortName ?? p.name}
+              </a>
+            </>
+          ))}
+        </p>
+      )
+    }
+
+    {
       hasLinks && (
         <div class="links">
           {d?.pdfUrl && (
@@ -211,6 +235,13 @@ const hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url || cites > 0);
   }
   .venue-line em {
     color: var(--text-muted);
+  }
+  /* Fainter than the venue line, as on the paper page: a second outing is
+     context for the row, not the row's own fact. */
+  .also {
+    margin: 0 0 0.3rem;
+    font-size: var(--fs-small);
+    color: var(--text-faint);
   }
   .links {
     margin: 0.5rem 0 0;

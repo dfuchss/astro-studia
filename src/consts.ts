@@ -18,6 +18,10 @@ import {
  * instead, and prose lives in `src/content/`. Page copy stays on its page.
  */
 
+/** A line of text, or one with exactly one link in it. See SITE.tagline. */
+export type Tagline =
+  string | { before: string; link: { label: string; href: string }; after?: string };
+
 export const SITE = {
   /**
    * No trailing slash. `astro.config.ts` and `src/pages/robots.txt.ts` both
@@ -64,8 +68,18 @@ export const SITE = {
     replacesWordmark?: boolean;
   } | null,
 
-  /** One line under the title on the home page and in the feed. Optional. */
-  tagline: 'Bringing Greek philosophy into Latin.',
+  /**
+   * One line under the name in the hero: the role, for a person; the pitch,
+   * for a project. A plain string, or a string with ONE link in it — the
+   * shape below, which fuchss.org needs for "Researcher at the [KIT]" and
+   * which is not HTML: three typed fields that the Tagline component joins
+   * without adding a space, so the punctuation is exactly what you wrote.
+   */
+  tagline: {
+    before: 'Bringing ',
+    link: { label: 'Greek philosophy', href: 'https://plato.stanford.edu/entries/stoicism/' },
+    after: ' into Latin.',
+  } as Tagline,
 
   description:
     'Demo content for aca-theme, an academic Astro starter. Replace src/consts.ts, src/data/ and src/content/ with your own.',
@@ -175,6 +189,82 @@ export const FOOTER_LINKS: { label: string; href: string }[] = [
   { label: 'PGP', href: PGP_KEY },
   { label: 'Imprint', href: IMPRINT },
 ];
+
+/**
+ * The rest of the footer. Every part of it that differed between the two
+ * sites this template came from is a field here; the layout is not.
+ *
+ * `affiliation` is the line after the copyright — "developed at the MCSE
+ * group, KASTEL, KIT" on ardoco.de — as plain strings and links in order,
+ * joined without spaces, so what you write is what renders. Empty for none.
+ *
+ * `email` puts SITE.email in the footer through components/Email.astro, which
+ * is the only way an address is allowed into a page: the audit greps the
+ * built output for anything address-shaped and fails on a plain mailto.
+ *
+ * `credit` is the "Built with Astro and aca-theme" line. The licence is MIT
+ * and turning this off is expected, not a breach — a credit that cannot be
+ * switched off is one people delete from the component on day one.
+ *
+ * Markup none of these can express goes in Base.astro's `footer` slot.
+ */
+export const FOOTER: {
+  affiliation: (string | { label: string; href: string })[];
+  email: boolean;
+  credit: boolean;
+} = {
+  affiliation: [
+    'Written at ',
+    { label: 'Tusculum', href: 'https://en.wikipedia.org/wiki/Tusculum' },
+    ' and ',
+    { label: 'Arpinum', href: 'https://en.wikipedia.org/wiki/Arpino' },
+  ],
+  email: true,
+  credit: true,
+};
+
+/**
+ * How many author names a publication entry shows before "and N more
+ * authors". `null` lists everyone — what a group site wants, where the point
+ * of the list is the people on it and eliding nine of sixteen entries would
+ * hide most of the group. (At exactly limit + 1 names all are shown anyway;
+ * see truncateAuthors() in src/lib/authors.ts.)
+ */
+export const AUTHOR_LIMIT: number | null = 4;
+
+/**
+ * The words under the numbers in the hero. The numbers are counted from the
+ * collections and cannot be edited; the words can. fuchss.org's fourth stat
+ * reads "replication packages", and that is not a rename this component
+ * should have to be edited for. A key with no stat behind it is simply unread.
+ */
+export const STAT_LABELS = {
+  publications: 'publications',
+  citations: 'citations',
+  hIndex: 'h-index',
+  projects: 'projects',
+  people: 'collaborators',
+};
+
+/* ▼ FEATURE:people ▼ */
+/**
+ * The chips on a person's card at /people/. `homepage` is the label for their
+ * `url` — ardoco.de says "Website at KIT", because everyone's is. `orcid`
+ * shows either the word or the identifier itself ('id'), which is what a
+ * registry-minded reader wants to see and copy.
+ */
+export const PEOPLE_CHIPS: {
+  homepage: string;
+  orcid: 'label' | 'id';
+  github: string;
+  email: string;
+} = {
+  homepage: 'Website',
+  orcid: 'id',
+  github: 'GitHub',
+  email: 'Email',
+};
+/* ▲ FEATURE:people ▲ */
 
 /**
  * Origins `scripts/audit-site.mjs` will tolerate in the built HTML, beyond

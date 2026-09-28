@@ -2,6 +2,7 @@
 import { intrinsic } from '../../lib/images.ts';
 import Email from '../Email.astro';
 import type { Member } from '../../lib/people.ts';
+import { PEOPLE_CHIPS } from '../../consts.ts';
 
 interface Props {
   member: Member;
@@ -14,15 +15,18 @@ const d = entry.data;
 const { width, height } = intrinsic(d.image);
 
 // Each of these is optional in people.yml, so a person with none of them
-// renders as a name and a portrait and nothing looks broken.
+// renders as a name and a portrait and nothing looks broken. The words on
+// the chips are PEOPLE_CHIPS in src/consts.ts: ardoco.de's homepage chip says
+// "Website at KIT", and its ORCID chip shows the identifier itself.
 const profiles = [
-  d.url && { label: 'Homepage', href: d.url },
+  d.url && { label: PEOPLE_CHIPS.homepage, href: d.url },
   author.data.orcid && {
-    label: 'ORCID',
+    label: PEOPLE_CHIPS.orcid === 'id' ? author.data.orcid : 'ORCID',
     href: `https://orcid.org/${author.data.orcid}`,
+    title: `ORCID ${author.data.orcid}`,
   },
-  d.github && { label: 'GitHub', href: `https://github.com/${d.github}` },
-].filter(Boolean) as { label: string; href: string }[];
+  d.github && { label: PEOPLE_CHIPS.github, href: `https://github.com/${d.github}` },
+].filter(Boolean) as { label: string; href: string; title?: string }[];
 ---
 
 <li class="person reveal" id={entry.id}>
@@ -43,12 +47,12 @@ const profiles = [
     <div class="chips">
       {
         profiles.map((p) => (
-          <a class="chip" href={p.href} rel="noopener">
+          <a class="chip" href={p.href} rel="noopener" title={p.title}>
             {p.label}
           </a>
         ))
       }
-      {d.email && <Email address={d.email} label="Email" class="chip" />}
+      {d.email && <Email address={d.email} label={PEOPLE_CHIPS.email} class="chip" />}
     </div>
   </div>
 </li>

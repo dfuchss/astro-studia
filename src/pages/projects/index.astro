@@ -15,7 +15,7 @@ const projects = (await getCollection('projects')).sort(
  * content.config.ts, which is what actually stops a typo.
  */
 const GROUPS: {
-  id: (typeof projects)[number]['data']['category'];
+  id: NonNullable<(typeof projects)[number]['data']['category']>;
   label: string;
   blurb: string;
 }[] = [
@@ -24,10 +24,28 @@ const GROUPS: {
   { id: 'misc', label: 'Elsewhere', blurb: 'Work that lives on another site.' },
 ];
 
-const grouped = GROUPS.map((g) => ({
+/*
+ * Grouped when anything is categorised, flat when nothing is.
+ *
+ * `category` is optional in the schema because a site need not sort its
+ * projects at all — ardoco.de's approaches are one list — and a page that
+ * always grouped would give such a site one heading over everything, which
+ * looks like a category and is not one. So: no entry with a category, no
+ * groups. If some entries carry one and others do not, the rest gather under
+ * a final "Other" group rather than vanishing — an entry that drops off the
+ * page because a field was left off is the failure the schema exists to
+ * prevent, and it would be silent.
+ */
+type Group = { id: string; label: string; blurb: string; items: typeof projects };
+const grouped: Group[] = GROUPS.map((g) => ({
   ...g,
   items: projects.filter((p) => p.data.category === g.id),
 })).filter((g) => g.items.length > 0);
+const rest = projects.filter((p) => p.data.category === undefined);
+if (grouped.length > 0 && rest.length > 0) {
+  grouped.push({ id: 'other', label: 'Other', blurb: 'Not filed under a group.', items: rest });
+}
+const flat = grouped.length === 0;
 ---
 
 <Base title="projects" description="Tools, corpora and long-running work." section="projects">
@@ -39,28 +57,38 @@ const grouped = GROUPS.map((g) => ({
       <code>redirect</code> in its front matter and no page here.
     </p>
 
-    <nav class="jump mono" aria-label="Jump to a group">
-      {
-        grouped.map((g) => (
-          <a class="chip" href={`#${g.id}`}>
-            {g.label.toLowerCase()} <span>{g.items.length}</span>
-          </a>
-        ))
-      }
-    </nav>
-
     {
-      grouped.map((g) => (
-        <section class="group" id={g.id}>
-          <h2>{g.label}</h2>
-          <p class="blurb">{g.blurb}</p>
-          <ul class="grid">
-            {g.items.map((project) => (
-              <ProjectCard project={project} />
+      /* One flat grid when nothing is categorised; otherwise the jump row and a
+         section per group. See the note on `grouped` above. */
+      flat ? (
+        <ul class="grid flat">
+          {projects.map((project) => (
+            <ProjectCard project={project} />
+          ))}
+        </ul>
+      ) : (
+        <>
+          <nav class="jump mono" aria-label="Jump to a group">
+            {grouped.map((g) => (
+              <a class="chip" href={`#${g.id}`}>
+                {g.label.toLowerCase()} <span>{g.items.length}</span>
+              </a>
             ))}
-          </ul>
-        </section>
-      ))
+          </nav>
+
+          {grouped.map((g) => (
+            <section class="group" id={g.id}>
+              <h2>{g.label}</h2>
+              <p class="blurb">{g.blurb}</p>
+              <ul class="grid">
+                {g.items.map((project) => (
+                  <ProjectCard project={project} />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </>
+      )
     }
   </section>
 </Base>
@@ -93,5 +121,9 @@ const grouped = GROUPS.map((g) => ({
     gap: 0.9rem;
     margin: 0;
     padding: 0;
+  }
+  /* The flat list has no group heading to space it from the lede. */
+  .grid.flat {
+    margin-top: 2rem;
   }
 </style>

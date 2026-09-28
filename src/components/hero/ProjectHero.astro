@@ -1,8 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 
-import { SITE } from '../../consts.ts';
+import { SITE, STAT_LABELS } from '../../consts.ts';
 import { intrinsic } from '../../lib/images.ts';
+import Tagline from '../Tagline.astro';
 /* ▼ FEATURE:citations ▼ */
 import { formatCount } from '../../lib/citations.ts';
 /* ▲ FEATURE:citations ▲ */
@@ -73,14 +74,14 @@ const m = scholarMetrics();
  */
 const stats = [
   /* ▼ FEATURE:publications ▼ */
-  { value: pubs.length, label: 'publications', href: PUBLICATIONS },
+  { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
   /* ▲ FEATURE:publications ▲ */
   /* ▼ FEATURE:citations ▼ */
-  { value: m.total, label: 'citations', href: PUBLICATIONS },
-  { value: m.hIndex, label: 'h-index', href: PUBLICATIONS },
+  { value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS },
+  { value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS },
   /* ▲ FEATURE:citations ▲ */
   /* ▼ FEATURE:people ▼ */
-  { value: people.length, label: 'people', href: PEOPLE },
+  { value: people.length, label: STAT_LABELS.people, href: PEOPLE },
   /* ▲ FEATURE:people ▲ */
 ].filter((s) => s.value > 0);
 ---
@@ -88,7 +89,8 @@ const stats = [
 <section class="wrap hero">
   <img class="logo" src={logo} alt="" width={logoWidth} height={logoHeight} />
   <h1>{SITE.title}</h1>
-  <p class="tagline">{SITE.tagline}</p>
+  {/* Can carry one link — see SITE.tagline and Tagline.astro. */}
+  <p class="tagline"><Tagline text={SITE.tagline} /></p>
   <p class="actions">
     {
       actions.map((a) => (

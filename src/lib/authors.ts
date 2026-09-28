@@ -1,4 +1,4 @@
-import { SELF } from '../consts.ts';
+import { AUTHOR_LIMIT, SELF } from '../consts.ts';
 
 export type Person = { first: string; last: string };
 
@@ -51,11 +51,13 @@ export const isSelfName = (name: string) =>
 /**
  * Author list with truncation.
  *
- * The limit is 4, with a grace clause: at exactly limit + 1 authors it shows
- * all of them, because "and 1 more author" takes more room than the name it is
- * standing in for and tells the reader less.
+ * The limit is AUTHOR_LIMIT in src/consts.ts — 4 as shipped — with a grace
+ * clause: at exactly limit + 1 authors it shows all of them, because "and 1
+ * more author" takes more room than the name it is standing in for and tells
+ * the reader less. `null` turns truncation off and lists everyone, which is
+ * what a group site wants: the people ARE the point of its list.
  */
-export function truncateAuthors(people: Person[], limit = 4) {
-  if (people.length <= limit + 1) return { shown: people, hidden: 0 };
+export function truncateAuthors(people: Person[], limit: number | null = AUTHOR_LIMIT) {
+  if (limit === null || people.length <= limit + 1) return { shown: people, hidden: 0 };
   return { shown: people.slice(0, limit), hidden: people.length - limit };
 }

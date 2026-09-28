@@ -376,8 +376,16 @@ const projects = defineCollection({
     z.object({
       title: z.string(),
       description: z.string(),
-      /** Buckets on /projects/. Labels for these live in that page. */
-      category: z.enum(['research', 'tools', 'misc']),
+      /**
+       * Buckets on /projects/. Labels for these live in that page.
+       *
+       * OPTIONAL: a site that does not group its projects — ardoco.de's
+       * approaches are one flat list — leaves it off every entry and gets a
+       * flat list with no group headings. Set it on some entries and not
+       * others and the rest gather under a last, unlabelled-by-enum "Other"
+       * group, so an entry can never silently drop off the page.
+       */
+      category: z.enum(['research', 'tools', 'misc']).optional(),
       order: z.number().int().default(100),
       /** When set, the entry links straight out and no page is generated. */
       redirect: z.url().optional(),
