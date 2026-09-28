@@ -11,47 +11,24 @@ import DemoSwitch from '../components/DemoSwitch.astro';
 import { BLOG, PEOPLE, PROJECTS, PUBLICATIONS } from '../lib/paths.ts';
 
 /*
- * The entry page.
- *
- * ▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲ marks code that exists only because an
- * optional AREA of the site does. The id names a feature in
- * scripts/features.mjs, and `npm run init` deletes exactly what a matching
- * pair encloses when you drop that feature. The markers stay behind on a
- * feature you keep, because you can still drop it later — so leave them even
- * when you are editing the code right next to them.
+ * The entry page. ▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲ marks code that exists
+ * only because an optional area does; `npm run init` deletes what a pair
+ * encloses when you drop that feature, and the markers stay on a feature you
+ * keep. Leave them even when editing the code right next to them.
  */
 
 /* ▼ FEATURE:demo ▼ */
 /*
- * ── This page carries BOTH entry-page shapes, until init runs ─────────────
+ * This page carries BOTH entry-page shapes until init runs, inside
+ * ▼ PRESET:<name> ▼ fences (docs/Removing-Features.md, "Two kinds of fence").
+ * An unfenced section, like contact at the bottom, belongs to both. Fences
+ * nest but must never straddle each other.
  *
- * ▼ PRESET:<name> ▼ … ▲ PRESET:<name> ▲ is the second fence family, read by
- * the same scanner. It marks the sections that belong to one AUDIENCE:
- * `profile` is one person's site, `project` is a research project's or a
- * group's. init keeps the preset you chose, deletes the other, and then
- * removes the surviving markers too — unlike a feature, the shape of the entry
- * page is chosen once and there is no second choice left to make.
- *
- * An UNFENCED section belongs to both. There is no `PRESET:both`: "no marker"
- * already means "unconditional", and labelling everything would make the
- * common case the noisy one. The contact section at the bottom is the example
- * — how to reach you is not a thing only one kind of site has.
- *
- * Fences nest — a FEATURE region inside a PRESET region, or the other way
- * round — but they must never straddle each other, because each pair is
- * removed as a unit.
- *
- * The two shapes do not render at once: the audit allows exactly one <h1> per
- * page, and two heroes is two. One renders per URL, and
- * src/pages/demo/project/index.astro is this same page with `shape="project"`,
- * so the switcher above the hero can link the two.
- *
- * That whole switch belongs to the `demo` feature, which is why this note and
- * the `isProfile` / `isProject` guards below are fenced as one. Every preset
- * drops `demo`, so the guards go, the other shape's sections go with their
- * PRESET fences, and what is left is one hero and one set of sections with
- * nothing conditional about them — and no leftover switch, and no comment
- * describing a mechanism that is no longer here.
+ * One shape renders per URL — the audit allows one <h1> — and
+ * src/pages/demo/project/index.astro is this page with `shape="project"`.
+ * The switch belongs to the `demo` feature, so this note and the guards below
+ * are fenced as one: after init there is one hero, one set of sections, and
+ * nothing conditional left.
  */
 type Shape = 'profile' | 'project';
 interface Props {
@@ -76,14 +53,8 @@ const latestYear = pubs.length > 0 ? Math.max(...pubs.map((p) => p.data.year)) :
 import PaperEntry from '../components/paper/PaperEntry.astro';
 import { featuredPapers } from '../lib/papers.ts';
 
-/*
- * The paper pages this page shows off, from the `papers` collection — NOT from
- * `publications.filter(pageSlug)`, which is what this was. That filter asked
- * the bibliography which of its entries name a page, and so could not see a
- * page whose venue is stated rather than cited: it has no BibTeX entry, so it
- * has no row there to be filtered. The block lists pages, so it reads the
- * collection of pages. See featuredPapers() for the selection and the order.
- */
+/* From the `papers` collection, not `publications.filter(pageSlug)`: a page
+   whose venue is stated rather than cited has no row there. */
 const papers = await featuredPapers();
 /* ▲ FEATURE:papers ▲ */
 /* ▲ FEATURE:publications ▲ */
@@ -95,12 +66,8 @@ const papers = await featuredPapers();
 import PersonHero from '../components/hero/PersonHero.astro';
 
 /* ▼ FEATURE:publications ▼ */
-/* ──────────────────────────────────────────────────────────────────────────
-   DEMO COPY. Everything from here to the end of this block is page text, not
-   configuration — it has exactly one consumer, so it lives on the page that
-   renders it rather than in src/consts.ts. Rewrite it; do not look for a
-   setting.
-   ────────────────────────────────────────────────────────────────────────── */
+/* DEMO COPY. Page text with one consumer lives on the page, not in
+   src/consts.ts. Rewrite it; do not look for a setting. */
 const interests = [
   'Moral philosophy',
   'Rhetoric and the theory of persuasion',
@@ -123,12 +90,8 @@ const involvement = [
     link: { label: 'Senate', href: 'https://www.perseus.tufts.edu/' },
     tail: 'and, in 63 BC, consul',
   },
-  /*
-   * Deliberately an external link rather than /people/#atticus: this block
-   * belongs to the projects feature, and pointing it at the people page made
-   * the two features depend on each other through nothing but demo prose. The
-   * audit caught it as a dangling link the moment people was pruned.
-   */
+  // External rather than /people/#atticus: this block belongs to the projects
+  // feature, and a link into people dangled the moment people was pruned.
   {
     text: 'Correspondent of',
     link: { label: 'Atticus', href: 'https://en.wikipedia.org/wiki/Titus_Pomponius_Atticus' },
@@ -369,10 +332,6 @@ const team = await members();
     <h2>Get in touch</h2>
     <p class="blurb">Questions, corrections and arguments all welcome.</p>
 
-    {
-      /* Every row from src/data/contact.yml, plus the two derived ones — see
-        that file and components/Contact.astro. */
-    }
     <Contact />
   </section>
 </Base>

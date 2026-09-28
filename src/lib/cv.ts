@@ -3,20 +3,9 @@ import cvRaw from '../data/cv.yml?raw';
 import { SITE } from '../consts.ts';
 
 /**
- * A section can render as:
- *
- *   timeline  a date rail on the left, content on the right (the default
- *             when entries carry dates)
- *   rows      the same content with no rail (the default otherwise)
- *   cards     a grid — title, "since" date, summary, a row of highlight
- *             chips. For a Projects-shaped section, where a rail would carry
- *             no information and a grid gives each entry room to breathe.
- *   courses   a semester-grouped grid, current semester surfaced above a
- *             collapsed run of past ones. For teaching, where "when" is a
- *             term rather than a date range.
- *
- * `layout` is optional so an existing section — anything not explicitly
- * opting in — keeps rendering exactly as it did.
+ * How a section renders. `timeline` (a date rail) and `rows` (none) are
+ * chosen by layoutOf() when a section names nothing; `cards` (a grid with
+ * highlight chips) and `courses` (a semester-grouped grid) are always explicit.
  */
 export type CvLayout = 'timeline' | 'rows' | 'cards' | 'courses';
 
@@ -32,16 +21,9 @@ export type CvEntry = {
   note?: string;
   details?: string[];
   /**
-   * Sends this entry to the section's collapsed tail instead of its main
-   * list — a long run of repeated low-value entries (teaching
-   * assistantships, retired course editions) that would otherwise bury the
-   * ones that matter, without deleting anything.
-   *
-   * A per-entry flag rather than a "keep the first N" count: in a real CV the
-   * line between "main" and "tail" is almost always about what *kind* of
-   * entry it is, not where it happens to fall once sorted — a teaching
-   * assistantship from three years ago and one from last month belong in the
-   * same tail.
+   * Sends this entry to the section's collapsed tail. A per-entry flag rather
+   * than "keep the first N", because the line between main and tail is about
+   * what kind of entry it is, not where it falls once sorted.
    */
   minor?: boolean;
   /** Chips under a `cards` entry, e.g. the areas a project touches. */
@@ -57,19 +39,10 @@ export type CvSection = {
   heading: string;
   layout?: CvLayout;
   /**
-   * A noun for an entry-count printed beside the heading — `courses` renders
-   * "Teaching 24 courses".
-   *
-   * Opt-in per section, on purpose. A bare number on every heading
-   * ("Experience 10", "Education 2", "Honours 1") is noise: the entries are
-   * right there to be counted, and the number says nothing the reader wanted.
-   * A *labelled* number on the one section where the figure is itself the
-   * point — a decade of teaching, a long publication run — is information.
-   * So the noun is the switch: naming it is how a section says the count is
-   * worth reading.
-   *
-   * Write it as it should read for several entries (`courses`), or as
-   * `singular|plural` (`course|courses`) for a section that may hold one.
+   * A noun for an entry count beside the heading: `courses` renders
+   * "Teaching 24 courses". Opt-in, because a bare number on every heading is
+   * noise; the noun is the switch. `singular|plural` for a section that may
+   * hold one entry.
    */
   count?: string;
   entries: CvEntry[];
@@ -85,16 +58,9 @@ export type Cv = {
 export const cv = parse(cvRaw) as Cv;
 
 /**
- * Format one end of a date range.
- *
- * "2020-03" and "2020" are formatted for the site's locale; anything else is
- * passed through untouched. That is deliberately permissive — a CV carries
- * "Winter 2024/25", "ongoing" and "63 BC" as readily as it carries an ISO
- * date, and a schema strict enough to reject those would be wrong more often
- * than it was useful.
- *
- * Parsed as UTC, so a month does not shift backwards depending on where the
- * build ran.
+ * Format one end of a date range. "2020-03" is formatted for the site's
+ * locale, in UTC so the month cannot shift with the build machine's zone;
+ * anything else ("Winter 2024/25", "63 BC") passes through untouched.
  */
 export function formatDate(value: string): string {
   const ym = /^(\d{4})-(\d{2})$/.exec(value);
@@ -119,11 +85,8 @@ export function dateRange(entry: CvEntry): string {
 }
 
 /**
- * Explicit, not inferred.
- *
- * "Has a start and no end" looks like it means ongoing, and does for a job —
- * but a degree, a prize and a certificate all carry one date and no end, and
- * inferring from the shape of the data labels every one of them "now".
+ * Explicit, not inferred: "a start and no end" also describes a degree, a
+ * prize and a certificate, and inferring would label every one of them "now".
  */
 export const isCurrent = (entry: CvEntry) => entry.current === true;
 
@@ -139,11 +102,8 @@ export function currentPosition(): CvEntry | undefined {
   return undefined;
 }
 
-/**
- * The default layout for a section that does not name one: a rail makes
- * sense once entries carry a date to hang it on, and reads as decoration
- * with nothing behind it otherwise.
- */
+/** The default layout for a section that names none: a rail only once there
+    are dates to hang on it. */
 export function layoutOf(section: CvSection): CvLayout {
   return section.layout ?? (section.entries.some((e) => e.start || e.end) ? 'timeline' : 'rows');
 }
@@ -165,13 +125,9 @@ export function splitMinor(entries: CvEntry[]): { main: CvEntry[]; minor: CvEntr
 }
 
 /**
- * A semester string → a sortable number, newest largest.
- *
- * Winter semesters are written `WS 26/27`, summer ones `SS 2026`, so a plain
- * four-digit match finds no year in a winter one and sorts every `WS` entry
- * below every `SS` entry. Both spellings are keyed on the year the semester
- * *starts*, which puts `WS 26/27` (October 2026) above `SS 2026` (April 2026)
- * and interleaves the two halves of each academic year.
+ * A semester string → a sortable number, newest largest. `WS 26/27` has no
+ * four-digit year, so both spellings are keyed on the two- or four-digit year
+ * the semester starts in, which puts `WS 26/27` above `SS 2026`.
  */
 export function semesterKey(semester: string): number {
   const m = /(\d{4}|\d{2})/.exec(semester);
@@ -180,11 +136,8 @@ export function semesterKey(semester: string): number {
   return year * 10 + (semester.startsWith('WS') ? 1 : 0);
 }
 
-/**
- * A `courses` section's entries, newest semester first and split into the
- * current term versus everything before it — the grid that stays visible
- * versus the run that collapses behind a disclosure.
- */
+/** A `courses` section's entries, newest semester first, split into the
+    current term and everything before it. */
 export function groupCourses(entries: CvEntry[]): { current: CvEntry[]; past: CvEntry[] } {
   const sorted = [...entries].sort(
     (a, b) => semesterKey(b.semester ?? '') - semesterKey(a.semester ?? ''),
@@ -197,13 +150,10 @@ export function groupCourses(entries: CvEntry[]): { current: CvEntry[]; past: Cv
 }
 
 /**
- * `CvEntry.details` bullets are plain text unless one embeds a markdown link,
- * e.g. "Reviewer for [ACM TOSEM](https://…)". Parsing just that one construct
- * — rather than accepting an object form in the YAML — means a bullet with no
- * link stays the plain string it always was, and one with a link reads the
- * same in cv.yml as it would in any markdown file, instead of a `{text, url}`
- * shape that has to be learned. It also allows more than one link per bullet,
- * which a single `{text, url}` pair could not.
+ * A `details` bullet is plain text unless it embeds a markdown link:
+ * "Reviewer for [ACM TOSEM](https://…)". Only that construct is parsed, so a
+ * bullet reads the same in cv.yml as in any markdown file and may carry more
+ * than one link.
  */
 export type DetailPart = { text: string; url?: string };
 export function parseDetail(detail: string): DetailPart[] {

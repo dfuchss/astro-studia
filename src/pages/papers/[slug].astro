@@ -28,15 +28,10 @@ const { paper } = Astro.props;
 const { Content } = await render(paper);
 
 /*
- * Everything bibliographic comes from the BibTeX entry, never from this page's
- * front matter — so a paper has exactly one source of truth for its venue,
- * year and DOI, and they cannot drift apart.
- *
- * `pub` is undefined for a page that has no entry at all: a talk at a venue
- * that publishes nothing. That is a legitimate page, and it is why every read
- * below is optional. A `publication` that is DECLARED and does not resolve is
- * still fatal — paperPublication() throws — because the page it would render
- * looks nearly right and the typo would reach the site.
+ * Everything bibliographic comes from the BibTeX entry, never from the front
+ * matter. `pub` is undefined for a talk at a venue that publishes nothing,
+ * which is why every read below is optional; a declared entry that does not
+ * resolve still throws (see paperPublication()).
  */
 const pub = await paperPublication(paper);
 const d = pub?.data;
@@ -49,13 +44,9 @@ const leaf = paperVenueShort(paper, pub);
 const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
 
 /*
- * The projects this paper came out of. The other direction of the same edge —
- * every paper on a project's page — is computed on /projects/<slug>/, so this
- * front matter is the only place the relationship is written down.
- *
- * A project with `redirect` has no page of its own, and linking to the path it
- * would have had is a 404 the build cannot see: reference() proves the entry
- * exists, not that a page was generated for it.
+ * The projects this paper came out of; the reverse edge is computed on
+ * /projects/<slug>/. A project with `redirect` has no page of its own, and
+ * reference() proves the entry exists, not that a page was generated for it.
  */
 const projects = (await Promise.all(paper.data.projects.map((ref) => getEntry(ref)))).map((p) => ({
   title: p.data.title,
@@ -63,14 +54,8 @@ const projects = (await Promise.all(paper.data.projects.map((ref) => getEntry(re
   external: Boolean(p.data.redirect),
 }));
 
-/**
- * Pretty names for the link keys used in front matter. A key with no entry
- * here falls back to itself, so adding a link never requires editing this —
- * it just renders as you typed it. In between, linkLabel() derives a label
- * for a key of the form `<venue>_<kind>`: `colloquium_pdf` is "PDF
- * (COLLOQUIUM)", so a paper presented three times can file three decks under
- * `slides` without a row here for each.
- */
+/** Pretty names for the link keys in front matter. A key with no row renders
+    as typed, and `<venue>_<kind>` is derived — see linkLabel(). */
 const LINK_LABELS: Record<string, string> = {
   acm: 'ACM DL',
   ieee: 'IEEE Xplore',
@@ -99,30 +84,18 @@ const inParts = [d?.booktitle ?? d?.journal ?? d?.school ?? d?.institution, d?.l
   Boolean,
 );
 
-// The two links a reader actually came for. They are repeated further down in
-// the link rows, which is the point: those rows are an index of everywhere the
-// work lives, and nobody should have to read an index to find the PDF.
+// The two links a reader came for, repeated in the link rows below on
+// purpose: nobody should have to read an index to find the PDF.
 const hasActions = Boolean(d?.pdfUrl || d?.doi);
 
-/*
- * The citation, and the id CopyButton copies from. One object rather than two
- * loose consts so the Cite section below has a single thing to test: either
- * there is a record to copy or there is a sentence saying why there is not.
- */
+// The citation and the id CopyButton copies from; one object so the Cite
+// section has one thing to test.
 const cite = pub ? { id: `bib-${pub.id}`, bibtex: pub.data.bibtex } : undefined;
 
-// The connector in front of the names and the separator between them, which are
-// not the same in the derived and the stated case — see paperByline(). Shared
-// with the paper rows on the entry pages rather than restated here.
+// Not the same in the derived and the stated case — see paperByline().
 const { connector, separator } = paperByline(venue, authors.length);
 ---
 
-{
-  /* The description falls back to the paper's own venue, never to the site's
-     blurb — see paperDescription(). ardoco.de does the same with its
-     conferenceName; a link preview for a paper should say where it appeared,
-     not what the site is. */
-}
 <Base title={paper.data.title} description={paperDescription(paper, pub)} section="papers">
   {
     pub && (
@@ -135,20 +108,10 @@ const { connector, separator } = paperByline(venue, authors.length);
   <article class="wrap section">
     <header class="head">
       {
-        /* One line doing both jobs: where you are, and what this is. A separate
-           breadcrumb above a venue kicker said the same thing twice in a row,
-           and the slug it ended on ("de-re-publica") was the one part a reader
-           already knows — they just clicked it. So the path's leaf is the venue
-           label instead.
-
-           The venue abbreviation is the shortest true name a published paper
-           has, which is why the schema carries no separate short label for it:
-           adding one would mean restating the badge in every paper's front
-           matter. A page with no BibTeX entry has no badge to restate, so it
-           names its venue in `venue.short`. An entry with no abbr gives the
-           proceedings or journal it names, and one that names nothing gives
-           no leaf at all — the path just stops at "papers", which is true, in
-           place of a word the template made up. See paperVenueShort(). */
+        /* Breadcrumb and venue kicker in one line: the path's leaf is the
+           venue's short name (see paperVenueShort()), and the slug, which the
+           reader just clicked, is not repeated. No leaf when there is nothing
+           true to put there. */
       }
       <p class="kicker" data-sigil="none">
         <a href={PAPERS}>papers</a>
@@ -176,14 +139,8 @@ const { connector, separator } = paperByline(venue, authors.length);
                 {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
                 <span class:list={['author', { self: isSelfName(a.data.name) }]}>
                   {a.data.name}
-                  {/*
-                   * The badge is the link, not the name. A name that is a link
-                   * promises the person's page; this one goes to a registry
-                   * record, and the 4x16-digit identifier next to a name is the
-                   * convention every publisher's author line already uses. It
-                   * also leaves the name free to become a link to something of
-                   * yours later without the two fighting.
-                   */}
+                  {/* The badge is the link, not the name: a linked name promises
+                      the person's page, and this goes to a registry record. */}
                   {a.data.orcid && (
                     <a
                       class="orcid"
@@ -347,18 +304,9 @@ const { connector, separator } = paperByline(venue, authors.length);
     <section class="cite" aria-labelledby="cite-h">
       <h2 class="mono" id="cite-h">Cite</h2>
       {
-        /* BibTeX alone, deliberately.
-         *
-         * This section held a full <PubEntry> for a while, on the theory that
-         * the badge, authors and citation count tell you whether this is the
-         * thing you meant to cite. On a page that opens with exactly that
-         * header it repeats all of it a screen further down, and it buries the
-         * one thing the section is FOR behind a disclosure toggle. It also
-         * needed a rule to hide the entry's own "Paper page" chip, which
-         * pointed at the page you were already on — a component needing to be
-         * partly hidden is the component being wrong for the place.
-         *
-         * Both sites this template came from tried it and moved back. */
+        /* BibTeX alone, deliberately: a full <PubEntry> here repeats the
+           header a screen further down and buries the record behind a
+           disclosure. Both source sites tried it and moved back. */
       }
       {
         cite ? (
@@ -367,17 +315,9 @@ const { connector, separator } = paperByline(venue, authors.length);
             <pre id={cite.id}>{cite.bibtex}</pre>
           </div>
         ) : (
-          /*
-           * The section STAYS, with a sentence in place of the record.
-           *
-           * Hiding it would be the tidier markup and the worse page: a reader
-           * who has just read a talk and wants to cite it would find the
-           * heading missing and conclude that this site does not offer
-           * citations, or that something failed to load. The absence is a fact
-           * about the venue, not about the page, and the only way to say that
-           * is to say it. No CopyButton: there is nothing to copy, and a button
-           * that copies an empty string is worse than no button.
-           */
+          /* The section STAYS, with a sentence in place of the record: a
+             missing heading reads as "this site does not offer citations".
+             The absence is a fact about the venue, so say it. */
           <p class="uncited">
             This was a talk at a venue that publishes no proceedings, so there is no bibliographic
             record of it and nothing to cite — that is a fact about the venue rather than a gap in

@@ -5,12 +5,8 @@ import { routePath } from '../lib/paths.ts';
 interface Props {
   title?: string;
   description?: string;
-  /**
-   * A page that has no address of its own — the 404 page, which is served for
-   * every URL that does not exist. It gets no canonical and no og:url, because
-   * there is no URL those could truthfully name, and a robots noindex so a
-   * crawler that reached it through a soft 404 does not index it.
-   */
+  /** A page with no address of its own (the 404 page): no canonical, no
+      og:url, and a robots noindex. */
   noindex?: boolean;
 }
 
@@ -20,11 +16,9 @@ const { title, description, noindex = false } = Astro.props;
 const pageTitle = title ? `${title} · ${SITE.title}` : SITE.title;
 const desc = description ?? SITE.description;
 
-// Through routePath(), because Astro.url.pathname is only the published
-// address under the default URL policy. Under 'preserve' it is the FILE path
-// for a flat route ("/papers/sosp67.html"), and routePath() is what takes the
-// extension off — see URL_POLICY in src/lib/paths.ts. The audit checks that
-// what is emitted here names this page's own file, whichever policy is set.
+// Through routePath(): under URL_POLICY 'preserve' Astro.url.pathname is the
+// FILE path ("/papers/sosp67.html"). The audit checks the result names this
+// page's own file.
 const canonical = noindex ? undefined : new URL(routePath(Astro.url.pathname), SITE.url);
 ---
 
@@ -35,19 +29,15 @@ const canonical = noindex ? undefined : new URL(routePath(Astro.url.pathname), S
 {canonical ? <link rel="canonical" href={canonical} /> : <meta name="robots" content="noindex" />}
 
 {
-  /* Three icons, in the order a browser should prefer them. The SVG scales to
-    any size and follows the palette; the 32px PNG is the fallback for the few
-    browsers that still ignore SVG icons; apple-touch-icon is what iOS uses
-    when someone adds the site to their home screen and is the one that looks
-    wrong by its absence. Regenerate the PNGs with `npm run favicons` after
-    editing public/favicon.svg. */
+  /* SVG first, the 32px PNG for browsers that ignore SVG icons, apple-touch-icon
+    for iOS. Regenerate the PNGs with `npm run favicons` after editing the SVG. */
 }
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
 <link rel="manifest" href="/site.webmanifest" />
 
-{/* Delete this line along with src/pages/feed.xml.ts if you drop the blog. */}
+{/* Delete this line along with src/pages/feed.xml.ts if you drop the feed. */}
 <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/feed.xml" />
 
 <meta property="og:type" content="website" />
@@ -57,10 +47,8 @@ const canonical = noindex ? undefined : new URL(routePath(Astro.url.pathname), S
 {canonical && <meta property="og:url" content={canonical} />}
 
 {
-  /* The card type follows whether there is actually an image to put in it.
-     summary_large_image with no image renders as a blank rectangle, which is
-     worse than the small card it replaced — so SITE.ogImage: null gets the
-     small one, honestly. */
+  /* summary_large_image with no image renders as a blank rectangle, so
+    SITE.ogImage: null gets the small card. */
 }
 {
   SITE.ogImage ? (

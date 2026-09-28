@@ -1,18 +1,9 @@
 ---
 /**
- * The demo ships two entry-page shapes — see the ▼ PRESET:… ▼ fences in
- * src/pages/index.astro — and a visitor who only ever lands on one of them has
- * no way to notice the other exists. This switcher sits above both so a click
- * is enough to compare them.
- *
- * Plain links, not a client-side toggle: each side is a real page Astro has
- * already rendered, so this has to work with JavaScript off. Both are
- * src/pages/index.astro — the second URL renders it with shape="project" —
- * so what the two buttons compare is the two ▼ PRESET:… ▼ regions of one file,
- * which is exactly what `npm run init` chooses between.
- *
- * Gone the moment init runs: this and src/pages/demo/ belong to the `demo`
- * feature, which no preset includes.
+ * Links between the two entry-page shapes of src/pages/index.astro (the
+ * second URL renders it with shape="project"), so a visitor can compare the
+ * two ▼ PRESET:… ▼ regions `npm run init` chooses between. Plain links, so it
+ * works with JS off. Belongs to the `demo` feature, which no preset includes.
  */
 interface Props {
   /** Which shape src/pages/index.astro is rendering. */
@@ -21,10 +12,7 @@ interface Props {
 
 const { current } = Astro.props;
 
-/*
- * The ids are the PRESET fence names in src/pages/index.astro, not free text:
- * `init --preset <id>` is what turns the side you pick into the only side.
- */
+/* The ids are the PRESET fence names, not free text. */
 const sides = [
   { id: 'profile', label: 'Personal Academic Page', href: '/' },
   { id: 'project', label: 'Academic Project Page', href: '/demo/project/' },

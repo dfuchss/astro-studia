@@ -4,13 +4,10 @@ import { SITE } from '../../consts.ts';
 import { repositories, languageColors, github, socials } from '../../lib/data.ts';
 
 /*
- * Everything here comes from src/data/github-metadata.json, which is committed.
- * No API call happens during the build — see scripts/fetch-github-metadata.mjs.
- *
- * A repo listed in repositories.yml but absent from the metadata file still
- * renders, using the name alone: the usual cause is adding a line and not yet
- * running `npm run data:github`, and a half-finished edit should not stop you
- * previewing the site. The note at the bottom says so.
+ * Everything here comes from the committed github-metadata.json; no API call
+ * happens during the build. A repo in repositories.yml but not yet in the
+ * metadata still renders by name, so a half-finished edit does not stop a
+ * preview.
  */
 const repos = (repositories.github_repos ?? [])
   .map((full) => ({ full, meta: github.repos[full] }))

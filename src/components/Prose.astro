@@ -79,18 +79,10 @@
       0 18px 40px -24px var(--sec-glow),
       0 2px 10px rgb(0 0 0 / 35%);
   }
-  /* An SVG in body copy is usually the same dark-on-transparent line art that
-     Figure.astro plates, and on this background it would otherwise be close to
-     invisible. Plating is therefore the default, because the failure it
-     prevents is silent.
-
-     Escape hatch for a figure that carries its own background:
-       <img class="no-plate" src="…" width="760" height="300" alt="…">
-
-     Markdown's own ![](…) cannot express that, and cannot carry width and
-     height either — which the build's image audit requires. So write an <img>
-     tag directly in the .md when you need one; it is plain HTML and remark
-     passes it through untouched. */
+  /* An SVG in body copy is usually dark-on-transparent line art, invisible
+     here unplated, so plating is the default. `class="no-plate"` opts out;
+     markdown's ![](…) cannot express that (nor width/height), so write the
+     <img> tag — see docs/Content.md, "Images in a post". */
   .prose :is(p, figure) > img[src$='.svg']:not(.no-plate) {
     background: #fff;
     padding: 1rem;
@@ -105,28 +97,11 @@
     text-align: center;
   }
 
-  /*
-   * A before/after pair, side by side:
-   *
-   *   <figure class="compare">
-   *     <div class="compare-pair">
-   *       <a href="/assets/img/…/before.svg"><img src="…" width="…" height="…" alt="…"></a>
-   *       <a href="/assets/img/…/after.svg"><img src="…" width="…" height="…" alt="…"></a>
-   *     </div>
-   *     <figcaption>What changed. Click either for full size.</figcaption>
-   *   </figure>
-   *
-   * Each image links to its own file, because two screenshots at half the
-   * reading measure are too small to read and the only useful thing to do with
-   * one is open it. They stack below 40rem, where half a column is no longer a
-   * screenshot but a smudge.
-   *
-   * The images here are deliberately outside the plate-and-halo treatment
-   * below: those rules only match an <img> that is a direct child of a <p> or a
-   * <figure>, and these sit inside the grid and their links. A pair wants a
-   * hairline and nothing more — two glowing panels side by side read as two
-   * separate figures rather than one comparison.
-   */
+  /* A before/after pair (markup in docs/Content.md). Each image links to its
+     own file, because two screenshots at half the measure are only useful
+     opened. Deliberately outside the plate-and-halo rules above, which match
+     only an <img> that is a direct child of a <p> or <figure>: two glowing
+     panels side by side read as two figures rather than one comparison. */
   .prose .compare {
     margin: 1.75rem 0;
   }
@@ -163,27 +138,10 @@
     }
   }
 
-  /*
-   * An inline icon, written into the markdown as a 24x24 SVG with
-   * `class="ti"`:
-   *
-   *   <svg class="ti" width="20" height="20" style="--ti: #5cc8e8"
-   *        viewBox="0 0 24 24" fill="none" stroke="currentColor"
-   *        stroke-width="1.75" aria-hidden="true"><path d="…"/></svg>
-   *
-   * Sized in em so it tracks whatever text it sits in, and coloured through
-   * one custom property so a body can tint an icon per row without a class per
-   * colour. The fallback is the muted ink, which is what an untinted icon
-   * should be: an icon is decoration next to a label, and every one of them
-   * shouting in an accent colour is noise.
-   *
-   * `width`/`height` attributes stay on the tag as well — the audit does not
-   * require them on an <svg>, but a browser with CSS still loading otherwise
-   * lays the icon out at 300x150.
-   *
-   * There is no icon dependency here on purpose. Take the path data from
-   * whatever set you like and paste it in; that is the whole mechanism.
-   */
+  /* An inline icon: a 24x24 SVG with `class="ti"` (markup in docs/Content.md),
+     tinted per icon through `--ti` and otherwise the muted ink. Keep
+     width/height on the tag too: a browser with CSS still loading otherwise
+     lays the icon out at 300x150. */
   .prose .ti {
     width: 1.05em;
     height: 1.05em;
@@ -192,27 +150,8 @@
     flex: none;
   }
 
-  /*
-   * An icon-led list, for a set of things each of which has a name, a sentence
-   * and somewhere to go:
-   *
-   *   <ul class="tool-landscape">
-   *     <li>
-   *       <svg class="ti" style="--ti: #5cc8e8" …/>
-   *       <strong>Name</strong> — what it is.<br>
-   *       <span class="tool-links"><svg class="ti" …/> <a href="…">Link</a></span>
-   *     </li>
-   *   </ul>
-   *
-   * The leading icon replaces the bullet, so the list loses its marker and its
-   * indent. The links row is indented to the text's left edge instead of the
-   * icon's, which is what keeps the column of names readable when several rows
-   * each carry a link run.
-   *
-   * Spacing is between items rather than after each one, matching the `li + li`
-   * rule above — a trailing gap on the last row doubles with the margin of
-   * whatever paragraph follows.
-   */
+  /* An icon-led list (markup in docs/Content.md). The leading icon replaces
+     the bullet, and the links row is indented to the text's left edge. */
   .prose ul.tool-landscape {
     padding-left: 0;
     list-style: none;

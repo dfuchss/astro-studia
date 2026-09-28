@@ -29,15 +29,9 @@ const { Content } = await render(project);
 const d = project.data;
 
 /* ▼ FEATURE:papers ▼ */
-/*
- * The reverse index: every paper whose front matter names this project. The
- * edge is written once, on the paper, and read from both ends.
- *
- * The join is by collection id, through reference('projects'), so renaming a
- * project fails the build with the offending id. Matching on the title instead
- * — the obvious way to write this — silently empties the list the first time
- * somebody edits a title, and nothing tells you.
- */
+/* The reverse index: every paper whose front matter names this project. By
+   collection id, not title: a title match silently empties the list the first
+   time somebody edits one. */
 const papers = await getCollection('papers', (p) =>
   p.data.projects.some((ref) => ref.id === project.id),
 );
@@ -48,10 +42,8 @@ const related = (
       return {
         paper,
         pub,
-        // Not `pub.data.year`: a paper page with no BibTeX entry — a talk at a
-        // venue that publishes nothing — carries its own year, and reading the
-        // entry alone would date it to 0 and park it at the bottom of the list
-        // for a reason nobody looking at the page could see.
+        // Not `pub.data.year`: a page with no entry carries its own year, and
+        // reading the entry alone would park it at the bottom of the list.
         year: paperYear(paper, pub),
         // Only used when there is no badge; see /papers/ for the same rule.
         tag: pub?.data.abbr ? undefined : paperVenueShort(paper, pub),

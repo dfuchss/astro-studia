@@ -1,65 +1,29 @@
 /**
- * The feature manifest: what this template is made of, and what belongs to what.
- *
- * ── Why this file exists ───────────────────────────────────────────────────
- *
- * Every area of the site is optional, and removing one touches five or six
- * places: the routes, a collection block, a `Section` union member, a nav row,
- * some data, sometimes a script and a workflow. Written down once as prose,
- * that list drifts from the code the first time either changes. Written down
- * here, it has two consumers that cannot disagree:
- *
- * A feature's fenced code needs no declaration: init scans src/ for
- * `▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲` pairs named after the feature's own id
- * and removes them wherever they are. Put a fence around anything that exists
- * only because a feature does — an import, a const, a markup block.
- *
- * ── Preset fences ──────────────────────────────────────────────────────────
- *
- * The same scanner reads a second family, named after a PRESET rather than a
- * feature:
- *
- *   ▼ PRESET:profile ▼ … ▲ PRESET:profile ▲
- *   ▼ PRESET:project ▼ … ▲ PRESET:project ▲
- *
- * src/pages/index.astro uses them to carry both entry-page shapes in one file:
- * the hero and the sections a personal site wants, and the ones a project or
- * group site wants. init keeps the chosen preset's regions and deletes the
- * rest — and then removes the surviving markers too, because unlike a feature
- * the shape of the entry page is decided once and there is no later choice to
- * leave a label for.
- *
- * There is no `PRESET:both`. An unfenced region is already unconditional, so
- * only the audience-specific parts carry a marker; the contact block at the
- * bottom of the entry page is the example of one that does not.
- *
- * Nothing about this is declared in the manifest below either — the fences in
- * the source are the declaration, and the preset names are the ones in
- * `PRESETS`.
+ * The feature manifest: what this template is made of, and what belongs to
+ * what. Removing an area touches five or six places, and a prose copy of that
+ * list drifts; written here it has two consumers that cannot disagree:
  *
  *   scripts/init.mjs      prunes what you do not want
  *   scripts/gen-docs.mjs  regenerates the table in docs/Removing-Features.md
  *
  * If you add a feature to this template, add it here too and both follow.
  *
- * ── Presets ────────────────────────────────────────────────────────────────
+ * A feature's fenced code needs no declaration: init scans src/ for
+ * `▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲` pairs named after the feature's id and
+ * removes them wherever they are. The same scanner reads `▼ PRESET:<name> ▼`
+ * fences, which src/pages/index.astro uses to carry both entry-page shapes;
+ * init keeps the chosen one and removes its markers. Neither family is
+ * declared below — the fences are the declaration, and the preset names are
+ * the ones in `PRESETS`. docs/Architecture.md, "Feature and preset fences".
  *
- * A preset is a STARTING SELECTION, not a mode. `npm run init` uses it to
- * pre-tick a sensible set of checkboxes; you tick and untick freely, and once
- * it has run there is no preset any more — only source files. Nothing in the
- * built site branches on which one you chose, and you can add any feature back
- * by hand afterwards.
+ * A preset is a STARTING SELECTION, not a mode: init pre-ticks its features,
+ * you tick and untick freely, and afterwards there is no preset, only source.
  *
  * `profile`  one person: publications, a CV, a blog, software, a GitHub list.
  * `project`  a project or group: sub-projects, paper pages, a team.
  *
- * NOTE: `npm run verify` fails after ANY prune until `npm run baseline` is run.
- * verification/asset-sha256.txt pins the demo images, some belonging to a
- * feature you just removed — which is the baseline doing its job, since it
- * exists so a published asset cannot vanish unnoticed. init says so when it
- * happens.
- *
- * A real site is usually neither. That is the point of the checkboxes.
+ * `npm run verify` fails after ANY prune until the asset baseline is re-pinned,
+ * because it pins demo images a removed feature took with it; init does that.
  */
 
 /** @typedef {'profile' | 'project'} Preset */
@@ -188,13 +152,8 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: ['Feed'],
-    /*
-     * Deliberately NOT owned by the blog. ardoco.de has no blog at all and
-     * still publishes a feed, built from its paper pages — which is the right
-     * thing for a project site, where a new paper is the news. Tying the feed
-     * to the blog would have deleted it from exactly the site that needs it
-     * most obviously.
-     */
+    // Deliberately NOT owned by the blog: a project site has no blog and still
+    // wants a feed, of its paper pages.
     manual: [
       'drop the feed <link rel="alternate"> from src/components/BaseHead.astro — without it you advertise a 404',
     ],
@@ -326,16 +285,10 @@ export const FEATURES = [
     label: 'Demo switcher',
     blurb: 'The two-button switcher and the second entry page that show both styles.',
     /*
-     * In NO preset, on purpose — this is the only feature like that.
-     *
-     * It exists so someone evaluating the template can click between the two
-     * entry-page styles and see both, which a single index.astro cannot show:
-     * it imports one of two interchangeable heroes. The moment you pick a
-     * preset you have chosen one, so the switcher and the page it switches to
-     * are scaffolding, and init always takes them out.
-     *
-     * This is also why the profile preset would otherwise break: the second
-     * entry page imports ProjectHero, which init deletes as the unused hero.
+     * In NO preset, on purpose — the only feature like that. The switcher and
+     * its second URL exist so someone evaluating the template can see both
+     * entry-page shapes; picking a preset chooses one, and init resolves the
+     * PRESET fences only when demo is gone (see applyShape in init.mjs).
      */
     presets: [],
     requires: [],
@@ -364,13 +317,9 @@ export const FEATURES = [
 
 /**
  * The feed source each preset starts from: one import line in
- * src/pages/feed.xml.ts, and the unused variant deleted.
- *
- * There is no PRESET_HERO beside it any more, and no table of which sections
- * each preset gets. Both live in the source, as ▼ PRESET:<name> ▼ fences in
- * src/pages/index.astro — see the "Preset fences" note above — and the hero a
- * preset uses is simply the one still imported once those are resolved. A
- * table would be a second place the answer is written down.
+ * src/pages/feed.xml.ts, and the unused variant deleted. There is no
+ * PRESET_HERO beside it: which hero a preset uses is decided by the PRESET
+ * fences in the source, and a table would be a second copy of that answer.
  */
 export const PRESET_FEED = {
   profile: 'fromPosts',

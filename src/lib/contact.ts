@@ -3,12 +3,9 @@ import contactRaw from '../data/contact.yml?raw';
 import { SITE } from '../consts.ts';
 
 /**
- * The free-form contact rows, from `src/data/contact.yml`.
- *
- * See that file's header for the shape and for why it is its own file rather
- * than a section of cv.yml. This module is only the parse, the validation and
- * the one derivation (`email: true` -> SITE.email); the markup is
- * `src/components/Contact.astro`, which both entry pages and /cv/ render.
+ * The contact rows from `src/data/contact.yml` (its header has the shape):
+ * the parse, the validation and the one derivation, `email: true` ->
+ * SITE.email. The markup is Contact.astro.
  */
 export type ContactRow = {
   label: string;
@@ -34,29 +31,20 @@ export type ResolvedRow = {
 };
 
 /*
- * Anchored, and the domain allows dots — `[A-Za-z0-9-]+` before the last one
- * only matches a single-label domain, so `me@mail.uni-example.de` would have
- * been neither caught as a raw address in `value:` nor accepted in `email:`.
- * The audit's own version of this pattern is unanchored because it hunts for
- * an address inside a page; this one asks whether a whole field IS one.
+ * Anchored (the audit's version is not: it hunts inside a page, this asks
+ * whether a whole field IS an address), and the domain allows dots — without
+ * that, `me@mail.uni-example.de` was neither caught in `value:` nor accepted
+ * in `email:`.
  */
 const ADDRESS_SHAPED = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 const raw = parse(contactRaw) as unknown;
 
 /**
- * Validated here rather than left to render time.
- *
- * `src/data/` is read with `?raw` and `yaml.parse`, which — unlike the content
- * collections — comes with no schema and no build failure for a typo. A
- * mis-keyed row would otherwise render as a label with an empty value, on the
- * two pages a visitor is most likely to land on, and nothing would say so.
- *
- * The address check is the one that earns its keep: `npm run verify` fails the
- * deploy if any address-shaped string reaches the built HTML, so a row written
- * as `value: me@example.org` is already fatal — just fatal later, from a script
- * that can only say "an address is in the bytes" and not which file put it
- * there. This says it at the source, with the row's label.
+ * Validated here because `?raw` + `yaml.parse` has no schema: a mis-keyed row
+ * would otherwise render as a label with nothing after it. The address check
+ * pre-empts the audit, which would fail the build later with "an address is
+ * in the bytes" and no file name; this says it with the row's label.
  */
 function validate(input: unknown): ResolvedRow[] {
   if (input === null || input === undefined) return [];

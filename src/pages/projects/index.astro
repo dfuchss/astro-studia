@@ -7,13 +7,8 @@ const projects = (await getCollection('projects')).sort(
   (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),
 );
 
-/**
- * The buckets, in the order they appear, with a line of context each.
- *
- * These stay on this page rather than in consts.ts: they have exactly one
- * consumer, and the ids are already constrained by the `category` enum in
- * content.config.ts, which is what actually stops a typo.
- */
+/** The buckets, in order. On this page rather than in consts.ts: one
+    consumer, and the `category` enum already stops a typo. */
 const GROUPS: {
   id: NonNullable<(typeof projects)[number]['data']['category']>;
   label: string;
@@ -24,18 +19,8 @@ const GROUPS: {
   { id: 'misc', label: 'Elsewhere', blurb: 'Work that lives on another site.' },
 ];
 
-/*
- * Grouped when anything is categorised, flat when nothing is.
- *
- * `category` is optional in the schema because a site need not sort its
- * projects at all — ardoco.de's approaches are one list — and a page that
- * always grouped would give such a site one heading over everything, which
- * looks like a category and is not one. So: no entry with a category, no
- * groups. If some entries carry one and others do not, the rest gather under
- * a final "Other" group rather than vanishing — an entry that drops off the
- * page because a field was left off is the failure the schema exists to
- * prevent, and it would be silent.
- */
+/* Grouped when anything is categorised, flat when nothing is; entries without
+   a category gather under a final "Other" group rather than vanishing. */
 type Group = { id: string; label: string; blurb: string; items: typeof projects };
 const grouped: Group[] = GROUPS.map((g) => ({
   ...g,

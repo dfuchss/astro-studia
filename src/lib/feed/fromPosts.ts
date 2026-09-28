@@ -2,12 +2,9 @@ import { publishedPosts, permalink } from '../blog.ts';
 import type { FeedItem } from './types.ts';
 
 /**
- * Feed items from the blog. The default, and the obvious one for a personal
- * site: a post has a real date, so nothing has to be inferred.
- *
- * Drafts are absent because publishedPosts() excludes them, and the feed does
- * not filter again. A feed is the one surface where publishing by accident
- * cannot be undone — subscribers already have it.
+ * Feed items from the blog (the default). Drafts are excluded by
+ * publishedPosts(); a feed is the one surface where publishing by accident
+ * cannot be undone.
  */
 export async function feedItems(): Promise<FeedItem[]> {
   const posts = await publishedPosts();

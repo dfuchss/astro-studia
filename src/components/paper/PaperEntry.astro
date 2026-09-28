@@ -8,26 +8,13 @@ import { paperPath } from '../../lib/paths.ts';
 import { paperByline, paperVenue, paperYear } from '../../lib/papers.ts';
 
 /*
- * One row of an entry page's paper block: a PAPER PAGE, in the shape
- * PubEntry uses for a publication.
- *
- * A SIBLING OF PubEntry RATHER THAN A MODE OF IT. The two render the same rows
- * — badge, title, byline, where it appeared, a pill or two — and share not one
- * field to read them from. Every row of PubEntry comes out of a BibTeX entry:
- * the badge from `abbr`, the byline from the entry's author strings, the venue
- * from `booktitle`/`journal` and `location`, the pills from `doi` and `pdfUrl`,
- * the citation from `bibtex`. A paper page whose venue is STATED has none of
- * those. Its byline is a list of REFERENCES into authors.yml, its venue is one
- * sentence it wrote itself, its year is its own, and there is nothing to cite.
- * Teaching PubEntry to take either would fork it inside every row it renders,
- * and four of those forks would be dead on /publications/ — the one page with
- * forty entries on it, and the one that must not regress. It would also make
- * PubEntry resolve content per entry to get a byline, which is exactly what its
- * `links` prop exists to avoid on a long list.
- *
- * So the prop here is a paper, always, and nothing below asks which kind it is:
- * a venue sentence, an imprint and a pill each render when their source has
- * something to say, and each case naturally has only one of them.
+ * One row of an entry page's paper block: a PAPER PAGE, in the shape PubEntry
+ * uses for a publication. A sibling of PubEntry rather than a mode of it: the
+ * two render the same rows and share not one field to read them from (a
+ * stated venue has no BibTeX entry at all), and teaching PubEntry both would
+ * fork it inside every row on the one page with forty entries. Nothing below
+ * asks which kind of paper it is; each part renders when its source has
+ * something to say.
  */
 interface Props {
   paper: CollectionEntry<'papers'>;

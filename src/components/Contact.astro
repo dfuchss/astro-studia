@@ -11,42 +11,21 @@ import { CV } from '../lib/paths.ts';
 /* ▲ FEATURE:cv ▲ */
 
 /**
- * How people reach you, from `src/data/contact.yml`.
- *
- * ── Why this is a component and not markup on each page ───────────────────
- *
- * Because there are three places that need the same answer — the personal
- * entry page, the project entry page and the CV lede — and before this there
- * were three hand-written copies of a `<dl>`. The visible cost of that was
- * ardoco.de and fuchss.org: fuchss.org lists a Matrix handle, which had to be
- * a fourth `<dl>` row typed into the home page, and /cv/ had nowhere to put it
- * at all, so the CV simply did not have it. A row is a row; where it renders
- * is not a property of the row.
- *
- * ── The two rows that are NOT in contact.yml ──────────────────────────────
- *
- * The PGP key id and the current position are DERIVED — from the fingerprint
- * in socials.yml and from cv.yml — and are appended after the listed rows.
- * They are facts the site already holds, and a second copy in contact.yml is a
- * copy that can disagree with /pgp-key/ and /cv/. Each is fenced by the
- * feature that owns it, so pruning `pgp` or `cv` takes its row with it.
+ * How people reach you, from `src/data/contact.yml`, rendered on both entry
+ * pages and in the CV lede. Two rows are DERIVED rather than listed — the PGP
+ * key id from socials.yml and the current position from cv.yml — because a
+ * second copy could disagree with /pgp-key/ and /cv/. Each is fenced by the
+ * feature that owns it.
  */
 interface Props {
-  /**
-   * `rows`   a <dl>: a label column on a hairline rule, for a contact section.
-   * `inline` one wrapping line of "label value" pairs, for the CV lede, where
-   *          a four-row list under the summary would push the portrait's
-   *          column out of shape for something a reader scans in one glance.
-   */
+  /** `rows`: a <dl> on hairline rules. `inline`: one wrapping line of pairs,
+      for the CV lede. */
   layout?: 'rows' | 'inline';
 }
 const { layout = 'rows' } = Astro.props;
 
-/*
- * Listed first, derived after. Not configurable: the listed rows are the ones
- * somebody chose to put there, and a derived row appearing above them would be
- * the template overruling that.
- */
+// Listed first, derived after: a derived row above the listed ones would be
+// the template overruling a choice.
 const rows: ResolvedRow[] = [...contactRows];
 
 /* ▼ FEATURE:pgp ▼ */

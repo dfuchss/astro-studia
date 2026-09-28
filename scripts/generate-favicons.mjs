@@ -1,16 +1,11 @@
 /**
- * Rasterize public/favicon.svg into the PNG sizes browsers still want.
+ * Rasterize public/favicon.svg into the PNGs browsers still want. The PNGs
+ * are committed so the build needs no image processing; rerun after editing
+ * the SVG (its colours are copies of --bg and the accent, not the tokens).
  *
- *   npm run favicons
- *
- * The SVG is the source of truth; these are derived and committed so the build
- * itself needs no image processing. Run this after you edit the SVG — which
- * you will, because its colours are copies of --bg and the default accent and
- * cannot read the real tokens from public/.
- *
- * Note that an SVG comment may not contain a double hyphen: it is illegal XML,
- * and sharp refuses the file outright where a browser would quietly cope. If
- * this script reports a corrupt header, that is usually why.
+ * An SVG comment may not contain a double hyphen: it is illegal XML, and
+ * sharp refuses the file where a browser would quietly cope. If this reports
+ * a corrupt header, that is usually why.
  */
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';

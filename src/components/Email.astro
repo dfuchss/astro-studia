@@ -1,15 +1,9 @@
 ---
 /**
- * An email address that is not in the served HTML.
- *
- * The address is split and rot13'd into data attributes and reassembled on
- * load, so a scraper reading the shipped bytes finds nothing to harvest.
- * scripts/audit-site.mjs greps the built output for anything address-shaped
- * and fails the build if one appears — which is what catches the case where
- * somebody writes a plain mailto: into a page and nobody notices for a year.
- *
- * Without JS it renders "name (at) example (dot) org", which is readable,
- * unambiguous, and still not a harvestable address.
+ * An email address that is not in the served HTML: split and rot13'd into
+ * data attributes, reassembled on load. The audit fails the build on anything
+ * address-shaped in the output. Without JS it renders "name (at) example
+ * (dot) org".
  */
 interface Props {
   /** The real address. It never reaches the HTML. */

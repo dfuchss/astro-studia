@@ -1,23 +1,8 @@
 /*
- * Structural and accessibility audit of dist/.
- *
- * Offline and structural on purpose. It runs against the built bytes before
- * anything is published, rather than crawling the live site afterwards and
- * telling you about a problem your readers found first.
- *
- * Run it with `npm run audit`, or `npm run verify` to get the asset checks too.
- * The deploy workflow runs verify before it publishes, so a regression fails
- * the build instead of reaching the site.
- *
- * Each block below is one check and they are independent — delete one you do
- * not want, add one you do. Checks 1, 2, 2b and 3 are contracts this template
- * makes about itself; 4 through 9 are true of any site.
- *
- * Checks 4, 4b and 9 share one rule: a published URL names exactly one file,
- * by its shape (see resolvePath below). That is what makes the URL policy in
- * src/lib/paths.ts enforceable — a link, a canonical, a sitemap entry or a
- * feed link whose shape does not match the file that was emitted is a 404 on
- * a static host, and it fails here rather than there.
+ * Structural and accessibility audit of dist/, run offline against the built
+ * bytes before anything is published (`npm run audit`, or `npm run verify` for
+ * the asset checks too). Each block is one independent check; what each one
+ * asserts and why is in docs/Verification.md.
  *
  * A note on the shape of these checks: several work by regex over built
  * output, which is a technique with one characteristic failure — change the
@@ -45,10 +30,7 @@ if (!existsSync(DIST)) {
   process.exit(1);
 }
 
-/* ---- configuration, read from src/consts.ts -------------------------------
- * Parsed rather than imported: this is a plain node script with no TypeScript
- * loader, and the two values it needs are unambiguous in the source.
- */
+// ---- configuration, read by regex: a plain node script has no TS loader ----
 const consts = readFileSync(join(SRC, 'consts.ts'), 'utf8');
 const astroConfig = readFileSync(join(ROOT, 'astro.config.ts'), 'utf8');
 
@@ -59,14 +41,8 @@ if (!siteUrl) {
 }
 const OWN_HOST = new URL(siteUrl).host;
 
-/**
- * The base path, when the site is deployed into a subdirectory.
- *
- * Astro rewrites the URLs it generates itself, but not an href you wrote by
- * hand — so a site with a base is exactly where internal links silently point
- * at the domain root. Check 4 below asserts that every one of them carries
- * the base, which is the failure this whole file exists to make loud.
- */
+/** The base path, when the site is deployed into a subdirectory. Check 4
+    asserts every internal URL carries it. */
 const BASE = (astroConfig.match(/^\s*base:\s*'([^']+)'/m)?.[1] ?? '').replace(/\/$/, '');
 
 const ALLOWED = new Set(
@@ -100,34 +76,17 @@ const pages = htmlFiles.map((f) => ({
 const isStub = (p) => /<meta http-equiv="refresh"/i.test(p.html);
 const real = pages.filter((p) => !isStub(p));
 
-/*
- * The site's own address, with the base, as the string every absolute URL it
- * publishes about itself has to start with. SITE.url carries the base when
- * there is one (docs/Deploying.md), so this is one prefix, not two.
- */
+/** The prefix every absolute self-URL must start with; SITE.url already
+    carries the base. */
 const SITE_ROOT = siteUrl.replace(/\/$/, '');
 
 /* ---- resolving a published URL to the file that serves it ------------------
  *
- * STRICT, BY SHAPE. A URL names exactly one file, and the shape says which:
- *
- *     /             index.html
- *     /a/b/         a/b/index.html
- *     /a/b          a/b.html
- *     /a/b.ext      a/b.ext
- *
- * Nothing else is tried. This used to accept a/b.html and a/b/index.html for
- * one another, and that leniency is precisely how a build under the wrong URL
- * policy passed every check: /projects/x/ was linked, projects/x.html was
- * emitted, the audit found the file by the other spelling and reported green,
- * and the deployed link was a 404. A static host does not try the other
- * spelling. So the shape IS the contract, and a link whose shape does not
- * match the file that exists fails here — with the other spelling named, so
- * the message says what actually went wrong.
- *
- * With a base configured, dist/ is still the root of what gets deployed — the
- * subdirectory comes from where it is deployed TO — so the base is stripped
- * before anything is looked up on disk.
+ * STRICT, BY SHAPE: /a/b/ is a/b/index.html and nothing else, /a/b is a/b.html
+ * and nothing else. Accepting either spelling is how a build under the wrong
+ * URL policy once passed every check while every deployed link 404ed — a
+ * static host does not try the other spelling. The base is stripped first:
+ * dist/ is still the root of what gets deployed.
  */
 const isFile = (p) => existsSync(p) && statSync(p).isFile();
 const resolvePath = (path) => {
@@ -158,20 +117,11 @@ const ownPath = (url) => {
 
 // ---- 1. every CSS custom property is defined --------------------------------
 /*
- * `var(--x, fallback)` is NOT a property that needs defining: the fallback is
- * the definition, and writing it that way is how a stylesheet says "callers may
- * override this, and here is what happens when they don't". Prose.astro's
- * `--ti` is exactly that — an inline-icon colour a page sets per icon, read as
- * `var(--ti, var(--text-faint))` and deliberately never defined in CSS.
- *
- * So only a var() used WITHOUT a fallback has to resolve. Getting this wrong is
- * not hypothetical: this check used to flag every use, and it passed only
- * because one demo page happens to set `--ti` inline and the loop below pools
- * inline definitions globally. Deleting three icons from that one page would
- * have failed the audit of an untouched template — and a real site whose prose
- * never uses an inline icon failed on day one. A check that passes for an
- * accidental reason is worse than no check: it reports green for the wrong
- * thing and nobody looks again.
+ * Only a var() used WITHOUT a fallback has to resolve: the fallback is the
+ * definition (Prose.astro's `--ti` is never defined in CSS on purpose).
+ * Flagging every use once passed only because one demo page set `--ti`
+ * inline and the loop pools inline definitions globally — a check that
+ * passes for an accidental reason is worse than no check.
  */
 {
   const defined = new Set();
@@ -214,14 +164,9 @@ const ownPath = (url) => {
 
 // ---- 2b. every section has an accent block ----------------------------------
 {
-  /*
-   * The `Section` union in consts.ts and the [data-section] blocks in
-   * tokens.css have to agree, or a page renders with the wrong accent — or
-   * with the default one, which looks deliberate and is the harder bug.
-   *
-   * Comparing the built HTML against the built CSS catches it from the outside
-   * without this script needing to parse TypeScript.
-   */
+  // The `Section` union and tokens.css have to agree, or a page renders with
+  // the default accent, which looks deliberate. Compared from the outside, in
+  // the built HTML and CSS, so nothing here parses TypeScript.
   const inHtml = new Set();
   for (const p of pages) {
     for (const m of p.html.matchAll(/\bdata-section="([a-z0-9-]+)"/gi)) inHtml.add(m[1]);
@@ -251,15 +196,9 @@ const ownPath = (url) => {
 
 // ---- 3. contrast ------------------------------------------------------------
 {
-  /*
-   * Derived, not listed. Every token whose value is a bare 6-digit hex is
-   * checked; the role tokens (-strong, -line, -dim, -glow) are color-mix()
-   * expressions and so are skipped automatically, which is right — they are
-   * borders and tints, not text.
-   *
-   * Change the palette and this follows it. Add a sixth accent family and it
-   * is checked without anyone remembering to add it here.
-   */
+  // Derived, not listed: every bare 6-digit hex token is checked, and the
+  // color-mix() role tokens drop out on their own. A sixth family is covered
+  // without anyone adding it here.
   const tokens = {};
   for (const f of cssFiles) {
     for (const m of readFileSync(f, 'utf8').matchAll(
@@ -398,18 +337,9 @@ const ownPath = (url) => {
 
 // ---- 4b. every URL a page publishes about itself names that page's file ----
 {
-  /*
-   * The canonical link, og:url, Scholar's citation_abstract_html_url and the
-   * JSON-LD `url` all claim to be the address of the page they sit on. Each one
-   * is resolved by the strict rule above and must land on the very file it was
-   * read from — not merely on some file. This is what catches a canonical
-   * built from Astro.url.pathname under a URL policy where that is the file
-   * path: "…/cv.html" resolves to nothing, and "…/404/" never did.
-   *
-   * Absolute rather than site-relative, because that is what these fields
-   * are; a canonical on another origin is a statement that this page is a
-   * copy of something elsewhere, and this template never makes one.
-   */
+  // Each must land on the very file it was read from, not merely on some
+  // file: that catches a canonical built from Astro.url.pathname under a
+  // policy where that is the file path ("…/cv.html" resolves to nothing).
   const SELF_URLS = [
     ['canonical', /<link rel="canonical" href="([^"]+)"/g],
     ['og:url', /<meta property="og:url" content="([^"]+)"/g],
@@ -472,13 +402,9 @@ const ownPath = (url) => {
       fail(`${p.url}: no meta description`);
       bad += 1;
     }
-    /*
-     * A page either has a canonical or says noindex — never both, never
-     * neither. The 404 page is the noindex case: it is served for every URL
-     * that does not exist, so there is no address a canonical could truthfully
-     * name, and the one it used to carry ("/404/") was a URL that did not
-     * exist either.
-     */
+    // Exactly one of a canonical and noindex. The 404 page is the noindex
+    // case: served for every URL that does not exist, it has no address a
+    // canonical could truthfully name.
     const canonical = /<link rel="canonical"/.test(p.html);
     const noindex = /<meta name="robots" content="noindex"/.test(p.html);
     if (canonical === noindex) {
@@ -497,13 +423,8 @@ const ownPath = (url) => {
 
 // ---- 6. images carry intrinsic dimensions -----------------------------------
 {
-  /*
-   * Without width and height the page reflows as each image loads, which is
-   * both the worst of the layout-shift metrics and genuinely unpleasant to
-   * read. Images from src/assets/ get them from Astro; images in public/ get
-   * them from intrinsic() in src/lib/images.ts; an <img> written by hand in
-   * markdown gets them from you.
-   */
+  // src/assets/ images get them from Astro, public/ images from intrinsic()
+  // in src/lib/images.ts, an <img> written by hand in markdown from you.
   let imgs = 0;
   let bad = 0;
   for (const p of pages) {
@@ -527,17 +448,13 @@ const ownPath = (url) => {
    *     <a href="...">institute</a>, <a href="...">somewhere</a>
    *
    * renders as "written at theinstitute, somewhere". It reads fine in the
-   * source and is easy to miss in review, so check the rendered bytes: a word
-   * character or a comma immediately against a link boundary, with no space.
+   * source, so check the rendered bytes: a word character or punctuation
+   * immediately against a link boundary, with no space.
+   *
+   * Chips, badges and icon links are spaced by CSS rather than a text node
+   * and are exempt by class; `orcid` because an ORCID icon flush after an
+   * author's name is the standard pattern.
    */
-  // Chips, badges and icon links are spaced by CSS margin or flex gap rather
-  // than by a text node, so a word sitting flush against their markup is
-  // correct. Only prose links are checked.
-  //
-  // `orcid` is here because an ORCID icon immediately after an author's name
-  // is the standard academic pattern — `Jan Keim<a class="orcid">` is exactly
-  // what you want, and without this entry every author on every paper page is
-  // reported.
   const STYLED = /class="[^"]*\b(?:chip|venue|who|title-link|brand|orcid|icon)\b/;
   const OPEN = /([A-Za-z0-9,.;:])(<a\s[^>]*>)/g;
   const CLOSE = /<\/a>([A-Za-z0-9])/g;
@@ -570,15 +487,8 @@ const ownPath = (url) => {
 
 // ---- 7. third-party subresources are only the ones you chose ----------------
 {
-  /*
-   * Links to other sites are the whole point of an academic page, so only
-   * *subresources* count here — the things a browser fetches without being
-   * asked, which are also the things that see your readers' IP addresses.
-   *
-   * The allowlist is ALLOWED_THIRD_PARTY in src/consts.ts, and it ships empty.
-   * A site embedding a talk would put 'www.youtube.com' there and nothing
-   * else; naming it means a second origin cannot appear unnoticed.
-   */
+  // Only *subresources* count — what a browser fetches without being asked,
+  // which is also what sees your readers' IP addresses. Links never do.
   const SUBRESOURCE = /<(?:img|script|iframe|source|video|audio)\b[^>]*\bsrc="https?:\/\/([^"/]+)/g;
   /*
    * <link> is separate, because most of them fetch nothing. rel="canonical"
@@ -615,23 +525,12 @@ const ownPath = (url) => {
 
 // ---- 8. no email address is in the served bytes -----------------------------
 {
-  /*
-   * Email.astro splits an address across two rot13'd attributes and assembles
-   * it on load, so none of this should ever match. The check exists because
-   * the way that protection is lost is not by breaking the component — it is
-   * by somebody writing a plain mailto: into a page, which looks completely
-   * normal in review.
-   */
+  // Email.astro never lets an address into the bytes; this catches the plain
+  // mailto: somebody writes into a page, which looks normal in review.
   const ADDRESS = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}\b/g;
 
-  /*
-   * Entity references are decoded first. `&#64;` and `&commat;` are both an @
-   * to a browser and to a scraper, so an address "protected" by writing the
-   * symbol as an entity is not protected at all — it is just invisible to a
-   * naive grep. That is the exact failure mode of the hand-rolled obfuscation
-   * every academic theme ships, and checking the raw bytes alone would have
-   * declared it safe.
-   */
+  // Scanned twice, raw and with entities decoded: `&#64;` is an @ to a
+  // scraper, and a raw-bytes check alone would declare it safe.
   const decode = (text) =>
     text
       .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
@@ -655,14 +554,8 @@ const ownPath = (url) => {
 
 // ---- 9. robots.txt names a sitemap that exists; it and the feed are sound --
 {
-  /*
-   * All three are generated, all three are easy to break without noticing,
-   * and all three are consumed by machines that will not tell you they
-   * stopped working. Every URL they carry is resolved by the strict rule
-   * above, because a sitemap entry or a feed link with the wrong shape is a
-   * 404 nobody reading the site will ever see — a feed reader's click is the
-   * one link on the site that is never checked by a human.
-   */
+  // All three are generated and consumed by machines that will not tell you
+  // they stopped working; a feed reader's click is never checked by a human.
   const readXml = (name) => {
     const f = join(DIST, name);
     if (!existsSync(f)) {
@@ -698,15 +591,9 @@ const ownPath = (url) => {
     return { bad, n };
   };
 
-  /*
-   * THE SITEMAP IS WHICHEVER FILE robots.txt NAMES. Not a probe for the
-   * integration's filename, and not a preference between an index and a
-   * single sitemap.xml: a crawler learns the sitemap's address from
-   * robots.txt and nowhere else, so that link is the thing to assert. A
-   * sitemap under any name that robots.txt does not point at is a sitemap
-   * nothing will read, and a robots.txt pointing at a file that was not
-   * emitted is a 404 handed to every crawler.
-   */
+  // THE SITEMAP IS WHICHEVER FILE robots.txt NAMES, not a probe for the
+  // integration's filename: a crawler learns the address from robots.txt and
+  // nowhere else, so that link is the thing to assert.
   const robotsFile = join(DIST, 'robots.txt');
   if (!existsSync(robotsFile)) {
     fail('robots.txt was not generated');

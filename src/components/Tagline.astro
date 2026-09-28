@@ -2,15 +2,9 @@
 import type { Tagline } from '../consts.ts';
 
 /*
- * SITE.tagline, rendered: a plain string as is, or the three-field shape with
- * its one link in the middle. Both heroes use this, so a tagline with a link
- * reads the same under a person's name and under a project's.
- *
- * The three parts are joined with NO added whitespace — `before` ends with the
- * space you want before the link, `after` starts with the comma or the space
- * you want after it. A component that inserted spaces would make ", Germany"
- * impossible to write, and that trailing comma is the actual case this exists
- * for: "Researcher at the [Karlsruhe Institute of Technology], Germany."
+ * SITE.tagline, rendered. The three parts are joined with NO added
+ * whitespace — `before` ends with the space before the link, `after` starts
+ * with the comma after it — because ", Germany" is the case this exists for.
  */
 interface Props {
   text: Tagline;

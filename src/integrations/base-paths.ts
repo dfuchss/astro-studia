@@ -4,52 +4,13 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Prefix every site-absolute URL in the built output with the configured base.
- *
- * ── Why this exists ────────────────────────────────────────────────────────
- *
- * Astro's `base` rewrites the URLs Astro itself generates — hashed assets,
- * imported images — but not a `/cv/` you wrote by hand. Deploy to
- * https://user.github.io/repo/ without this and every internal link points at
- * the domain root and 404s. The configuration reference is blunt about it:
- * "all of your static asset imports and URLs should add the base as a prefix".
- *
- * Astro does not do it for you, and deliberately: given `/something` it cannot
- * know whether you meant it relative to the base or to the server root, and
- * guessing would stop you linking to a sibling directory.
- *
- * The obvious alternative is a withBase() helper called at each of the ~20
- * places that emit a path. That is worse than it sounds. You have to remember
- * it every time, forgetting is silent, and it cannot reach the cases that
- * matter most — an image path in a YAML data file, a link in a paper's front
- * matter, a plain ![](/assets/…) in markdown. Those are strings in content,
- * not expressions in a component, and no helper can be called from them.
- *
- * So this runs once, over the bytes that are actually published. You write
- * `/cv/` everywhere, which is what you would write anyway, and it is correct
- * at the root and in a subdirectory alike. Starlight's ecosystem arrived at
- * the same answer (starlight-base-path), for the same reason.
- *
- * ── What it touches ────────────────────────────────────────────────────────
- *
- * Only URL-bearing attributes: href, src, srcset, and `content` on exactly the
- * meta tags where it is a URL. Never the inside of a <script> or <style>,
- * where a leading slash means something else entirely — those regions are
- * masked out before anything is rewritten and restored afterwards.
- *
- * A URL is left alone when it already carries the base, is protocol-relative
- * (//host), or has a scheme (https:, mailto:, data:, #fragment).
- *
- * ── The one case it cannot reach ───────────────────────────────────────────
- *
- * A client-side script that builds a path at runtime. There is one, in
- * src/pages/blog/index.astro, and it reads import.meta.env.BASE_URL directly.
- * If you add another, do the same.
- *
- * scripts/audit-site.mjs asserts the outcome: with a base configured, any
- * internal link or subresource that does not carry it fails the build. So if
- * this integration ever stops working, you are told rather than shipping a
- * site whose every link is broken.
+ * Prefix every site-absolute URL in the built output with the configured
+ * base. Astro's `base` does not touch a `/cv/` you wrote by hand, and a
+ * withBase() helper cannot reach a path in YAML, front matter or markdown, so
+ * this rewrites the bytes once after the build: href, src, srcset and URL
+ * `content` attributes, with <script>/<style> bodies masked. A client-side
+ * script that builds a path at runtime (src/pages/blog/index.astro) must read
+ * import.meta.env.BASE_URL itself. docs/Architecture.md.
  */
 export default function basePaths(): AstroIntegration {
   // Captured from the resolved config rather than read from
@@ -106,11 +67,9 @@ const SRCSET_ATTR = /\ssrcset="([^"]*)"/g;
 /** Regions whose contents are not markup and must not be touched. */
 const MASKED = /<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi;
 /**
- * `content` is a URL on a couple of meta tags and prose on every other one, so
- * it is matched against the WHOLE tag rather than the attribute alone. An
- * earlier version tested the attribute match, which of course never contains
- * the sibling `property=` — so og:image was silently skipped, which is exactly
- * the case docs/Deploying.md tells you to add.
+ * `content` is a URL on a couple of meta tags and prose on every other, so it
+ * is matched against the WHOLE tag: an attribute match never contains the
+ * sibling `property=`, and testing that silently skipped og:image.
  */
 const URL_META = /<meta\b[^>]*\bcontent="(\/[^"]*)"[^>]*>/g;
 const IS_URL_META = /property="og:(url|image)"|name="twitter:image"/;

@@ -14,13 +14,8 @@ interface Props {
    * page — where the full apparatus would drown the rest of the page.
    */
   compact?: boolean;
-  /**
-   * Surname → /people/#anchor, from peopleLinks(). Optional on purpose: this
-   * component must not depend on the people collection, so that removing
-   * /people/ does not break /publications/. Built once per page by the caller,
-   * because building it per entry would hit the content store hundreds of
-   * times on a long list.
-   */
+  /** Surname → /people/#anchor, from peopleLinks(), built once per page by
+      the caller. Optional, so removing /people/ does not break /publications/. */
   links?: Map<string, string>;
 }
 

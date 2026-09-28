@@ -19,15 +19,8 @@ import {
 } from '../../lib/cv.ts';
 import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
 
-/*
- * Each section picks its own shape from its data unless `layout:` in cv.yml
- * says otherwise: a section whose entries carry dates gets the timeline with
- * the rail, one whose entries do not — a language list, a set of honours —
- * gets plain rows. Deciding per section rather than per site means adding
- * "Grants" to cv.yml needs no code here. `cards` and `courses` are always
- * explicit, because nothing about a plain entry implies a highlight-chip
- * grid or a semester grid.
- */
+/* Each section picks its shape from its data unless `layout:` says otherwise
+   (see layoutOf()), so adding a section to cv.yml needs no code here. */
 const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(section) }));
 ---
 

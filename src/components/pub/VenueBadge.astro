@@ -34,14 +34,9 @@ const venue: DataEntryMap['venues'][string] | undefined = abbr ? await getEntry(
 }
 
 <style>
-  /*
-   * venues.yml holds each venue's real brand colour, used as-is. Many of those
-   * were chosen against a white conference site and are far too dark to read
-   * as text on a near-black page, so the raw hue only ever becomes the border
-   * and a low-alpha fill; the text is mixed toward white until it is legible.
-   *
-   * That is why you can paste a venue's actual hex in and not think about it.
-   */
+  /* venues.yml holds each venue's real brand colour, usually chosen for a
+     white site: the raw hue becomes the border and a low-alpha fill, and the
+     text is mixed toward white until legible. */
   .venue {
     display: inline-flex;
     align-items: center;

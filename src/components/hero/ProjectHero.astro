@@ -13,24 +13,15 @@ import { formatCount } from '../../lib/citations.ts';
  * actions a visitor is most likely to want.
  */
 /* ▼ FEATURE:demo ▼ */
-/*
- * See PersonHero.astro for the shape a person's site wants instead. Neither
- * takes props: src/pages/index.astro carries both, each inside its own
- * ▼ PRESET:… ▼ fences, and `npm run init` keeps one and deletes the other —
- * this note with it, which is why it is fenced rather than left to describe a
- * component that is no longer there.
- */
+/* See PersonHero.astro for the other shape. src/pages/index.astro carries
+   both inside ▼ PRESET:… ▼ fences, and init keeps one — this note is fenced
+   so it goes with the choice. */
 /* ▲ FEATURE:demo ▲ */
 
 /*
- * The same mark as the nav, from SITE.brandLogo, so a site that has a logo
- * does not show it in the corner and a favicon in the middle of its own front
- * page. This used to be '/favicon.svg' outright, which meant ardoco.de had to
- * edit a component to put its own logo on its own home page.
- *
- * The favicon is the FALLBACK, not the default: with no brand mark configured
- * a centred hero still needs something above the title, and the favicon is the
- * one image every site in this template is guaranteed to have.
+ * The same mark as the nav, from SITE.brandLogo. The favicon is the fallback:
+ * a centred hero still needs something above the title, and the favicon is
+ * the one image every site here is guaranteed to have.
  */
 const logo = SITE.brandLogo?.src ?? '/favicon.svg';
 const { width: logoWidth, height: logoHeight } = intrinsic(logo);
@@ -62,16 +53,8 @@ import { scholarMetrics } from '../../lib/citations.ts';
 const m = scholarMetrics();
 /* ▲ FEATURE:citations ▲ */
 
-/*
- * Counted, never typed in — same reasoning as PersonHero.astro. A group page
- * that says "12 people" by hand is wrong the day someone joins, and nothing
- * would tell you.
- *
- * One row per line and each fenced by the feature it counts, so pruning that
- * feature takes its row — and its `getCollection` above — with it. Without the
- * fences a hero kept alongside a custom selection reads a collection that is
- * no longer declared, which is a build failure rather than a missing stat.
- */
+/* Counted, never typed in, one row per line and each fenced by the feature it
+   counts — see PersonHero.astro. */
 const stats = [
   /* ▼ FEATURE:publications ▼ */
   { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },

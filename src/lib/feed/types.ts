@@ -1,12 +1,8 @@
 /**
- * What a feed source hands back.
- *
- * `path` is site-absolute and WITHOUT the base — src/pages/feed.xml.ts adds
- * that, because an RSS <link> is an element rather than an attribute and so is
- * out of reach of the base-paths integration.
- *
- * `pubDate` may be undefined. Omitting a date is honest; defaulting to the
- * epoch is not, and a reader will file the entry under 1970 and believe it.
+ * What a feed source hands back. `path` is site-absolute WITHOUT the base;
+ * feed.xml.ts adds it, because an RSS <link> is an element, not an attribute,
+ * and the base-paths integration cannot reach it. `pubDate` may be undefined:
+ * defaulting to the epoch files the entry under 1970 in every reader.
  */
 export type FeedItem = {
   title: string;

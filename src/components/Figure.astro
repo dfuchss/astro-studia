@@ -5,23 +5,11 @@ interface Props {
   /** Path under public/, e.g. "/assets/img/papers/overview.svg". */
   src: string;
   alt: string;
-  /**
-   * Put the image on a white plate. Diagrams exported from a paper are almost
-   * always dark line art on a transparent background, drawn for a white page;
-   * on a near-black one they are close to invisible. Set false for an image
-   * that carries its own background.
-   */
+  /** A white plate behind the image: dark line art on transparency is close
+      to invisible here. False for an image with its own background. */
   plate?: boolean;
-  /**
-   * Draw the figure inside a fake window — a titlebar with three dots and this
-   * string as its label. For an approach diagram or a screenshot of a running
-   * tool, where the frame says "this is a thing on a screen" and gives a
-   * light-plated image an edge to sit against instead of floating on the page.
-   *
-   * Off by default, and it should stay that way: framing a scan, a photo or a
-   * plot claims something about it that is not true, and a page where every
-   * figure is a window is a page of windows.
-   */
+  /** A window frame with this titlebar label, for a diagram or a screenshot.
+      Off by default: framing a photo or a plot claims something untrue. */
   frame?: string;
   caption?: string;
 }
@@ -30,16 +18,8 @@ const { src, alt, plate = true, frame, caption } = Astro.props;
 
 const { width, height } = intrinsic(src);
 
-/*
- * How wide the figure is allowed to get.
- *
- * Vectors are capped at the prose measure. A diagram is usually small and wide,
- * and stretched across the full column it dominates the page and dwarfs the
- * text it illustrates.
- *
- * Rasters are capped at their own pixel width instead, because scaling one past
- * that is what makes it look soft.
- */
+/* Vectors are capped at the prose measure, so a small wide diagram does not
+   dwarf its text; rasters at their own pixel width, past which they go soft. */
 const isVector = src.endsWith('.svg');
 const maxWidth = isVector ? 'var(--measure)' : `${width}px`;
 ---

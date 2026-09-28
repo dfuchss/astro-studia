@@ -4,14 +4,8 @@ import { join } from 'node:path';
 import { socials } from './data.ts';
 
 /**
- * Everything /pgp-key/ needs, derived from the one value in socials.yml.
- *
- * A fingerprint is 40 hex characters. Storing only that — rather than a
- * fingerprint, a key id, a formatted version and a filename — means the four
- * cannot disagree, which is the failure this replaces.
- *
- * Every function returns null when no fingerprint is set, and the page and
- * SocialRow both stand down quietly in that case.
+ * Everything /pgp-key/ needs, derived from the one value in socials.yml so
+ * nothing can disagree. Every function returns null when it is unset.
  */
 const raw = socials.pgp_fingerprint?.replace(/\s+/g, '').toUpperCase() ?? null;
 const valid = raw && /^[0-9A-F]{40}$/.test(raw) ? raw : null;
@@ -28,21 +22,8 @@ export const fingerprint = () => valid;
 export const keyPath = () => (valid ? `/assets/pgp-key/${valid}.asc` : null);
 
 /**
- * The ASCII-armored public key itself, if the .asc file is actually there.
- *
- * Read at build time so /pgp-key/ can print the block in a `<pre>` rather than
- * only linking to it: a key that is part of the document works without JS, is
- * indexable, and can be copied in one click. Fetching it on load — which is how
- * fuchss.org did this before — gives up all three.
- *
- * NOTHING NEW TO CONFIGURE. The path is derived from the same fingerprint as
- * everything else in this file, and the file being absent is a supported state,
- * not an error: the page falls back to the fingerprint, the key id and the
- * download link, which is what it has always shown.
- *
- * Resolved from the working directory rather than import.meta.url, for the
- * reason spelled out in src/lib/images.ts: during `astro build` this module is
- * bundled into dist/, so a URL relative to the module points at the output.
+ * The ASCII-armored key, inlined at build time. An absent file is a supported
+ * state, not an error. Working directory, not import.meta.url — see images.ts.
  */
 export const armoredKey = (): string | null => {
   const path = keyPath();

@@ -2,20 +2,15 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Intrinsic dimensions of an image under public/, read off disk at build time.
- *
- * Everything in public/ is served byte-for-byte and never touches Astro's image
- * pipeline, so nothing else knows how big these files are. Without width and
- * height the page reflows as each one loads, and scripts/audit-site.mjs fails
- * any <img> that ships without them.
- *
- * Images imported from src/assets/ do not need this — the Astro <Image>
- * component already knows their size. This is only for public/.
+ * Intrinsic dimensions of an image under public/, which never touches Astro's
+ * image pipeline, so nothing else knows how big it is — and the audit fails an
+ * <img> without width and height. Images from src/assets/ get theirs from
+ * <Image> and do not need this.
  *
  * Resolved from the working directory, NOT from import.meta.url: during
  * `astro build` this module is bundled into dist/.prerender/chunks/, so a URL
- * relative to import.meta.url points into the output directory and every lookup
- * fails — while `astro dev`, which runs the source in place, works fine.
+ * relative to the module points into the output and every lookup fails —
+ * while `astro dev`, which runs the source in place, works fine.
  */
 export function intrinsic(publicPath: string): { width: number; height: number } {
   const file = join(process.cwd(), 'public', publicPath);

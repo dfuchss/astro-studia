@@ -17,13 +17,9 @@ import { formatCount } from '../../lib/citations.ts';
  * back them up.
  */
 /* ▼ FEATURE:demo ▼ */
-/*
- * See ProjectHero.astro for the shape a research-project site wants instead.
- * Neither takes props: src/pages/index.astro carries both, each inside its own
- * ▼ PRESET:… ▼ fences, and `npm run init` keeps one and deletes the other —
- * this note with it, which is why it is fenced rather than left to describe a
- * component that is no longer there.
- */
+/* See ProjectHero.astro for the other shape. src/pages/index.astro carries
+   both inside ▼ PRESET:… ▼ fences, and init keeps one — this note is fenced
+   so it goes with the choice. */
 /* ▲ FEATURE:demo ▲ */
 /* ▼ FEATURE:publications ▼ */
 import { PUBLICATIONS } from '../../lib/paths.ts';
@@ -39,18 +35,10 @@ const m = scholarMetrics();
 /* ▲ FEATURE:citations ▲ */
 
 /*
- * Counted, never typed in.
- *
- * A hardcoded "35 publications" is wrong the day you add the thirty-sixth, and
- * nothing tells you. Every number on this page is derived from the collection
- * it describes, so the page cannot disagree with the rest of the site.
- *
- * A stat whose value is 0 is dropped rather than shown as a zero.
- *
- * One row per line and each fenced by the feature it counts, so pruning that
- * feature takes its row — and its `getCollection` above — with it. Without the
- * fences a hero kept alongside a custom selection reads a collection that is
- * no longer declared, which is a build failure rather than a missing stat.
+ * Counted, never typed in: a hardcoded "35 publications" is wrong the day you
+ * add the thirty-sixth. A stat of 0 is dropped. One row per line, each fenced
+ * by the feature it counts, so pruning that feature takes its row and its
+ * `getCollection` above with it.
  */
 const stats = [
   /* ▼ FEATURE:publications ▼ */

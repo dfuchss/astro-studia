@@ -23,18 +23,11 @@ export async function members(): Promise<Member[]> {
 }
 
 /**
- * Surname → the anchor of that person's entry on /people/.
- *
- * Lets an author name in the publication list become a link, without every
- * publication having to know who is on the team. Built once per page and
- * passed down, rather than looked up per author — a page listing forty papers
- * would otherwise hit the content store several hundred times.
- *
- * Matching is on the surname alone, folded the same way isSelf() folds, so
- * "Sjögren" and "Sjogren" both land. That is deliberately loose: two people
- * sharing a surname is rarer than one person's name being spelled two ways,
- * and the cost of a wrong hit here is a link to the wrong colleague rather
- * than anything worse.
+ * Surname → the anchor of that person's entry on /people/, built once per
+ * page and passed down rather than looked up per author. Matching is on the
+ * folded surname alone (the same fold as surnameKey() in authors.ts, which
+ * PubEntry reads the map with): deliberately loose, because one name spelled
+ * two ways is commoner than two people sharing a surname.
  */
 export async function peopleLinks(): Promise<Map<string, string>> {
   const fold = (s: string) =>

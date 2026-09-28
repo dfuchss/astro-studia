@@ -8,15 +8,9 @@ interface Props {
 
 const { section } = Astro.props;
 
-/*
- * The brand mark, if there is one — see SITE.brandLogo.
- *
- * The HEIGHT is a design decision and lives here; the width follows from the
- * file's own aspect ratio, read off disk, so swapping a square logo for a wide
- * one needs no edit in either place. Both attributes have to be on the tag:
- * scripts/audit-site.mjs fails an <img> without them, and without them the nav
- * — the first thing on every page — reflows as the image arrives.
- */
+/* The brand mark, if there is one — see SITE.brandLogo. The height is decided
+   here; the width follows from the file's aspect ratio, read off disk, so
+   both attributes the audit requires are always present. */
 const LOGO_HEIGHT = 24;
 const logo = SITE.brandLogo;
 const natural = logo ? intrinsic(logo.src) : undefined;

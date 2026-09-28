@@ -5,18 +5,11 @@ import { bibtexLoader } from './loaders/bibtex.ts';
 import { PAPERS } from './lib/paths.ts';
 
 /*
- * The content model.
- *
- * Every collection is one fenced block below, and every cross-reference goes
- * through Astro's `reference()`. That is the point of the whole file: a bad
- * slug, an unknown venue or a BibTeX key pointing at a page that does not
- * exist stops the build with the offending id in the message. The same
- * mistakes in a template language are a silent lookup that renders blank, and
- * you find them when a reader tells you.
- *
- * To remove a collection, delete its block AND its name from the `collections`
- * export at the bottom. See docs/Removing-Features.md — some have a required
- * order, because `publications` needs `venues` and `papers` needs `authors`.
+ * The content model. Every cross-reference goes through `reference()`, so a
+ * bad slug or an unknown venue stops the build naming the offender instead of
+ * rendering blank. Field by field: docs/Content.md. To remove a collection,
+ * delete its block AND its name from the export at the bottom
+ * (docs/Removing-Features.md has the order that matters).
  */
 
 /** Badge colours for the publication list, keyed by the BibTeX `abbr`. */
@@ -38,12 +31,8 @@ const authors = defineCollection({
   }),
 });
 
-/**
- * The people shown at /people/.
- *
- * The collection id is the page anchor — see the header of people.yml — and
- * inbound author links depend on it, so a key here is a published URL.
- */
+/** The people shown at /people/. The collection id is the page anchor, so a
+    key here is a published URL. */
 const people = defineCollection({
   loader: file('src/data/people.yml'),
   schema: z.object({
@@ -56,10 +45,8 @@ const people = defineCollection({
     email: z.string().optional(),
     url: z.url().optional(),
     github: z.string().optional(),
-    /**
-     * Every surname this person publishes under. Used to link an author name
-     * in the publication list back to their entry here.
-     */
+    /** Every surname this person publishes under; links an author name in the
+        publication list back to this entry. */
     surnames: z.array(z.string()).min(1),
   }),
 });
@@ -69,8 +56,7 @@ const publications = defineCollection({
     file: 'src/data/papers.bib',
 
     links: [
-      // A PDF you host. An absolute URL passes straight through; a relative
-      // path must exist under public/assets/pdf/ or the build fails.
+      // A PDF you host: an absolute URL, or a path under public/assets/pdf/.
       {
         field: 'pdf',
         as: 'pdfUrl',
@@ -80,18 +66,12 @@ const publications = defineCollection({
           file: `public/assets/pdf/${rel}`,
         }),
       },
-      // This paper's own page. A slug with no markdown file behind it used to
-      // be the classic way to publish a live-looking link that 404s; here it
-      // is a build error with the BibTeX key attached.
+      // This paper's own page; a slug with no markdown behind it fails the build.
       {
         field: 'page',
         as: 'pageSlug',
-        /*
-         * Built from PAPERS rather than typed out, so renaming the route does
-         * not leave a validator still insisting on the old prefix. A regex is
-         * the one place src/lib/paths.ts cannot supply the literal directly —
-         * so it supplies the string the regex is assembled from.
-         */
+        // Assembled from PAPERS rather than typed out, so renaming the route
+        // cannot leave a validator insisting on the old prefix.
         resolve: (raw, { key }) => {
           const re = new RegExp(`^${PAPERS}([a-z0-9._-]+)/?$`);
           const m = re.exec(raw);
@@ -110,8 +90,7 @@ const publications = defineCollection({
     authors: z.array(z.object({ first: z.string(), last: z.string() })).min(1),
     year: z.number().int(),
     month: z.number().int().min(1).max(12).optional(),
-    // Optional: a preprint with no venue renders without a badge. When it IS
-    // set, reference() turns an unknown abbr into a build failure.
+    // Optional: an entry with no venue renders without a badge.
     abbr: reference('venues').optional(),
     booktitle: z.string().optional(),
     journal: z.string().optional(),
@@ -137,37 +116,20 @@ const publications = defineCollection({
   }),
 });
 
-/**
- * An image under public/, with the one decision a dark page forces on you.
- * Figure.astro reads the dimensions off disk, so there is nothing to declare
- * here but the path.
- */
+/** An image under public/; Figure.astro reads the dimensions off disk. */
 const figure = z.object({
   src: z.string(),
   alt: z.string(),
-  /**
-   * Put it on a white plate. True is right for the usual case — a diagram
-   * exported from a paper, dark line art on transparency, which is invisible
-   * on this background. Set false when the image has its own background.
-   */
+  /** A white plate behind it. True for dark line art on transparency, which
+      is invisible on this background; false for an image with its own. */
   plate: z.boolean().default(true),
-  /**
-   * Wrap it in a window frame, with this string as the titlebar label. For a
-   * diagram of record: the frame gives a white plate an edge to sit against
-   * instead of floating as a bright rectangle on a near-black page.
-   *
-   * Omit it for no frame. An explicit label beats deriving the frame from
-   * `plate` — the two happen to coincide often, which is exactly what makes a
-   * derived version look right until the first figure where it does not.
-   */
+  /** A window frame with this titlebar label. Explicit rather than derived
+      from `plate`: the two coincide often enough to look right until they don't. */
   frame: z.string().optional(),
 });
 
-/**
- * A map of label -> URL, rendered as a row of chips: `{ acm: "https://…" }`.
- * A plain record rather than a fixed set of fields, because every paper has a
- * different handful of places it lives.
- */
+/** label -> URL, rendered as a row of chips. A record, because every paper
+    lives in a different handful of places. */
 const linkMap = z
   .record(
     z.string(),
@@ -179,12 +141,8 @@ const linkMap = z
   .optional();
 
 /**
- * One page per paper: the abstract, the figure, the links, the citation.
- *
- * The filename is the URL — src/content/papers/de-officiis.md is
- * /papers/de-officiis/ — and it is what a `page = {/papers/<slug>/}` field in
- * papers.bib has to match. Renaming this file without touching the .bib fails
- * the build, which is the point.
+ * One page per paper. The filename is the URL, and what a `page = {…}` field
+ * in papers.bib has to match.
  */
 const papers = defineCollection({
   loader: glob({ base: 'src/content/papers', pattern: '**/*.md' }),
@@ -195,57 +153,27 @@ const papers = defineCollection({
 
       /**
        * The BibTeX key. Everything bibliographic is read from there, not here.
-       *
-       * OPTIONAL, because not every page with something to say is a publication.
-       * A working-group meeting, an invited lecture, a national workshop: the
-       * venue publishes no proceedings, so there is no entry to point at and
-       * nothing to cite. Such a page states its venue and its year itself — see
-       * `venue` and `year` below, and the refinements under this object, which
-       * make "derived from BibTeX" and "stated by the page" the only two
-       * possibilities rather than a spectrum.
+       * OPTIONAL: a talk at a venue that publishes nothing has no entry to
+       * point at, and states its `venue` and `year` itself instead. The
+       * refinements below make those the only two possibilities.
        */
       publication: reference('publications').optional(),
 
-      /**
-       * The year, for a page that has no `publication`.
-       *
-       * Only then. With an entry the year comes from the BibTeX, and a second
-       * copy here would be a fact that can drift; without one, nothing else on
-       * the page knows when this happened, and an undated paper sorts last on
-       * every list and reaches the feed with no date at all. So exactly one of
-       * the two is present, which the refinement below enforces.
-       */
+      /** The year, only for a page with no `publication`; with one it comes
+          from the entry. */
       year: z.number().int().optional(),
 
       /**
-       * The venue line, stated outright, for a page with no `publication`.
+       * The venue, stated outright, for a page with no `publication`. The
+       * presence of this object IS which of the two sources a page has.
        *
-       * A paper page's venue has exactly two possible sources: the BibTeX entry
-       * (plus `conferenceName` below for the series' own homepage), or this. The
-       * presence of this object IS which one — nothing else has to be consulted.
-       *
-       * ONE OBJECT, NOT FOUR SIBLING STRINGS. ardoco.de reached this case with
-       * `pubEmoji`, `pubPrefixText`, `pubBylineConnector` and `pubShortName` as
-       * four independent top-level fields, and that shape misleads twice over. It
-       * hides that the four mean nothing apart from each other — each one reads
-       * as something any paper might set. And because `pubPrefixText` had to
-       * carry a default ('Paper at') for the pages that state nothing, the page
-       * then asked `pubPrefixText !== 'Paper at'` to find out whether a venue had
-       * been stated at all: a sentinel string standing in for the presence of the
-       * thing it is part of. An optional object cannot get into that state.
-       *
-       * It is also the honest home for the label's LANGUAGE. Stating your own
-       * venue is how a page not written in English says where it happened
-       * ("Präsentation auf der Jahrestagung der GI-FG Architekturen 2024"), and
-       * the moment that sentence is German every English word the template
-       * supplies next to it is wrong. There is one: the byline's "by". So it
-       * comes from here too. The serial "and" between author names does not
-       * become a fifth field — it simply goes away in this case, because a comma
-       * is language-neutral and a per-language conjunction is the accident above
-       * starting over.
-       *
-       * `status` is not consulted for a stated venue: a talk is neither published
-       * nor to appear, and the label already says what happened.
+       * One object, not four sibling strings: the four mean nothing apart
+       * from each other, and four loose fields once ended in a default prefix
+       * doubling as the "is a venue stated at all?" sentinel. It is also the
+       * home of the label's language — a German sentence makes every English
+       * word the template adds beside it wrong, so the byline's "by" lives
+       * here and the serial "and" between names goes away. `status` is not
+       * consulted for a stated venue.
        */
       venue: z
         .object({
@@ -253,74 +181,42 @@ const papers = defineCollection({
           label: z.string(),
           /** The event's own page, if it has one. */
           url: z.url().optional(),
-          /**
-           * A flag or other mark, set before the label. ardoco.de uses 🇩🇪 to say
-           * a talk was given in German.
-           */
+          /** A flag or other mark, before the label. */
           mark: z.string().optional(),
-          /**
-           * A short form for the places the sentence does not fit: the
-           * breadcrumb on the page itself, a row on /papers/, a project's list
-           * of related papers. A publication has its venue badge for that; a
-           * stated venue has only this. Defaults to `label`.
-           */
+          /** For the breadcrumb and the list rows, where the sentence does not
+              fit. Defaults to `label`. */
           short: z.string().optional(),
           /** The byline's "by", in the page's language: "von", "par", "a". */
           bylineConnector: z.string().default('by'),
         })
         .optional(),
 
-      /**
-       * Authors as entries in authors.yml, so the page can link each to their
-       * ORCID. Separate from the BibTeX author list on purpose: that one is
-       * strings, this one is identities.
-       */
+      /** Authors as authors.yml entries, so each can link to an ORCID. The
+          BibTeX author list is strings; this one is identities. */
       authors: z.array(reference('authors')).default([]),
 
-      /**
-       * Where this paper is in the pipeline, spelled out. The sites this template
-       * came from each had a boolean here — one `inPress`, the other
-       * `alreadyPublished` — and a boolean has to be read as a negation half the
-       * time: `inPress: false` is true of a paper that is out and of one that was
-       * never submitted. A name per state also leaves room for the third one
-       * (withdrawn, retracted) that a flag has nowhere to put.
-       */
+      /** Spelled out rather than a boolean: `inPress: false` is true of a paper
+          that is out and of one never submitted. */
       status: z.enum(['published', 'to-appear']).default('published'),
 
       /**
-       * The conference or series' OWN homepage. It is none of the three things
-       * next to it: `abbr` badges the proceedings the paper was printed in,
-       * `links.paper` points at the paper in a publisher's library, and the DOI
-       * is the record. This one answers "what is this venue, and does it run
-       * again next year", which none of the others can.
-       *
-       * This is the DERIVED path's companion, unchanged: it names the venue of a
-       * paper that has a BibTeX entry, and the page wraps it in "Published at" /
-       * "To appear at". A page that states its own `venue` must not also set it —
-       * two venue sentences with no rule for which wins.
+       * The conference or series' OWN homepage, which neither `abbr` (the
+       * proceedings), `links.paper` (the publisher's copy) nor the DOI points
+       * at. For a paper with an entry; the page wraps it in "Published at".
        */
       conferenceName: z.string().optional(),
       conferenceUrl: z.url().optional(),
 
-      /**
-       * Second and later outings for the same work: a doctoral symposium, a
-       * national workshop, an invited talk. Deliberately not in papers.bib —
-       * those venues are usually non-archival, so there is nothing to cite, and
-       * one BibTeX entry per talk would show the same paper twice or five times
-       * on /publications/.
-       */
+      /** Later outings for the same work. Not in papers.bib, where one entry
+          per talk would show the same paper five times on /publications/. */
       additionalPresentations: z
         .array(z.object({ name: z.string(), shortName: z.string().optional(), url: z.url() }))
         .default([]),
 
       /**
-       * The projects this work came out of. Stated here and nowhere else: each
-       * project page derives its own publication list by scanning this field, so
-       * the two directions cannot drift apart the way two hand-kept lists do.
-       * Pointing at a project that has a `redirect` is fine — the paper page
-       * links out to it instead of to a page that was never generated. Dropping
-       * the projects collection means dropping this field in the same edit;
-       * reference() makes the dependency real rather than advisory.
+       * The projects this work came out of, stated here and nowhere else: a
+       * project page derives its paper list by scanning this field. A project
+       * with a `redirect` is fine; the page links out to it.
        */
       projects: z.array(reference('projects')).default([]),
 
@@ -332,13 +228,9 @@ const papers = defineCollection({
 
       links: z.object({ paper: linkMap, replication: linkMap, slides: linkMap }).default({}),
     })
-    /*
-     * The three rules that keep "derived" and "stated" from blurring. They are
-     * refinements rather than prose in the comments above because the failure
-     * they prevent is silent: a page with both sources renders whichever one
-     * the markup happens to check first, and a page with neither renders a
-     * venue line with nothing in it and sorts to the end of every list.
-     */
+    /* Refinements rather than prose, because the failure is silent: a page
+       with both sources renders whichever the markup checks first, and one
+       with neither renders an empty venue line and sorts last. */
     .refine((d) => Boolean(d.publication) !== Boolean(d.venue), {
       message:
         'a paper page needs exactly one venue source: a `publication` (the BibTeX entry) or a stated `venue`',
@@ -356,59 +248,31 @@ const papers = defineCollection({
     }),
 });
 
-/**
- * Things you have made: a tool, a corpus, a long-running line of work.
- *
- * An entry with `redirect` is a link out and gets no page of its own — useful
- * for something that lives on someone else's site but should still appear in
- * your list.
- */
+/** Things you have made. An entry with `redirect` is a link out and gets no
+    page of its own. */
 const projects = defineCollection({
   loader: glob({ base: 'src/content/projects', pattern: '**/*.md' }),
-  /**
-   * The schema is a function here so it can take `image()`, which runs the
-   * logo through Astro's asset pipeline: hashed filename, and width and height
-   * known at build time without reading the file. That is why project logos
-   * live in src/assets/ and figures live in public/ — the two are served by
-   * different machinery, and only public/ has stable URLs.
-   */
+  /** A function so it can take `image()`: logos go through the asset
+      pipeline from src/assets/, figures are paths under public/. */
   schema: ({ image }) =>
     z.object({
       title: z.string(),
       description: z.string(),
       /**
-       * Buckets on /projects/. Labels for these live in that page.
-       *
-       * OPTIONAL: a site that does not group its projects — ardoco.de's
-       * approaches are one flat list — leaves it off every entry and gets a
-       * flat list with no group headings. Set it on some entries and not
-       * others and the rest gather under a last, unlabelled-by-enum "Other"
-       * group, so an entry can never silently drop off the page.
+       * Buckets on /projects/; the labels live on that page. Optional: leave it
+       * off every entry for a flat list, and entries without one gather under
+       * a final "Other" group rather than dropping off the page.
        */
       category: z.enum(['research', 'tools', 'misc']).optional(),
       order: z.number().int().default(100),
       /** When set, the entry links straight out and no page is generated. */
       redirect: z.url().optional(),
-      /**
-       * Where this project's code lives, as chips on its page. Not the site-wide
-       * /repositories/ page: that one lists an organisation's repositories from
-       * the GitHub API, all of them, ranked by stars. This is the two or three a
-       * reader of THIS project needs, named by you, and some of them will belong
-       * to somebody else's org.
-       */
+      /** The two or three repositories a reader of THIS project needs, as
+          chips. Not the site-wide /repositories/ list. */
       repositories: z.array(z.object({ name: z.string(), url: z.url() })).default([]),
       logo: image().optional(),
-      /*
-       * An overview diagram for the project's page. The SAME sub-schema the
-       * papers collection uses, not a second one that looks like it: a figure
-       * is a figure, and two shapes would be two places to fix the day `plate`
-       * or `frame` changes. Omit it and nothing renders — an approach page
-       * without a diagram is a page without a diagram, not a broken one.
-       *
-       * Note where it lives: `logo` goes through image() and so belongs in
-       * src/assets/, while a figure is a path under public/ — see the comment
-       * on the `figure` schema above for why the two are served differently.
-       */
+      /** An overview diagram: the same sub-schema the papers use, so the two
+          cannot mean different things. */
       figure: figure.optional(),
     }),
 });
@@ -416,10 +280,7 @@ const projects = defineCollection({
 /** Front matter in the wild uses both `tags: x` and `tags: [x, y]`. */
 const toArray = (v: string | string[]) => (Array.isArray(v) ? v : [v]);
 
-/**
- * Posts. The FILENAME sets the URL and must be YYYY-MM-DD-slug — see
- * src/lib/blog.ts for why the date is not taken from the front matter.
- */
+/** Posts. The FILENAME sets the URL and must be YYYY-MM-DD-slug; blog.ts says why. */
 const posts = defineCollection({
   loader: glob({ base: 'src/content/posts', pattern: '**/*.md' }),
   schema: z.object({

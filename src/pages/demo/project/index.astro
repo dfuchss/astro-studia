@@ -2,22 +2,9 @@
 import Home from '../../index.astro';
 
 /*
- * The project-shaped entry page — which is src/pages/index.astro, rendered
- * with its other `shape`.
- *
- * This file used to be a second copy of the whole page, with a header comment
- * claiming it was "what a `project` preset init keeps at /". It was not:
- * init swapped one hero import in index.astro and deleted this directory, so
- * `--preset project` produced a project hero above a personal body. Now there
- * is one page carrying both shapes, marked up with ▼ PRESET:… ▼ fences, and
- * this route exists only to give the demo switcher a second URL to point at.
- *
- * An .astro page is an ordinary component, so importing it is all it takes.
- * Everything a visitor sees here — the hero, the sections, the styles — is in
- * index.astro; nothing is duplicated, and nothing can drift.
- *
- * Deleted by `npm run init` along with the switcher: the `demo` feature owns
- * src/pages/demo/, and once a preset is chosen there is only one shape left.
+ * The project-shaped entry page: src/pages/index.astro rendered with its other
+ * `shape`, so the demo switcher has a second URL to point at. Nothing is
+ * duplicated. Deleted by `npm run init` with the rest of the `demo` feature.
  */
 ---
 

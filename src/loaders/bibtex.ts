@@ -6,15 +6,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * One BibTeX field that carries a link, checked at build time.
- *
- * A bibliography accumulates fields that are bookkeeping rather than
- * bibliography — a path to the PDF you host, a path to the paper's own page on
- * your site. They are worth having, and they are the fields most likely to rot:
- * nothing about renaming a file tells you that a .bib entry still points at the
- * old name. Declaring one here does three things — validates it against disk,
- * exposes the result on the collection entry under `as`, and keeps it out of
- * the BibTeX block a reader copies.
+ * One BibTeX field that carries a link, checked at build time. Declaring it
+ * validates the value against disk, exposes it on the entry under `as`, and
+ * keeps it out of the BibTeX block a reader copies.
  */
 export type BibLink = {
   /** The BibTeX field to read, e.g. 'pdf' or 'page'. */
@@ -118,11 +112,8 @@ export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
   return {
     name: 'bibtex',
     load: async ({ store, parseData, generateDigest, logger, watcher }) => {
-      // Resolved against the working directory, which is the project root in
-      // both `astro dev` and `astro build`. That makes every path in this
-      // loader's options — opts.file, and whatever a BibLink returns — mean
-      // exactly what it looks like: repo-relative, the same string you would
-      // type into a terminal.
+      // Against the working directory, so every path in the options is
+      // repo-relative in both `astro dev` and `astro build`.
       const bibPath = resolve(process.cwd(), opts.file);
       watcher?.add(bibPath);
       // Watch this loader too. Entries are cached in `.astro/` keyed off the

@@ -1,18 +1,7 @@
 /**
- * Typed access to the YAML and JSON in `src/data/`.
- *
- * Everything is imported with Vite's `?raw` and parsed here, rather than read
- * with `fs` at render time. Reading them with `fs` + `import.meta.url` resolves
- * against the *bundled* chunk rather than the source tree, which works in
- * `astro dev` and fails during `astro build` — the worst shape of bug, because
- * it only appears in CI. Inlining sidesteps path resolution entirely, and gives
- * hot reload on a data file for free.
- *
- * Each data file's import, its type and its export are fenced together under
- * the feature that owns them, so `npm run init` takes all three out at once.
- * That matters more here than anywhere else: an unused `?raw` import still
- * inlines a file, and once the file is gone it is a build error rather than
- * dead weight — which is exactly how this file used to break every prune.
+ * Typed access to `src/data/`, imported with `?raw` rather than read with
+ * `fs` (see images.ts). Each file's import, type and export are fenced under
+ * its feature: an unused `?raw` import of a deleted file is a build error.
  */
 import { parse } from 'yaml';
 
@@ -47,12 +36,8 @@ export type Socials = {
   semanticscholar_id: string | null;
   pgp_fingerprint: string | null;
   /**
-   * Anything the fixed fields above do not cover — Mastodon, ResearchGate,
-   * Codeberg, an institutional page. `icon` names one of the marks in
-   * SocialRow.astro; leave it out and the entry renders as a text chip.
-   *
-   * The fixed list is a convenience, not a whitelist. Where an academic keeps
-   * a profile is not something a template gets to decide.
+   * Anything the fixed fields do not cover. `icon` names one of the marks in
+   * SocialRow.astro; without one the entry renders as a text chip.
    */
   extra?: { label: string; url: string; icon?: string }[] | null;
 };
@@ -109,10 +94,8 @@ export const repositories = parse(repositoriesRaw) as Repositories;
 export const languageColors = parse(languageColorsRaw) as Record<string, string>;
 /* ▲ FEATURE:repositories ▲ */
 
-/**
- * Written by scripts/fetch-github-metadata.mjs and committed, rather than
- * fetched during the build. See that script's header for why.
- */
+/** Written by scripts/fetch-github-metadata.mjs and committed; never fetched
+    during the build. */
 /* ▼ FEATURE:repositories ▼ */
 export const github = githubMetadata as GithubMetadata;
 /* ▲ FEATURE:repositories ▲ */

@@ -10,22 +10,15 @@ const { pub } = Astro.props;
 const d = pub.data;
 
 /*
- * Highwire Press citation_* tags plus a ScholarlyArticle JSON-LD block.
- *
- * This is how Google Scholar, DBLP and their kin discover a paper page and
- * attribute it correctly, and it is the one piece of SEO on an academic site
- * that reliably pays for itself. Injected through Base's `slot="head"`.
- *
- * citation_pdf_url is emitted only when you host the PDF yourself. Pointing it
- * at a publisher's landing page instead is worse than omitting it: Scholar
- * follows it expecting a PDF.
+ * Highwire Press citation_* tags plus a ScholarlyArticle JSON-LD block, which
+ * is how Scholar and DBLP discover a paper page. Injected through Base's
+ * `slot="head"`. citation_pdf_url only when you host the PDF yourself:
+ * Scholar follows it expecting a PDF, so a landing page is worse than nothing.
  */
 const container = d.booktitle ?? d.journal;
 const date = d.month ? `${d.year}/${String(d.month).padStart(2, '0')}` : String(d.year);
-// routePath(), not Astro.url.pathname alone: under URL_POLICY 'preserve' the
-// pathname is this page's FILE ("/papers/foo.html"), and Scholar would be
-// handed an address that is not the one the page is published at. The same
-// call BaseHead.astro makes for the canonical, so the two cannot disagree.
+// routePath(), as in BaseHead: under URL_POLICY 'preserve' the pathname is
+// this page's FILE ("/papers/foo.html"), not its address.
 const pageUrl = new URL(routePath(Astro.url.pathname), SITE.url).href;
 const pdfUrl = d.pdfUrl ? new URL(d.pdfUrl, SITE.url).href : undefined;
 /*

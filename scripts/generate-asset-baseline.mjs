@@ -1,14 +1,8 @@
 /**
- * Rewrite verification/asset-sha256.txt from what is currently in public/.
- *
- *   npm run baseline
- *
- * This is a deliberate act, not part of the build: the baseline exists so that
- * a file in public/ cannot change without someone meaning it to, and a script
- * that regenerated it automatically would defeat the entire point.
- *
- * Run it when you genuinely add or replace a published asset, and commit the
- * result in the same commit as the file.
+ * Rewrite verification/asset-sha256.txt from what is in public/ (`npm run
+ * baseline`). A deliberate act, never part of the build: the baseline exists
+ * so a published file cannot change without someone meaning it to. Commit the
+ * result together with the asset.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';

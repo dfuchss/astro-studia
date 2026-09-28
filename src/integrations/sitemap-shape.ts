@@ -6,37 +6,14 @@ import { fileURLToPath } from 'node:url';
 /**
  * Make every sitemap entry name the file that was actually emitted.
  *
- * ── Why this exists ────────────────────────────────────────────────────────
- *
- * @astrojs/sitemap decides whether an entry ends in a slash by looking at
- * `build.format`: 'directory' gets a slash appended, anything else is left as
- * the route pattern, which has none. Under URL_POLICY 'preserve' (see
- * src/lib/paths.ts) that is wrong for most of the site: /people/ is still
- * people/index.html and its address still ends in a slash, but the sitemap
- * says /people. Only the paper pages — flat files — are right by accident.
- * ardoco.de's deployed sitemap has the slashes; a template that dropped them
- * would be publishing a different set of URLs from the ones that are indexed.
- *
- * There is no option that changes this, and the integration's `serialize`
- * hook cannot tell /people (a directory) from /papers/foo (a file) by looking
- * at the URL alone. The build output can: after the pages are written, one of
- * `<path>/index.html` or `<path>.html` exists, and that is the shape the entry
- * must have. So this runs once, over the sitemap as written, and asks the disk.
- * It is the same answer src/integrations/base-paths.ts gives to the same kind
- * of problem — the bytes that are published are the thing to get right — and
- * the same shape of check scripts/audit-site.mjs makes afterwards.
- *
- * ── What it touches ────────────────────────────────────────────────────────
- *
- * Every <loc> in every sitemap-*.xml under the output directory. An entry whose
- * path is `<path>/index.html` on disk gets a trailing slash; one whose path is
- * `<path>.html` loses it; a path that is itself a file (a PDF from customPages)
- * or nothing on disk at all is left alone — the audit reports the latter. The
- * index file's own entries point at other sitemaps, which are files, so they
- * fall through untouched.
- *
- * Under the default policy every entry already ends in a slash and resolves to
- * an index.html, so nothing changes and the output is byte-identical.
+ * @astrojs/sitemap appends a trailing slash only when `build.format` is
+ * 'directory', so under URL_POLICY 'preserve' it publishes /people for a page
+ * that is people/index.html. There is no option for this, and its `serialize`
+ * hook cannot tell a directory route from a flat one by the URL alone — but
+ * after the build one of `<path>/index.html` or `<path>.html` exists, so this
+ * asks the disk. A path that is itself a file (a PDF from customPages) or
+ * nothing on disk is left alone. Under the default policy nothing changes.
+ * docs/Architecture.md, "The two integrations".
  */
 export default function sitemapShape(): AstroIntegration {
   let site = '';

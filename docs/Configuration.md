@@ -261,10 +261,12 @@ Opt-in, and only worth it where the number is itself the point: a bare count on
 every heading is noise the reader can see for themselves.
 
 Every field of an entry except `title` is optional: `org`, `url`, `start`, `end`,
-`location`, `note`, `details` (bullets, which may embed a markdown link), and
-`minor: true`, which sends a long run of repeated low-value entries into a
-collapsed "N more" disclosure instead of burying the ones that matter. Omitting
-`end` means "to the present" and marks the entry current.
+`location`, `note`, `details` (bullets, which may embed a markdown link),
+`current: true`, which renders "– present" and a `now` badge and is what the
+entry page's "where" row reads, and `minor: true`, which sends a long run of
+repeated low-value entries into a collapsed "N more" disclosure instead of
+burying the ones that matter. An entry with a `start` and no `end` is a single
+date, not an open range: a degree or a prize is not "to the present".
 
 The file's own header documents every field with an example. Read that before
 this table.

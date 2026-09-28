@@ -4,15 +4,9 @@ import { SITE } from '../consts.ts';
 export type Post = CollectionEntry<'posts'>;
 
 /**
- * Derive the permalink from the FILENAME, never from the parsed date.
- *
- * Reading a `Date` with local getters shifts the day backwards anywhere west
- * of UTC, so building the same post in CI and on a laptop would publish it at
- * two different URLs. The filename already carries the zero-padded values and
- * does not move.
- *
- * publishedPosts() then checks that the front-matter date agrees with the
- * filename, so the two cannot quietly diverge either.
+ * The permalink comes from the FILENAME, never from the parsed date: local
+ * getters shift the day backwards west of UTC, so CI and a laptop would
+ * publish the same post at two URLs. publishedPosts() checks the two agree.
  */
 export function permalinkParts(id: string) {
   const m = /^(\d{4})-(\d{2})-(\d{2})-(.+)$/.exec(id);

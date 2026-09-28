@@ -2,11 +2,9 @@ import { SITE } from '../consts.ts';
 import { citations } from './data.ts';
 
 /**
- * Google Scholar cluster id → citation count.
- *
- * Scholar's own keys look like `<profileId>:<clusterId>`, while a `.bib` entry
- * usually carries just the cluster id. Index on the part after the last colon
- * so either form works, whichever way you filled in citations.yml.
+ * Scholar cluster id → citation count. Scholar's own keys look like
+ * `<profileId>:<clusterId>` while a .bib entry usually carries the cluster id
+ * alone, so index on the part after the last colon and accept either.
  */
 const byCluster = new Map<string, number>(
   Object.entries(citations.papers).map(([key, value]) => [
@@ -21,12 +19,9 @@ export function citationsFor(googleScholarId?: string): number {
 }
 
 /**
- * Total citations, h-index and i10-index.
- *
- * Computed over the whole of citations.yml — the full Scholar profile, not only
- * the entries that also appear in papers.bib. That is deliberate: it makes the
- * numbers here match the ones on your Scholar page, which is the comparison
- * anyone reading them will actually make.
+ * Total citations, h-index and i10-index, over the whole of citations.yml
+ * rather than only the entries in papers.bib, so the numbers match the ones
+ * on the Scholar profile.
  */
 export function scholarMetrics() {
   const counts = Object.values(citations.papers)
@@ -42,12 +37,8 @@ export function scholarMetrics() {
 }
 
 /**
- * Format the `last_updated` date.
- *
- * Parsed and rendered as UTC on purpose. `new Date('2026-09-13')` is midnight
- * UTC, and reading it with local getters anywhere west of UTC gives the
- * previous day — so the same commit renders a different date depending on
- * where it was built.
+ * Format `last_updated`. UTC in and out: `new Date('2026-09-13')` is midnight
+ * UTC, and local getters west of UTC give the previous day.
  */
 export function formatUpdated(iso: string): string {
   return new Intl.DateTimeFormat(SITE.locale, {

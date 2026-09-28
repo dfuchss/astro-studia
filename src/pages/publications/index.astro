@@ -9,15 +9,9 @@ const pubs = await getCollection('publications');
 const groups = byYear(pubs);
 const metrics = scholarMetrics();
 // Built once for the whole page, then handed to every entry.
-/*
- * Declared out here and assigned inside the fence, so that removing the people
- * feature leaves `links` simply undefined rather than an unresolved identifier.
- * PubEntry's `links` prop is optional, so an undefined value is the "no people
- * page to link to" case and renders plain author names.
- *
- * A dynamic import for the same reason: a static one would survive the fence
- * removal at the top of the file and point at a deleted module.
- */
+/* Declared outside the fence and assigned inside it, with a dynamic import,
+   so removing the people feature leaves `links` undefined rather than an
+   unresolved identifier or a static import of a deleted module. */
 let links: Map<string, string> | undefined;
 /* ▼ FEATURE:people ▼ */
 links = await (await import('../../lib/people.ts')).peopleLinks();

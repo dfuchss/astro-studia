@@ -1,17 +1,8 @@
 /**
  * Fetch GitHub metadata for everything in src/data/repositories.yml and write
- * src/data/github-metadata.json.
- *
- * The output is COMMITTED. That is the whole point: /repositories/ renders from
- * a file in the repo, so `npm run build` needs no network, no token, and
- * cannot be rate-limited — and a build from six months ago still produces the
- * same page. The cost is that the numbers are as fresh as the last run.
- *
- *   node scripts/fetch-github-metadata.mjs
- *
- * Set GITHUB_TOKEN to raise the rate limit from 60 requests an hour to 5000.
- * The workflow at .github/workflows/update-github-metadata.yml does this on a
- * schedule and commits the result.
+ * src/data/github-metadata.json, which is COMMITTED: the build reads the file,
+ * never the network. Set GITHUB_TOKEN to raise the rate limit from 60 requests
+ * an hour to 5000. .github/workflows/update-github-metadata.yml runs this.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

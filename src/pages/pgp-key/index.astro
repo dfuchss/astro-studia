@@ -10,16 +10,9 @@ const id = keyId();
 const pretty = grouped();
 const asc = keyPath();
 
-/*
- * The key block itself, when public/assets/pgp-key/<FINGERPRINT>.asc exists.
- *
- * Inlined at build time rather than fetched on load: a key that is part of the
- * document is readable without JS, is indexable, and survives the site being
- * saved to disk. `null` when the file is not there, in which case the page
- * renders exactly what it did before — the fingerprint, the key id and the
- * download link — because publishing only a fingerprint is a legitimate
- * choice and not a half-configured site.
- */
+// The key block, when public/assets/pgp-key/<FINGERPRINT>.asc exists. null
+// otherwise, and the page keeps the fingerprint, key id and download link:
+// publishing only a fingerprint is a legitimate choice.
 const key = armoredKey();
 ---
 

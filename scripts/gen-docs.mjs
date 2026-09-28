@@ -1,25 +1,12 @@
 /**
- * Regenerate the removal table in docs/Removing-Features.md from the manifest.
+ * Regenerate the removal table in docs/Removing-Features.md from the manifest,
+ * so the docs cannot drift from what init.mjs actually does.
  *
  *   npm run docs         rewrite the table
  *   npm run docs:check   fail if the table is out of date (prints a diff)
  *
- * ── Why ────────────────────────────────────────────────────────────────────
- *
- * `scripts/features.mjs` already knows which routes, collections, sections and
- * hand edits belong to each feature, and `scripts/init.mjs` acts on it. A
- * second, hand-written copy of the same list in the docs is a copy that drifts:
- * it is wrong the first time either the manifest or the code changes, and
- * nothing tells you. So the table is generated, and `--check` — wired into CI
- * as `npm run docs:check` — is what keeps it honest.
- *
- * Only the region between the two markers is touched:
- *
- *   <!-- BEGIN GENERATED: features -->
- *   <!-- END GENERATED: features -->
- *
- * Everything else in that file — the five-step recipe, the two orderings, the
- * worked blog-removal example — is prose written by a human and is left alone.
+ * Only the region between `<!-- BEGIN GENERATED: features -->` and
+ * `<!-- END GENERATED: features -->` is touched; the prose around it is not.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -88,10 +75,8 @@ function block() {
 
 // ---- splice it into the document -------------------------------------------
 
-/**
- * Put the markers in on the first run: the region replaces the hand-written
- * table that currently sits under "## What goes with what", and nothing else.
- */
+/** Without markers (a first run), the region replaces the table under
+    "## What goes with what". */
 function insertMarkers(src) {
   const heading = src.indexOf('## What goes with what');
   if (heading === -1) {

@@ -9,16 +9,9 @@ const papers = (await getCollection('papers')).sort(
   (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),
 );
 
-/*
- * Each row pulls its venue and year from the BibTeX entry the page points at,
- * the same as the detail page does — or, for a page with no entry, from what
- * that page states about itself. Both through the same helpers, so this list
- * and the page it links to cannot disagree about where something appeared.
- *
- * `tag` is the venue named in words, and it is here only for the rows that have
- * no badge: a page with no BibTeX entry has nothing in the badge column, and a
- * row showing a title and a year alone does not say where the work appeared.
- */
+/* Venue and year through the same helpers the detail page uses, so the two
+   cannot disagree. `tag` names the venue in words, only for rows with no
+   badge. */
 const rows = await Promise.all(
   papers.map(async (paper) => {
     const pub = await paperPublication(paper);

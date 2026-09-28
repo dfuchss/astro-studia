@@ -1,26 +1,16 @@
 /*
- * Design tokens.
- *
- * Dark only. Every colour is defined on bare `:root` — there is no light theme
- * and no [data-theme] switching, so a colour has exactly one definition and
- * there is no second palette to keep in step. scripts/audit-site.mjs fails the
- * build if a [data-theme] block appears, so this stays true by accident as
- * well as on purpose.
- *
- * Section accents: five hue families, each with the same five roles. A page
- * sets `data-section` on <body> and the neutral `--sec-*` aliases re-point at
- * that family, so one set of components recolours itself by context. Nav links
- * carry `data-section` too, which is how each previews its destination's hue.
+ * Design tokens. Dark only: every colour is defined once on bare `:root`, and
+ * the audit fails the build if a [data-theme] block appears. Five hue
+ * families with the same five roles; `data-section` on <body> re-points the
+ * `--sec-*` aliases at one of them. docs/Theming.md.
  */
 
 :root {
   color-scheme: dark;
 
   /* ── SURFACES ──────────────────────────────────────────────────────────
-     Near-neutral, very slightly cool. Deliberately not tinted toward any of
-     the accents below: a surface that leans into the brand hue looks
-     considered with one palette and muddy with the next, and this file is
-     meant to be re-hued by whoever clones it. */
+     Near-neutral and deliberately not tinted toward any accent: a surface
+     that leans into one brand hue looks muddy under the next. */
   --bg: #0b0d12;
   --bg-1: #111520;
   --bg-2: #161c27;
@@ -36,20 +26,10 @@
   --text-faint: #828d9f;
 
   /* ── PALETTE ───────────────────────────────────────────────────────────
-     To rebrand this site, change the five base hex values below and nothing
-     else: no other file in the codebase names a colour. The four other roles
-     in each family are mixed from the base, so a hue is one edit rather than
-     five plus a hex-to-rgb conversion by hand.
-
-     Keep each base at 3:1 or better against --bg, and the --text* values at
-     4.5:1, or scripts/audit-site.mjs will fail the build and tell you which
-     one and by how much.
-
-       base     links, icons, the accent rule under a heading
-       -strong  hover, and headings that carry the accent themselves
-       -line    borders and rules — never text
-       -dim     tints: chip backgrounds, :target highlights
-       -glow    the fixed radial wash behind the page, in body::before */
+     Five base hex values; no other file names a colour, and the four other
+     roles per family (-strong, -line, -dim, -glow) are mixed from the base.
+     Keep each base at 3:1 against --bg and --text* at 4.5:1, or the audit
+     fails naming the token. What each role is for: docs/Theming.md. */
 
   --cyan: #5cc8e8;
   --cyan-strong: color-mix(in srgb, var(--cyan) 55%, white);
@@ -95,35 +75,20 @@
   --sec-glow: var(--cyan-glow);
 
   /* ── GEOMETRY ──────────────────────────────────────────────────────────
-     --max IS THE WIDTH OF THE PAGE. It is the only place that decides it:
-     `.wrap` in base.css is what every page and every section is inside, and
-     `.wrap` is `max-width: var(--max)` plus the gutter. Change this one value
-     and the whole site gets wider or narrower.
-
-     --gutter is the breathing room at the left and right edges, and it shrinks
-     on a narrow screen rather than being a fixed inset. */
+     --max is the width of the page: `.wrap` in base.css is `max-width:
+     var(--max)` plus the gutter, and everything is inside a `.wrap`. */
   --max: 1180px;
   --gutter: clamp(1rem, 4vw, 2.5rem);
 
-  /* THE READING COLUMN, which is a different question from --max: how wide a
-     line of text may get inside the page before the eye loses the start of the
-     next one. Article pages — a paper page, a post — hold their header, figure,
-     prose, link list, cite block and pager to it, so the column has ONE right
-     edge all the way down instead of every block picking its own.
-
-     In rem, not ch, precisely because those blocks are not all set in the body
-     font: `ch` is the width of "0" in the element's own font, so the same 72ch
-     is ~738px on a paragraph and ~562px on a `.mono` line — and the edges this
-     exists to line up would not. 46rem is the 72ch of the body font at the body
-     size, so the prose measure is unchanged; it is only now expressed in a unit
-     that means the same thing everywhere it is used. */
+  /* The reading column, which article pages hold every block to so the
+     column has one right edge. In rem, NOT ch: `ch` is the width of "0" in
+     the element's own font, so 72ch is ~738px on a paragraph and ~562px on a
+     `.mono` line, and the edges this exists to line up would not. 46rem is
+     the body font's 72ch. */
   --measure: 46rem;
 
-  /* The label column of the site's two label-on-a-hairline-rule lists: the
-     home page's post list and the contact rows in components/Contact.astro.
-     They sit one above the other on the same page, so their left edges have to
-     agree — and since the two now live in different files, the measure is a
-     token rather than a number typed twice. */
+  /* The label column of the home page's post list and Contact.astro's rows,
+     which sit one above the other and have to line up. */
   --label-col: 11rem;
 
   --radius-s: 8px;
@@ -131,8 +96,7 @@
   --radius-l: 22px;
 
   /* ── TYPE ───────────────────────────────────────────────────────────────
-     Two faces, self-hosted through @fontsource and imported in
-     layouts/Base.astro. Swapping them is that import plus these three lines. */
+     Self-hosted through @fontsource, imported in layouts/Base.astro. */
   --font-head: 'Space Grotesk', system-ui, sans-serif;
   --font-body: 'Space Grotesk', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', SFMono-Regular, monospace;
@@ -154,19 +118,13 @@
 }
 
 /* ── SECTION ACCENT SCOPING ───────────────────────────────────────────────
-   One block per value of the `Section` union in src/consts.ts. Every value
-   needs one — including 'home', which is why it has a block of its own rather
-   than falling through to the :root default: audit-site.mjs collects the
-   data-section values out of the built HTML and the selectors out of the built
-   CSS, and fails on any value with no block. That check is what makes "adding
-   a section is two edits" safe to say.
-
-   Sections may share a family. Eight areas over five hues reads as a palette;
-   eight distinct hues reads as a swatch chart. */
+   One block per `data-section` value that reaches the built HTML — the
+   `Section` union in src/consts.ts, plus 'contact' on the entry page's last
+   section. 'home' needs its own rather than falling through to :root: the
+   audit fails on any value with no block. Sections may share a family. */
 
 [data-section='home'] {
-  /* Ink rather than a hue: the home page carries the site's own colour in its
-     glow, and an accented nav item for "about" would compete with whichever
+  /* Ink rather than a hue, so the "about" nav item does not compete with the
      section the visitor is actually in. */
   --sec: var(--text);
   --sec-strong: var(--text);

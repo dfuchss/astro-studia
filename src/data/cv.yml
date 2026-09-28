@@ -27,8 +27,11 @@
 #   org       who it was with
 #   url       link on the org (or, for `cards`, on the title)
 #   start     "2020-03", "2020", or anything else — a value that looks like a
-#   end       date is formatted, anything else is printed verbatim. Omitting
-#             `end` means "to the present" and marks the entry as current.
+#   end       date is formatted, anything else is printed verbatim. A start
+#             with no end is a single date, not an open range.
+#   current   true renders "– present" and a `now` badge, and the entry page's
+#             "where" row reads the first entry that says so. Explicit, because
+#             a degree or a prize also has a start and no end.
 #   location  city, country
 #   note      one short line, e.g. a thesis title (or a `cards` summary)
 #   details   bullets. A bullet is plain text unless it embeds a markdown
