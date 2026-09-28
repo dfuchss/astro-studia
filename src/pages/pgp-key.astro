@@ -1,13 +1,26 @@
 ---
 import Base from '../layouts/Base.astro';
-import { fingerprint, grouped, keyId, keyPath } from '../lib/pgp.ts';
+import CopyButton from '../components/CopyButton.astro';
+import { armoredKey, fingerprint, grouped, keyId, keyPath } from '../lib/pgp.ts';
 
-// All four derive from the single value in socials.yml, so they cannot
-// disagree with one another. All four are null when it is unset.
+// All of these derive from the single value in socials.yml, so they cannot
+// disagree with one another. All are null when it is unset.
 const fp = fingerprint();
 const id = keyId();
 const pretty = grouped();
 const asc = keyPath();
+
+/*
+ * The key block itself, when public/assets/pgp-key/<FINGERPRINT>.asc exists.
+ *
+ * Inlined at build time rather than fetched on load: a key that is part of the
+ * document is readable without JS, is indexable, and survives the site being
+ * saved to disk. `null` when the file is not there, in which case the page
+ * renders exactly what it did before — the fingerprint, the key id and the
+ * download link — because publishing only a fingerprint is a legitimate
+ * choice and not a half-configured site.
+ */
+const key = armoredKey();
 ---
 
 <Base title="pgp key" description="Public key for encrypted mail." section="home">
@@ -30,10 +43,20 @@ const asc = keyPath();
             </div>
           </dl>
           <p class="actions">
-            <a class="chip" href={asc}>
+            <a class="chip" href={asc} download>
               Download public key
             </a>
           </p>
+
+          {key && (
+            <div class="keybox">
+              <CopyButton target="pgp-key" label="Copy key" />
+              <div class="scroll-x">
+                <pre id="pgp-key">{key}</pre>
+              </div>
+            </div>
+          )}
+
           <p class="hint">
             Verify the fingerprint over a second channel before you trust it. A key served from the
             same site as the address it belongs to proves very little on its own.
@@ -47,9 +70,10 @@ const asc = keyPath();
             public key at <code>public/assets/pgp-key/&lt;FINGERPRINT&gt;.asc</code>.
           </p>
           <p>
-            This page and the PGP chip in the profile row both appear on their own once it is set.
-            If you do not use PGP, delete <code>src/pages/pgp-key.astro</code> and
-            <code>src/lib/pgp.ts</code>.
+            This page and the PGP chip in the profile row both appear on their own once it is set,
+            and the key block is inlined here with a copy button as soon as the <code>.asc</code>{' '}
+            file is in place. If you do not use PGP, delete
+            <code>src/pages/pgp-key.astro</code> and <code>src/lib/pgp.ts</code>.
           </p>
         </div>
       )
@@ -85,6 +109,19 @@ const asc = keyPath();
 
   .actions {
     margin: 1.25rem 0;
+  }
+
+  /* Positioned, because CopyButton pins itself to the top right of its
+     containing block — the same arrangement the citation blocks use. */
+  .keybox {
+    position: relative;
+    margin: 1.5rem 0;
+  }
+  .keybox pre {
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    margin: 0;
   }
   .hint {
     color: var(--text-faint);

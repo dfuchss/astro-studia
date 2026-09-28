@@ -44,4 +44,14 @@ extra:
 
 # Your PGP key fingerprint, no spaces. When set, /pgp-key/ renders it and
 # SocialRow links there; when null, both quietly stand down.
-pgp_fingerprint: null
+#
+# Put the exported public key at public/assets/pgp-key/<FINGERPRINT>.asc and
+# /pgp-key/ inlines it in a <pre> with a copy button as well. That file is the
+# only other thing there is to set up — there is no second setting for it, and
+# no setting at all if you would rather only publish the fingerprint: the page
+# drops the block and keeps the download link when the file is not there.
+#
+# DEMO KEY. Generated for this template and thrown away: nobody holds the
+# secret half, so it can encrypt nothing and signs nothing. Its user id says
+# so. Replace it with yours, and delete the .asc that came with it.
+pgp_fingerprint: AEDD211D16871331224CEC5571C3DB09BA98F214

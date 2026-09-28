@@ -1,17 +1,55 @@
 ---
 import { NAV, SITE, type Section } from '../consts.ts';
+import { intrinsic } from '../lib/images.ts';
 
 interface Props {
   section?: Section;
 }
 
 const { section } = Astro.props;
+
+/*
+ * The brand mark, if there is one — see SITE.brandLogo.
+ *
+ * The HEIGHT is a design decision and lives here; the width follows from the
+ * file's own aspect ratio, read off disk, so swapping a square logo for a wide
+ * one needs no edit in either place. Both attributes have to be on the tag:
+ * scripts/audit-site.mjs fails an <img> without them, and without them the nav
+ * — the first thing on every page — reflows as the image arrives.
+ */
+const LOGO_HEIGHT = 24;
+const logo = SITE.brandLogo;
+const natural = logo ? intrinsic(logo.src) : undefined;
+const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_HEIGHT) : undefined;
 ---
 
 <header class="nav">
   <div class="wrap inner">
     <a class="brand mono" href="/">
-      {SITE.brandPrompt && <span class="brand-prompt">{SITE.brandPrompt}</span>}{SITE.brand}
+      {
+        /* alt is derived, not configured: beside the wordmark the mark is
+           decoration and a screen reader should not read the site's name
+           twice, and in place of the wordmark the mark IS the name. */
+        logo && (
+          <img
+            class="brand-logo"
+            src={logo.src}
+            alt={logo.replacesWordmark ? SITE.brand : ''}
+            width={logoWidth}
+            height={LOGO_HEIGHT}
+          />
+        )
+      }
+      {
+        /* One span, so that the flex gap below separates the mark from the
+           wordmark and not the `~/` prompt from the name it is a prompt for. */
+        !logo?.replacesWordmark && (
+          <span>
+            {SITE.brandPrompt && <span class="brand-prompt">{SITE.brandPrompt}</span>}
+            {SITE.brand}
+          </span>
+        )
+      }
     </a>
 
     <nav aria-label="Primary">
@@ -53,13 +91,22 @@ const { section } = Astro.props;
     min-height: 3.5rem;
   }
 
-  /* A wordmark, not an image. If you want a logo here instead, put one in
-     public/ and render it beside the text — see docs/theming.md. */
+  /* A wordmark, optionally with a mark beside it — set SITE.brandLogo and the
+     <img> above renders. inline-flex unconditionally, because a one-item flex
+     row lays out exactly like the inline text it replaces. */
   .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--text);
     text-decoration: none;
     font-weight: 600;
     white-space: nowrap;
+  }
+  .brand-logo {
+    /* A logo with square corners against a square-cornered bar looks pasted
+       on; the radius is the same token every other plate on the site uses. */
+    border-radius: var(--radius-s);
   }
   .brand-prompt {
     color: var(--text-faint);

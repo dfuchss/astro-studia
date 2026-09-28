@@ -95,6 +95,7 @@ description: One or two sentences. Used for the meta description too.
 publication: surname_keyword_2026 # the BibTeX key
 authors: [surname, other] # keys from authors.yml
 order: 1
+featured: true # also list it in the entry page's paper block
 figure:
   src: /assets/img/papers/overview.svg
   alt: A description someone who cannot see it would want.
@@ -110,6 +111,51 @@ links:
 Nothing bibliographic goes in the front matter. Venue, year, DOI and the
 citation all come from the BibTeX entry, so they have one source of truth.
 
+`order` is the sequence on `/papers/`; `featured` is what the entry page's
+"Paper pages" block selects on, newest first, so that block is a handful of
+pages you curate here rather than everything in the directory. Both are read
+from this file and not from the BibTeX entry: they are decisions about the site,
+and `papers.bib` is a bibliography.
+
+### A page for a talk that was never published
+
+`publication` is optional, because not every page with something to say is a
+publication: a working-group meeting, an invited lecture, a national workshop
+prints no proceedings, so there is no BibTeX entry to point at and nothing to
+cite. Such a page states the two things the entry would have told it — the year
+and the venue — and is the one case where the front matter carries something
+bibliographic, because there is nowhere else for it to be:
+
+```yaml
+---
+title: 'De legibus naturae: praelectio Latine habita'
+authors: [cicero, quintus, atticus]
+# The only date the page has: /papers/, the feed and the project lists sort on it.
+year: 2026
+venue:
+  mark: 🏛 # a flag or other mark before the label (ardoco.de uses 🇩🇪)
+  label: Praelectio in Conventiculo Latino Arpinati habita
+  short: Conventiculum Arpinas # for the breadcrumb and the list rows
+  url: https://www.tulliana.eu/
+  bylineConnector: oratores # the byline's "by", in the page's language
+---
+```
+
+One object rather than four loose fields, because the four only mean anything
+together: they are the parts of one sentence the page says for itself, in its
+own language. That is also why `label` is the whole sentence and gets no
+"Published at" in front of it, and why the byline drops the English `, and `
+between the last two names in this case — a comma needs no translation.
+
+The schema enforces the rest: `venue` and `publication` are mutually exclusive
+(as are `venue` and `conferenceName`), and `year` is required with the former
+and rejected with the latter. A page in this state keeps its **Cite** section,
+with a sentence in place of the BibTeX saying that the venue publishes nothing —
+the absence is a fact about the venue, not a hole in the site.
+
+`src/content/papers/de-legibus-praelectio.md` is this case, with every field
+annotated.
+
 `links` has exactly three groups; any other key is silently dropped by the
 schema. Add one in `content.config.ts` if you need it, and a label for it in
 `LINK_LABELS` on the paper page.
@@ -123,6 +169,23 @@ someone else's site.
 Logos go in `src/assets/projects/` and run through Astro's image pipeline
 (hashed filename, dimensions known at build time). That is the difference
 between `src/assets/` and `public/`: only `public/` has stable URLs.
+
+An optional `figure` puts an overview diagram above the prose — the same field,
+with the same four keys, that a paper page takes:
+
+```yaml
+figure:
+  src: /assets/img/projects/translation-strategies.svg
+  alt: Three strategies for moving a term between languages.
+  plate: false # true (the default) for dark line art on transparency
+  frame: translation strategies # omit for no window frame
+```
+
+It is the same sub-schema in `src/content.config.ts`, not a copy of it, so the
+two can never mean different things. Leave it out and the page renders without
+one. The path is under `public/`, like every figure — `Figure.astro` reads the
+dimensions off disk — and `public/assets/img/projects/` belongs to the projects
+feature, so a figure filed there cannot be deleted by pruning something else.
 
 ## Posts — `src/content/posts/`
 
@@ -225,7 +288,100 @@ Drop `class="no-plate"` when the image _is_ dark-on-transparent line art.
 
 ## A group site rather than a personal one
 
-Nothing here assumes one author. List every member's surname in `SELF.surnames`
-so all of their names are emphasised in author lists, fill in `people.yml`, and
-rename `projects` to `approaches` (or whatever your group calls them) if that
-fits better — it is a collection name in one file and a route directory.
+Nothing here assumes one author. List every member's surname in
+`SELF.surnames` so all of their names are emphasised in author lists, fill in
+`people.yml`, and give the entry page the project shape — `npm run init
+--preset project`, or the `▼ PRESET:project ▼` regions of
+`src/pages/index.astro` if you have already run init.
+
+## Renaming a route
+
+Say `/papers/` should be `/conferences/`, or `/projects/` should be
+`/approaches/` because that is what your group calls them. It is **three
+edits**, and only one of them is code:
+
+1. **The constant in `src/lib/paths.ts`.** `PAPERS` and `PROJECTS` are the only
+   places those two prefixes are written down. Every back link, breadcrumb,
+   `NAV` row, hero action and slug helper reads one of them, and so does the
+   regex in `src/content.config.ts` that validates a `page = {…}` field — it is
+   assembled from the constant rather than typed out, precisely so a rename
+   cannot leave a validator behind insisting on the old prefix.
+
+2. **The route directory.** `git mv src/pages/papers src/pages/conferences`.
+   Astro derives routes from the filesystem, so this one cannot come from a
+   constant. It is also the only reason this is not a single edit.
+
+3. **The data that names the route.** For `papers`, the `page = {/papers/…/}`
+   fields in `src/data/papers.bib`. They are content, not code, and the build
+   fails with the offending BibTeX key if you forget one.
+
+Two things that look like they should be on that list and are not. The
+**collection name** (`papers` in `src/content.config.ts`) and its **source
+directory** (`src/content/papers/`) never appear in a URL, so a route rename
+does not touch them — rename them too if you like the symmetry, but that is a
+separate edit and `reference()` will tell you if you do half of it.
+
+Then `npm run build && npm run verify`: the audit resolves every internal link
+in the built output, so anything still pointing at the old prefix is a failure
+naming the page it is on.
+
+## The contact block — `src/data/contact.yml`
+
+The rows under "Get in touch" on the entry page, and the same rows in the `/cv/`
+lede. One list, rendered by `src/components/Contact.astro`, so a handle added
+here shows up in both places with no markup to edit.
+
+```yaml
+- label: email
+  email: true # true means SITE.email; write an address for a different one
+
+- label: matrix
+  value: '@cicero:example.org'
+  href: https://matrix.to/#/@cicero:example.org
+  mono: true
+  note: for anything that should not sit in a mailbox
+```
+
+Every row has a `label` and then **exactly one** of `value` and `email`, plus
+the optional `href`, `mono` and `note`. Getting that wrong is a build error
+naming the row, not a label with nothing beside it.
+
+**An address goes in `email:`, never in `value:`.** `email:` renders through
+`src/components/Email.astro`, which splits and rot13s the address so it is not
+in the served bytes; `npm run verify` greps the built output for anything
+address-shaped and fails the deploy if one appears. A `value:` that looks like
+an address is rejected at build time with the row's label, so you find out from
+the file that caused it rather than from the audit afterwards.
+
+Two rows are **derived** and appear after the listed ones: the PGP key id, from
+`pgp_fingerprint` in `socials.yml`, and your current position, from `cv.yml`.
+Neither is repeated here, because a second copy is a copy that can disagree
+with `/pgp-key/` and `/cv/`.
+
+It is its own file rather than a block in `cv.yml` because the contact block
+outlives the CV: `npm run init --preset project` deletes `src/data/cv.yml`, and
+the entry page it produces still has a contact section.
+
+## Your portrait — `src/assets/portrait.*`
+
+Drop in `portrait.jpg`, `portrait.png`, `portrait.webp`, `portrait.avif` or
+`portrait.svg` and delete the one that shipped. There is no setting: both the
+hero and the `/cv/` lede read `src/lib/portrait.ts`, which finds the file by
+extension at build time.
+
+A configured path string could not do this. Astro's `<Image>` optimises and
+sizes an asset it can resolve statically, and the audit fails any `<img>`
+without intrinsic width and height — so the filename is the configuration, and
+`import.meta.glob` is what turns it back into a real static import.
+
+No portrait, or two of them, is a build error naming the path it expected.
+
+## The PGP key — `public/assets/pgp-key/`
+
+`pgp_fingerprint` in `socials.yml` is the only setting, and `/pgp-key/` derives
+the key id, the grouped fingerprint and the download path from it. Export your
+public key to `public/assets/pgp-key/<FINGERPRINT>.asc` and the page also
+inlines the armored block in a `<pre>` with a copy button — read at build time,
+so it works without JavaScript and is indexable. No file there is a supported
+state, not a broken one: the page keeps the fingerprint, the key id and the
+download link.

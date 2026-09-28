@@ -72,6 +72,11 @@ const featured = posts.filter((p) => p.data.featured);
 </Base>
 
 <script>
+  /* Imported rather than written out, so the URL this pushes into the history
+     cannot drift from the one the pills link to. Astro bundles this script, so
+     the import resolves the same way the frontmatter's does. */
+  import { BLOG, tagPath } from '../../lib/paths.ts';
+
   // The pills stay real links to /blog/tag/<slug>/, so they work with JS off
   // and stay shareable. With JS they filter in place instead — the same
   // behaviour as the filter on /publications/, rather than a page load per tag.
@@ -98,7 +103,7 @@ const featured = posts.filter((p) => p.data.featured);
       pill.setAttribute('aria-pressed', String(on));
     }
     if (empty) empty.hidden = visible !== 0;
-    const url = tag ? `/blog/tag/${tag}/` : '/blog/';
+    const url = tag ? tagPath(tag) : BLOG;
     history.replaceState({ tag }, '', url);
   };
 

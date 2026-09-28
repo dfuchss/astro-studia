@@ -13,11 +13,17 @@
 #
 # To add or replace an asset on purpose: npm run baseline, and commit both.
 
+3277df33b58ac5601539506a8908f995dc59e59b9f045bca4c0172acd297f396  assets/img/brand-mark.svg
+a10ab88e0a53b59ba4aa5a163aafe0d3d293687b62d66ab81af4d1c2383964c9  assets/img/og.png
 86b876cfbc0e862d3d2983c9276d1ba6d08fbea12d79d57a588668d00c2017bd  assets/img/papers/mixed-constitution.svg
 2b40f18de21732f2226ecc2dfaeadf651000d6f475f8853a7fa46aa83d7f38bc  assets/img/papers/officia-plate.svg
+58150547a7b7875e676add579963d3a14a1c1abaefb6652fa0f9ff1797131048  assets/img/papers/palimpsest-after.svg
+3e3627bf0d7bb0c022eca035906cb6518bdb87b40b1a251b8db5ce37b604311a  assets/img/papers/palimpsest-before.svg
 fdd1e7b51c3ebcf6afa3675dfc84f144d11f9629698149a36ebd17485107b429  assets/img/people/atticus.svg
 bc0e2457a674af048d09cc19c9b85ceee3e1c40927ff51d59a56f7d69d529537  assets/img/people/cicero.svg
 3160d2daf769e5a6c880db0cfce66f683223cbfc9c78e7d1e47f15f7c9fe3471  assets/img/people/marek.svg
 ce46734ef138d079a2fdceea0f2a25ba7da92bb15ba65d72b0d4de7e431fc272  assets/img/people/tiro.svg
 4d893197fa85d0e7c8cc0a437e2280f6224a7ce6e1e6df1ed6a4d3d57f92aa6d  assets/img/posts/translation-layers.svg
+62af21ecd88253d55d7322fc67bef0e1cfe6f191fe70ad07140ae244ec780f6a  assets/img/projects/translation-strategies.svg
 665ab1bbc4c16c3c7884e755e84054ec9610ad05cf8764c6d74d02dafb1d01d2  assets/pdf/editions/de-re-publica-excerpt.pdf
+07dd90e52bd0f3b95afe6e3b1d6b2c2a6a1872c7e74b6c226ac0e089bde5ae50  assets/pgp-key/AEDD211D16871331224CEC5571C3DB09BA98F214.asc

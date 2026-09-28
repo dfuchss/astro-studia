@@ -109,17 +109,37 @@ Documented so you use them rather than reinventing them. All in `base.css`.
 | `.skip-link` | the keyboard skip target, revealed on focus                            |
 | `.reveal`    | fades in on scroll. A no-op without JS, and under reduced motion       |
 
-## Adding a logo to the header
+## The logo in the header
 
-`Nav.astro` renders a wordmark with an optional `SITE.brandPrompt` prefix. For
-an image instead, put one in `public/` and render it beside the text:
+`Nav.astro` renders a wordmark with an optional `SITE.brandPrompt` prefix, and a
+mark beside it when `SITE.brandLogo` is set. That is one line in `src/consts.ts`
+and no edit here:
 
-```astro
-<a class="brand mono" href="/">
-  <img src="/logo.svg" alt="" width="26" height="26" />
-  {SITE.brand}
-</a>
+```ts
+brandLogo: { src: '/assets/img/brand-mark.svg' },       // beside the wordmark
+brandLogo: { src: '/assets/img/brand-mark.svg', replacesWordmark: true },
+brandLogo: null,                                       // wordmark alone
 ```
 
-Give it `width` and `height` — the audit requires them on every `<img>` — and
-set `.brand { display: inline-flex; align-items: center; gap: 0.55rem; }`.
+The path is under `public/`. There are deliberately no dimensions to declare:
+the nav fixes the height (`LOGO_HEIGHT` in `Nav.astro`) and reads the file's
+aspect ratio off disk for the width, so a wide logo and a square one both fit,
+the `width`/`height` the audit requires on every `<img>` are always there, and a
+path with no file behind it fails the build naming the path.
+
+There is no `alt` either, for the same reason: beside the wordmark the mark is
+decoration and takes `alt=""` rather than making a screen reader say the site's
+name twice, and in place of the wordmark it _is_ the name, so its alt is
+`SITE.brand`.
+
+The demo ships `public/assets/img/brand-mark.svg` with `brandLogo` set, so the
+path is exercised rather than only described. Replace the file, or set
+`brandLogo: null` for a wordmark alone.
+
+`ProjectHero.astro` — the centred hero a project or group site opens with —
+reads the same value, so a site with a logo does not show it in the corner and a
+favicon in the middle of its own front page. It used to hard-code
+`/favicon.svg`, which meant putting your own logo there was a component edit.
+With `brandLogo: null` it falls back to `/favicon.svg`, because a centred hero
+still needs something above the title and the favicon is the one image every
+site here is guaranteed to have.

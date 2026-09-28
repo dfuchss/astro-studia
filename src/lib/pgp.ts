@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { socials } from './data.ts';
 
 /**
@@ -23,3 +26,27 @@ export const fingerprint = () => valid;
 
 /** Where the exported public key lives. Put the .asc file there yourself. */
 export const keyPath = () => (valid ? `/assets/pgp-key/${valid}.asc` : null);
+
+/**
+ * The ASCII-armored public key itself, if the .asc file is actually there.
+ *
+ * Read at build time so /pgp-key/ can print the block in a `<pre>` rather than
+ * only linking to it: a key that is part of the document works without JS, is
+ * indexable, and can be copied in one click. Fetching it on load — which is how
+ * fuchss.org did this before — gives up all three.
+ *
+ * NOTHING NEW TO CONFIGURE. The path is derived from the same fingerprint as
+ * everything else in this file, and the file being absent is a supported state,
+ * not an error: the page falls back to the fingerprint, the key id and the
+ * download link, which is what it has always shown.
+ *
+ * Resolved from the working directory rather than import.meta.url, for the
+ * reason spelled out in src/lib/images.ts: during `astro build` this module is
+ * bundled into dist/, so a URL relative to the module points at the output.
+ */
+export const armoredKey = (): string | null => {
+  const path = keyPath();
+  if (!path) return null;
+  const file = join(process.cwd(), 'public', path);
+  return existsSync(file) ? readFileSync(file, 'utf8').trim() : null;
+};

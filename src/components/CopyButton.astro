@@ -2,6 +2,12 @@
 /**
  * Copy-to-clipboard button for a `<pre>` elsewhere on the page.
  *
+ * Deliberately NOT under components/pub/: that directory belongs to the
+ * `publications` feature and is deleted with it, while /pgp-key/ uses this
+ * button to copy an ASCII-armored key and has nothing to do with a
+ * bibliography. A generic control owned by one optional area is a build error
+ * waiting for the first person who prunes that area and keeps the other.
+ *
  * Markup and handler live together, and the handler binds to every
  * `button[data-copy]` on the page rather than to one id. Put them in separate
  * places and you end up with a second copy of the logic on the next page that

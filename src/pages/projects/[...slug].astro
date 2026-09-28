@@ -1,11 +1,16 @@
 ---
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import { Image } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import Prose from '../../components/Prose.astro';
+import Figure from '../../components/Figure.astro';
+import { PROJECTS } from '../../lib/paths.ts';
+/* ▼ FEATURE:papers ▼ */
 import VenueBadge from '../../components/pub/VenueBadge.astro';
 import { paperPath } from '../../lib/paths.ts';
+import { paperPublication, paperVenueShort, paperYear } from '../../lib/papers.ts';
+/* ▲ FEATURE:papers ▲ */
 
 export const getStaticPaths = (async () => {
   const projects = await getCollection('projects');
@@ -23,6 +28,7 @@ const { project } = Astro.props;
 const { Content } = await render(project);
 const d = project.data;
 
+/* ▼ FEATURE:papers ▼ */
 /*
  * The reverse index: every paper whose front matter names this project. The
  * edge is written once, on the paper, and read from both ends.
@@ -37,15 +43,26 @@ const papers = await getCollection('papers', (p) =>
 );
 const related = (
   await Promise.all(
-    papers.map(async (paper) => ({ paper, pub: await getEntry(paper.data.publication) })),
+    papers.map(async (paper) => {
+      const pub = await paperPublication(paper);
+      return {
+        paper,
+        pub,
+        // Not `pub.data.year`: a paper page with no BibTeX entry — a talk at a
+        // venue that publishes nothing — carries its own year, and reading the
+        // entry alone would date it to 0 and park it at the bottom of the list
+        // for a reason nobody looking at the page could see.
+        year: paperYear(paper, pub),
+        // Only used when there is no badge; see /papers/ for the same rule.
+        tag: pub?.data.abbr ? undefined : paperVenueShort(paper, pub),
+      };
+    }),
   )
 )
   // Newest edition first, then the order the paper list uses, so two works
   // from the same year keep the sequence a reader saw on /papers/.
-  .sort(
-    (a, b) =>
-      (b.pub?.data.year ?? 0) - (a.pub?.data.year ?? 0) || a.paper.data.order - b.paper.data.order,
-  );
+  .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.paper.data.order - b.paper.data.order);
+/* ▲ FEATURE:papers ▲ */
 ---
 
 <Base title={d.title} description={d.description} section="projects">
@@ -61,6 +78,20 @@ const related = (
         <p class="lede">{d.description}</p>
       </div>
     </header>
+
+    {
+      /* The overview diagram, when the front matter names one. Above the prose
+         because it is the thing a reader wants first on an approach page: what
+         is this, in one picture. Nothing renders when `figure` is unset. */
+      d.figure && (
+        <Figure
+          src={d.figure.src}
+          alt={d.figure.alt}
+          plate={d.figure.plate}
+          frame={d.figure.frame}
+        />
+      )
+    }
 
     <Prose>
       <Content />
@@ -87,6 +118,7 @@ const related = (
       )
     }
 
+    {/* ▼ FEATURE:papers ▼ */}
     {
       related.length > 0 && (
         <section class="block" aria-labelledby="papers-h">
@@ -94,7 +126,7 @@ const related = (
             {related.length === 1 ? 'Related paper' : 'Related papers'}
           </h2>
           <ul class="papers">
-            {related.map(({ paper, pub }) => (
+            {related.map(({ paper, pub, year, tag }) => (
               <li>
                 <div class="badge">
                   <VenueBadge abbr={pub?.data.abbr} />
@@ -104,7 +136,8 @@ const related = (
                     {paper.data.title}
                   </a>
                   <p class="mono year">
-                    {pub?.data.year}
+                    {year}
+                    {tag && <span> · {tag}</span>}
                     {paper.data.status === 'to-appear' && <span> · to appear</span>}
                   </p>
                 </div>
@@ -114,9 +147,10 @@ const related = (
         </section>
       )
     }
+    {/* ▲ FEATURE:papers ▲ */}
 
     <p class="back">
-      <a class="chip" href="/projects/">← All projects</a>
+      <a class="chip" href={PROJECTS}>← All projects</a>
     </p>
   </article>
 </Base>

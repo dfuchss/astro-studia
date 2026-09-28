@@ -1,3 +1,15 @@
+import {
+  BLOG,
+  CV,
+  IMPRINT,
+  PAPERS,
+  PEOPLE,
+  PGP_KEY,
+  PROJECTS,
+  PUBLICATIONS,
+  REPOSITORIES,
+} from './lib/paths.ts';
+
 /**
  * The config file.
  *
@@ -28,6 +40,29 @@ export const SITE = {
    * something else entirely; it is decoration and nothing depends on it.
    */
   brandPrompt: '~/',
+
+  /**
+   * A mark beside the wordmark in the nav: a group's logo, a project's, a
+   * personal seal. `null` for the wordmark alone.
+   *
+   * A path under public/ and one decision. Nothing else, and in particular no
+   * dimensions — Nav.astro reads the file's own aspect ratio off disk and
+   * scales it to the bar's height, so a wide logo and a square one both fit
+   * without an edit here, and a path with no file behind it is a build error
+   * naming the path rather than a silently broken image. And no `alt`: a mark
+   * beside the site's own name is decoration, so it takes alt="" rather than
+   * making a screen reader say the name twice, while a mark that REPLACES the
+   * name IS the name and takes SITE.brand. Both are derived; neither is a
+   * choice worth offering.
+   *
+   * ardoco.de is the case this exists for: a logo and the site's name side by
+   * side. `replacesWordmark` is for a logo with the name drawn into it, where
+   * the text beside it would be the same word twice.
+   */
+  brandLogo: { src: '/assets/img/brand-mark.svg', replacesWordmark: false } as {
+    src: string;
+    replacesWordmark?: boolean;
+  } | null,
 
   /** One line under the title on the home page and in the feed. Optional. */
   tagline: 'Bringing Greek philosophy into Latin.',
@@ -125,20 +160,20 @@ export type Section =
  */
 export const NAV: { label: string; href: string; section: Section }[] = [
   { label: 'about', href: '/', section: 'home' },
-  { label: 'publications', href: '/publications/', section: 'publications' },
-  { label: 'papers', href: '/papers/', section: 'papers' },
-  { label: 'projects', href: '/projects/', section: 'projects' },
-  { label: 'blog', href: '/blog/', section: 'blog' },
-  { label: 'repositories', href: '/repositories/', section: 'repositories' },
-  { label: 'people', href: '/people/', section: 'people' },
-  { label: 'cv', href: '/cv/', section: 'cv' },
+  { label: 'publications', href: PUBLICATIONS, section: 'publications' },
+  { label: 'papers', href: PAPERS, section: 'papers' },
+  { label: 'projects', href: PROJECTS, section: 'projects' },
+  { label: 'blog', href: BLOG, section: 'blog' },
+  { label: 'repositories', href: REPOSITORIES, section: 'repositories' },
+  { label: 'people', href: PEOPLE, section: 'people' },
+  { label: 'cv', href: CV, section: 'cv' },
 ];
 
 /** The thin link row in the footer. Add or drop freely. */
 export const FOOTER_LINKS: { label: string; href: string }[] = [
   { label: 'Feed', href: '/feed.xml' },
-  { label: 'PGP', href: '/pgp-key/' },
-  { label: 'Imprint', href: '/imprint/' },
+  { label: 'PGP', href: PGP_KEY },
+  { label: 'Imprint', href: IMPRINT },
 ];
 
 /**

@@ -8,6 +8,21 @@ category: research
 order: 1
 logo: ../../assets/projects/vocabulary.svg
 
+# An overview diagram for this page. Optional, and the SAME shape a paper
+# page's `figure` takes — a path under public/, alt text, and the two
+# presentation flags. Drop the block and the page renders without it.
+#
+# `plate: false` because this drawing brings its own background; a diagram
+# exported as dark line art on transparency wants the default (true), or it is
+# very nearly invisible on a near-black page.
+figure:
+  src: /assets/img/projects/translation-strategies.svg
+  alt: >-
+    Three strategies for moving a term between languages: borrowing it,
+    calquing it, and reusing an existing Latin word in a new sense.
+  plate: false
+  frame: translation strategies
+
 # This project's own repositories, rendered as chips on its page. Different
 # from the site-wide /repositories/ page, which lists everything an
 # organisation owns: these are the two or three that belong to THIS work, and

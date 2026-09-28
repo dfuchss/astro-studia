@@ -29,10 +29,11 @@ Then, in order:
 | --- | ----------------------- | ---------------------------------------------------------------------------------------- |
 | 1   | `src/consts.ts`         | Your name, URL and email. Delete the `NAV` rows you do not want. Set `demoNotice: null`. |
 | 2   | `src/styles/tokens.css` | Five hex values. That is the whole palette — see [docs/theming.md](docs/theming.md).     |
-| 3   | `src/data/`             | Your `papers.bib`, your venues, your CV. All of it is demo content.                      |
+| 3   | `src/data/`             | Your `papers.bib`, venues, CV and `contact.yml`. All of it is demo content.              |
 | 4   | `src/content/`          | Your posts, projects and paper pages.                                                    |
-| 5   | `src/pages/index.astro` | Your home page copy, under the `DEMO COPY` banner.                                       |
-| 6   | —                       | `npm run check && npm run build && npm run verify`                                       |
+| 5   | `src/assets/portrait.*` | Your photo. Any common extension; the filename is the whole setting.                     |
+| 6   | `src/pages/index.astro` | Your home page copy, under the `DEMO COPY` banner.                                       |
+| 7   | —                       | `npm run check && npm run build && npm run verify`                                       |
 
 Removing an area you do not want is a short, uniform recipe — see
 [docs/removing-features.md](docs/removing-features.md).
@@ -44,7 +45,7 @@ src/
   consts.ts           the config file: SITE, SELF, Section, NAV, FOOTER_LINKS
   content.config.ts   the seven collections and their schemas
   loaders/bibtex.ts   papers.bib -> a typed `publications` collection
-  data/               papers.bib, venues, authors, people, cv, socials, repositories
+  data/               papers.bib, venues, authors, people, cv, contact, socials, repositories
   content/            papers/, projects/, posts/
   components/ layouts/ lib/ pages/ styles/
   integrations/       base-paths: makes `base` work for hand-written links
@@ -82,18 +83,18 @@ Run by the deploy workflow **before** it publishes, so a regression fails the
 build rather than reaching the site.
 
 ```
-✓ css: 60 custom properties, all defined
+✓ css: 62 custom properties, all defined or defaulted
 ✓ css: dark-only, no theme toggle
-✓ css: all 8 sections have an accent block
+✓ css: all 9 sections have an accent block
 ✓ a11y: 9 colour tokens all clear WCAG on --bg
-✓ links: 451 internal links and 42 fragments resolve
-✓ html: 21 pages each have one h1, a title, a description and a canonical
-✓ html: all 13 images have intrinsic dimensions
-✓ html: no text runs into a link on 21 pages
+✓ links: 523 internal links and 35 fragments resolve
+✓ html: 23 pages each have one h1, a title, a description and a canonical
+✓ html: all 46 images have intrinsic dimensions
+✓ html: no text runs into a link on 23 pages
 ✓ privacy: no third-party subresources
 ✓ privacy: no email address appears in the built output
 ✓ feed.xml / sitemap-index.xml / sitemap-0.xml well-formed and non-empty
-✓ assets: 8 published file(s) byte-identical to the baseline
+✓ assets: 14 published file(s) byte-identical to the baseline
 ```
 
 The last one matters more than it looks. A PDF you have published is cited in
@@ -142,4 +143,6 @@ prefix, which the DOI registry reserves for examples — they render, and
 `npm run bib:check` correctly reports them as unregistered. One person in it,
 the modern editor, is invented; her ORCID is ORCID's own fictional demo record
 and the GitHub handle is `octocat`, so nothing here points at a real identity
-or at a link that 404s.
+or at a link that 404s. The PGP key under `public/assets/pgp-key/` is demo
+content in the same sense: generated for the template and then thrown away, so
+nobody holds the secret half and it can encrypt nothing. Its user id says so.

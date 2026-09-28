@@ -119,6 +119,13 @@
      that means the same thing everywhere it is used. */
   --measure: 46rem;
 
+  /* The label column of the site's two label-on-a-hairline-rule lists: the
+     home page's post list and the contact rows in components/Contact.astro.
+     They sit one above the other on the same page, so their left edges have to
+     agree — and since the two now live in different files, the measure is a
+     token rather than a number typed twice. */
+  --label-col: 11rem;
+
   --radius-s: 8px;
   --radius-m: 14px;
   --radius-l: 22px;
