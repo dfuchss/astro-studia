@@ -125,17 +125,84 @@ export function paperByline(venue: PaperVenue | undefined, count: number) {
 }
 
 /**
- * The shortest true name for where a paper appeared: a breadcrumb leaf, a cell
+ * What a BibTeX entry says the work appeared IN: the proceedings, the journal,
+ * the series, the awarding institution, or at last the publisher. Undefined
+ * for an entry that names none of them — an @misc with only a `howpublished`.
+ *
+ * One chain, used by both fallbacks below, so the label a list row shows and
+ * the description a paper page advertises cannot name two different things.
+ */
+export function paperContainer(pub: Pub | undefined): string | undefined {
+  const d = pub?.data;
+  return d?.booktitle ?? d?.journal ?? d?.series ?? d?.school ?? d?.institution ?? d?.publisher;
+}
+
+/**
+ * The shortest TRUE name for where a paper appeared: a breadcrumb leaf, a cell
  * in a list, a line under a title in a project's related-papers block.
  *
  * For a publication that is the venue abbreviation — the badge's own text, and
- * the reason the papers schema carries no short label of its own for that case.
- * For a stated venue it is `venue.short`, falling back to the full label,
- * because there is nothing else: the page with no BibTeX entry has no badge.
- * A publication with no venue at all is a preprint, which is what is left.
+ * the reason the papers schema carries no short label of its own for that
+ * case. For a stated venue it is `venue.short`, falling back to the full
+ * label, because there is nothing else: a page with no BibTeX entry has no
+ * badge.
+ *
+ * A publication WITHOUT an `abbr` falls back to what its entry says it
+ * appeared in — the proceedings or journal title, which is long but is the
+ * entry's own record and cannot be wrong — and to nothing at all when the
+ * entry names no container. Callers render nothing in that case: the
+ * breadcrumb stops at "papers", a list row shows the year alone.
+ *
+ * This used to fall back to the word 'preprint', on the theory that a paper
+ * with no badge must be one. It is not: a workshop paper whose venue simply
+ * has no row in venues.yml is a published paper, and two real ones on
+ * ardoco.de were being called preprints in three places. A label the template
+ * invents can be false; a label read from the entry, or left out, cannot. The
+ * word is still reachable — from an `abbr` that says so (an `arXiv` row in
+ * venues.yml, which also gives the entry its badge) or a stated `venue.short`
+ * — which is to say only when the site says the work is one. The way to get a
+ * SHORT label for a paper that has none is the same: give the entry an `abbr`.
  */
-export function paperVenueShort(paper: Paper, pub: Pub | undefined): string {
-  return paper.data.venue?.short ?? paper.data.venue?.label ?? pub?.data.abbr?.id ?? 'preprint';
+export function paperVenueShort(paper: Paper, pub: Pub | undefined): string | undefined {
+  return (
+    paper.data.venue?.short ?? paper.data.venue?.label ?? pub?.data.abbr?.id ?? paperContainer(pub)
+  );
+}
+
+/**
+ * The one-line summary a paper page advertises to a link preview and a feed
+ * reader: its own `description`, or failing that the venue — the paper's own,
+ * whether stated on the page, given as `conferenceName`, or read off the
+ * BibTeX entry. Never the site's blurb: a card for a paper that describes the
+ * site is a card that says nothing about the paper. Undefined only for a page
+ * with no description and an entry that names no container, and BaseHead then
+ * falls back to SITE.description as it does for any page.
+ */
+export function paperDescription(paper: Paper, pub: Pub | undefined): string | undefined {
+  return paper.data.description ?? paperVenue(paper)?.label ?? paperContainer(pub);
+}
+
+/**
+ * The label for a key in a paper's `links` maps: the site's own table first,
+ * then a RULE for keys that encode which talk a file belongs to, then the key
+ * as typed.
+ *
+ * The rule: `<venue>_<kind>` where `<kind>` is itself a labelled key, so
+ * `icsa23_pdf` is "PDF (ICSA23)" and `se26_pptx` is "PPTX (SE26)". ardoco.de
+ * files its slide decks that way — one paper, presented three times, three
+ * decks under `slides` — and the label had been derived by string surgery on
+ * the key in the template language. A derivation rather than three more rows
+ * in the table, because the venue part is open-ended and the point of the key
+ * is that adding a deck needs no edit anywhere else.
+ *
+ * The table is the caller's — it lives on the paper page beside the keys it
+ * names — and it wins outright: a key that is in it is never taken apart.
+ */
+export function linkLabel(key: string, labels: Record<string, string>): string {
+  if (labels[key]) return labels[key];
+  const m = /^(.+)_([a-z0-9]+)$/i.exec(key);
+  if (m && labels[m[2]]) return `${labels[m[2]]} (${m[1].replace(/[-_]/g, ' ').toUpperCase()})`;
+  return key;
 }
 
 /**

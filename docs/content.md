@@ -111,6 +111,21 @@ links:
 Nothing bibliographic goes in the front matter. Venue, year, DOI and the
 citation all come from the BibTeX entry, so they have one source of truth.
 
+That includes the short venue label — the breadcrumb leaf on the page, the
+tag on a `/papers/` row, the line under a title in a project's related-papers
+list. It is the entry's `abbr`, the badge's own text. An entry **without** an
+`abbr` shows what it says it appeared in instead — the proceedings, journal or
+series title — which is long, but is the entry's own record and so cannot be
+wrong; an entry that names no container shows nothing. The template never
+invents a word here: an earlier version fell back to "preprint" for any entry
+without a badge, and called two published workshop papers preprints. The way
+to a short label is the way to a badge — an `abbr` on the entry and a row in
+`venues.yml`. `src/content/papers/de-fato.md` is the no-`abbr` case.
+
+The page's meta description — what a link preview and a feed reader show —
+is `description`, or failing that the venue: the stated `venue.label`, the
+`conferenceName`, or the entry's container. Never the site's own blurb.
+
 `order` is the sequence on `/papers/`; `featured` is what the entry page's
 "Paper pages" block selects on, newest first, so that block is a handful of
 pages you curate here rather than everything in the directory. Both are read
@@ -158,13 +173,19 @@ annotated.
 
 `links` has exactly three groups; any other key is silently dropped by the
 schema. Add one in `content.config.ts` if you need it, and a label for it in
-`LINK_LABELS` on the paper page.
+`LINK_LABELS` on the paper page. A key of the form `<venue>_<kind>`, where
+`<kind>` is itself a labelled key, needs no row: `colloquium_pdf` renders as
+"PDF (COLLOQUIUM)", so the decks from a work's several outings can sit side by
+side under `slides` — see `linkLabel()` in `src/lib/papers.ts`.
 
 ## Projects — `src/content/projects/`
 
-`category` is an enum, so a typo fails the build. An entry with `redirect` gets
-no page of its own and links straight out — useful for work that lives on
-someone else's site.
+`category` is an enum, so a typo fails the build — and it is optional. Leave
+it off every entry and `/projects/` is one flat list with no group headings,
+which is what a site that does not sort its projects wants; set it on some
+entries and not others and the rest gather under a final "Other" group rather
+than dropping off the page. An entry with `redirect` gets no page of its own
+and links straight out — useful for work that lives on someone else's site.
 
 Logos go in `src/assets/projects/` and run through Astro's image pipeline
 (hashed filename, dimensions known at build time). That is the difference

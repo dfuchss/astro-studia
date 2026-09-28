@@ -49,7 +49,10 @@ figure:
   # floating as a bright rectangle. The string is the titlebar label.
   frame: approach overview
 
-# Label -> URL. The labels are yours; they render in the order written.
+# Label -> URL. The labels are yours; they render in the order written. A key
+# of the form `<venue>_<kind>` gets a derived label: `colloquium_pdf` renders
+# as "PDF (COLLOQUIUM)", so the decks from a work's several outings can sit
+# side by side under `slides` with no label table to extend. See linkLabel().
 links:
   paper:
     loeb: https://www.loebclassics.com/view/LCL213/1928/volume.xml
@@ -58,6 +61,7 @@ links:
     perseus: https://www.perseus.tufts.edu/hopper/text?doc=Perseus:text:2007.01.0044
   slides:
     pdf: /assets/pdf/editions/de-re-publica-excerpt.pdf
+    colloquium_pdf: /assets/pdf/editions/de-re-publica-excerpt.pdf
 ---
 
 Written between 54 and 51 BC and cast as a dialogue set a lifetime earlier, in

@@ -1,6 +1,6 @@
 import { getCollection } from 'astro:content';
 import { publicationDate } from '../publications.ts';
-import { paperPublication, paperVenue, paperYear } from '../papers.ts';
+import { paperDescription, paperPublication, paperYear } from '../papers.ts';
 import { paperPath } from '../paths.ts';
 import type { FeedItem } from './types.ts';
 
@@ -27,9 +27,10 @@ export async function feedItems(): Promise<FeedItem[]> {
       return {
         title: paper.data.title,
         // A talk usually has no description of its own; the venue it was given
-        // at is the next most useful line in a reader's client, and it is the
-        // one thing such a page always states.
-        description: paper.data.description ?? paperVenue(paper)?.label,
+        // at is the next most useful line in a reader's client. The same
+        // fallback the paper page's own meta description uses, so the feed
+        // and the page cannot summarise one work two ways.
+        description: paperDescription(paper, pub),
         pubDate: year === undefined ? undefined : publicationDate({ year, month: pub?.data.month }),
         path: paperPath(paper.id),
         categories: pub?.data.keywords ?? [],

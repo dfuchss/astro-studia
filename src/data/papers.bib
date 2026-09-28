@@ -152,3 +152,22 @@
   url          = {https://www.perseus.tufts.edu/hopper/text?doc=Perseus:text:1999.02.0019},
   keywords     = {oratory, Catilinarian conspiracy},
 }
+
+% NO `abbr` BUT A PAGE: the case that used to be mislabelled. An entry with no
+% venue badge is not a preprint — this one appeared in a journal — and its page
+% must not call it one. With no abbr, the breadcrumb on /papers/de-fato/, the
+% row on /papers/ and a project's related-papers line all show what the entry
+% says it appeared in: the journal title. Want a short label there instead?
+% Give the entry an abbr and venues.yml a row for it — that is what a badge is.
+@article{cicero_de_fato_1942,
+  title        = {De Fato},
+  author       = {Cicero, Marcus Tullius and Rackham, Harris},
+  journal      = {Rheinisches Museum f{\"u}r Philologie},
+  volume       = {91},
+  pages        = {1--29},
+  year         = {1942},
+  note         = {Composed 44 BC},
+  doi          = {10.5555/rhm.091.1942},
+  page         = {/papers/de-fato/},
+  keywords     = {fate, free will, Stoicism},
+}
