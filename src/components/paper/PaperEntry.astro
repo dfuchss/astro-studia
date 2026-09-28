@@ -1,0 +1,234 @@
+---
+import { getEntry } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import VenueBadge from '../pub/VenueBadge.astro';
+import { citationsFor, formatCount } from '../../lib/citations.ts';
+import { isSelfName } from '../../lib/authors.ts';
+import { paperPath } from '../../lib/paths.ts';
+import { paperByline, paperVenue, paperYear } from '../../lib/papers.ts';
+
+/*
+ * One row of an entry page's paper block: a PAPER PAGE, in the shape
+ * PubEntry uses for a publication.
+ *
+ * A SIBLING OF PubEntry RATHER THAN A MODE OF IT. The two render the same rows
+ * — badge, title, byline, where it appeared, a pill or two — and share not one
+ * field to read them from. Every row of PubEntry comes out of a BibTeX entry:
+ * the badge from `abbr`, the byline from the entry's author strings, the venue
+ * from `booktitle`/`journal` and `location`, the pills from `doi` and `pdfUrl`,
+ * the citation from `bibtex`. A paper page whose venue is STATED has none of
+ * those. Its byline is a list of REFERENCES into authors.yml, its venue is one
+ * sentence it wrote itself, its year is its own, and there is nothing to cite.
+ * Teaching PubEntry to take either would fork it inside every row it renders,
+ * and four of those forks would be dead on /publications/ — the one page with
+ * forty entries on it, and the one that must not regress. It would also make
+ * PubEntry resolve content per entry to get a byline, which is exactly what its
+ * `links` prop exists to avoid on a long list.
+ *
+ * So the prop here is a paper, always, and nothing below asks which kind it is:
+ * a venue sentence, an imprint and a pill each render when their source has
+ * something to say, and each case naturally has only one of them.
+ */
+interface Props {
+  paper: CollectionEntry<'papers'>;
+  /**
+   * Its BibTeX entry, already resolved by the caller — undefined for a talk at
+   * a venue that publishes nothing. Passed in rather than looked up here so the
+   * list can be sorted by year before anything is rendered; see
+   * featuredPapers().
+   */
+  pub?: CollectionEntry<'publications'>;
+}
+
+const { paper, pub } = Astro.props;
+const d = pub?.data;
+
+const venue = paperVenue(paper);
+const year = paperYear(paper, pub);
+const cites = citationsFor(d?.googleScholarId);
+
+/*
+ * The byline comes from authors.yml, not from the BibTeX author list, for the
+ * same reason the paper page's does: it is the one source that exists in both
+ * cases. Resolved here, per row, which would be wrong on /publications/ and is
+ * fine here — this block is a handful of pages an author picked by hand, not a
+ * bibliography.
+ */
+const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
+const { connector, separator } = paperByline(venue, authors.length);
+
+// Where the entry says it was printed. Empty for a page with no entry, which is
+// why the venue sentence above it is that page's only answer.
+const inParts = [d?.booktitle ?? d?.journal ?? d?.school ?? d?.institution, d?.location].filter(
+  Boolean,
+);
+
+/*
+ * Whether the pill row exists at all. Tested here rather than with `:empty`,
+ * which a div holding only whitespace does not match — and a talk with no
+ * BibTeX entry has no pills, so the row would otherwise contribute its top
+ * margin to every one of those entries.
+ */
+const hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url || cites > 0);
+---
+
+<li class="entry reveal">
+  <div class="badge">
+    <VenueBadge abbr={d?.abbr} />
+  </div>
+
+  <div class="body">
+    <h3 class="title">
+      {
+        /* Always a link: every paper in this collection HAS a page — that is what
+          being in it means. PubEntry has to ask, because most publications
+          do not. */
+      }
+      <a class="title-link" href={paperPath(paper.id)}>{paper.data.title}</a>
+    </h3>
+
+    {
+      authors.length > 0 && (
+        <p class="authors">
+          {/* The trailing space is inside the string: whitespace between two
+              markup expressions is not something to bet a byline on. */}
+          {connector && `${connector} `}
+          {authors.map((a, i) => (
+            <>
+              {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
+              {isSelfName(a.data.name) ? (
+                <strong>{a.data.name}</strong>
+              ) : (
+                <span>{a.data.name}</span>
+              )}
+            </>
+          ))}
+        </p>
+      )
+    }
+
+    {
+      venue && (
+        <p class="venue-line">
+          {venue.mark && `${venue.mark} `}
+          {venue.prefix && `${venue.prefix} `}
+          {venue.url ? (
+            <a href={venue.url} rel="noopener">
+              {venue.label}
+            </a>
+          ) : (
+            venue.label
+          )}
+        </p>
+      )
+    }
+
+    {
+      (inParts.length > 0 || year !== undefined) && (
+        <p class="venue-line">
+          {inParts.length > 0 && <em>{inParts.join(', ')}</em>}
+          {year !== undefined && <span>{inParts.length > 0 ? `, ${year}` : year}</span>}
+          {/* The one thing about a paper that changes after it is written, so a
+              reader scanning the block for what is new wants it here. Only when
+              the venue sentence has not already said it. */}
+          {paper.data.status === 'to-appear' && !venue && <span> · to appear</span>}
+        </p>
+      )
+    }
+
+    {
+      hasLinks && (
+        <div class="links">
+          {d?.pdfUrl && (
+            <a class="chip" href={d.pdfUrl}>
+              PDF
+            </a>
+          )}
+          {d?.doi ? (
+            <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
+              DOI
+            </a>
+          ) : (
+            /* Only when there is no DOI: a DOI is the better permalink, and two
+               chips pointing at the same paper is noise. */
+            d?.url && (
+              <a class="chip" href={d.url} rel="noopener">
+                Link
+              </a>
+            )
+          )}
+          {cites > 0 && (
+            <span class="chip cites" title="Citations (Google Scholar)">
+              {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
+            </span>
+          )}
+        </div>
+      )
+    }
+  </div>
+</li>
+
+<style>
+  /* The same row as a publication entry, to the pixel: the two lists are one
+     kind of thing to a reader, and a paper block that sat on a different grid
+     from /publications/ would read as a different site. The values are repeated
+     rather than shared because this theme keeps its layout in scoped styles per
+     component — see PubEntry.astro, /papers/ and a project page, which all set
+     their own badge column. */
+  .entry {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    gap: 0 1.1rem;
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .badge {
+    padding-top: 0.2rem;
+  }
+  .title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    margin: 0 0 0.2rem;
+    line-height: 1.35;
+  }
+  .title-link {
+    color: inherit;
+    text-decoration: none;
+  }
+  .title-link:hover {
+    color: var(--sec-strong);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .authors,
+  .venue-line {
+    margin: 0 0 0.3rem;
+    font-size: var(--fs-small);
+    color: var(--text-muted);
+  }
+  .authors strong {
+    color: var(--text);
+  }
+  .venue-line em {
+    color: var(--text-muted);
+  }
+  .links {
+    margin: 0.5rem 0 0;
+  }
+  .links > .chip {
+    margin: 0 0.4rem 0.4rem 0;
+    vertical-align: middle;
+  }
+  .cites {
+    border-color: var(--sec-line);
+    color: var(--sec);
+    background: var(--sec-dim);
+  }
+
+  @media (max-width: 34rem) {
+    .entry {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+  }
+</style>
