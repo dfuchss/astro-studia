@@ -94,10 +94,56 @@ one until someone mistypes a URL.
 Nothing here needs GitHub. The build is a directory of static files with no
 server-side anything.
 
-`trailingSlash: 'always'` with `build.format: 'directory'` means every route is
-`<route>/index.html`, which every static host serves correctly without
-configuration. Point the host at `dist/` — or, as fuchss.org does, have a web
-server pull the `gh-pages` branch.
+Under the default URL policy every route is `<route>/index.html`, which every
+static host serves correctly without configuration. Point the host at `dist/`
+— or, as fuchss.org does, have a web server pull the `gh-pages` branch.
+
+## The URL policy
+
+`URL_POLICY` in `src/lib/paths.ts` is the one place this is decided, and it
+has two values:
+
+- **`'directory'`** (the default): every page is `<route>/index.html` and
+  every URL ends in a slash — `/papers/de-officiis/`. This is Astro's
+  `trailingSlash: 'always'` with `build.format: 'directory'`.
+- **`'preserve'`**: a page's file mirrors its source file. Every route in this
+  template is an `index.astro` in a directory and keeps its slash — except
+  the paper pages, which are `src/pages/papers/[slug].astro` and so become
+  flat files published as `/papers/de-officiis`, no slash, no extension.
+  This is `trailingSlash: 'ignore'` with `build.format: 'preserve'`.
+
+The second exists for a site that cannot move. ardoco.de published its paper
+pages as `/c/icse25` for years; they are indexed, cited and linked that way,
+and a template that could only emit `/c/icse25/` would be asking it to break
+every one of those links. Flip the constant and nothing else needs an edit:
+
+- `astro.config.ts` derives both Astro settings from it.
+- `paperPath()` is the one link helper whose shape differs.
+- `routePath()` turns `Astro.url.pathname` — which under `'preserve'` is the
+  **file** path, `/papers/de-officiis.html` — back into the address, for the
+  canonical link, `og:url` and the Scholar/JSON-LD URLs. Only `BaseHead.astro`
+  and `ScholarMeta.astro` build a page URL, and both go through it.
+- `src/pages/feed.xml.ts` emits every item link as a full URL, because
+  `@astrojs/rss` re-shapes a relative one: its `trailingSlash` option appends
+  a slash to every link by default and strips one from every link when false,
+  and a feed that can carry both blog posts and flat paper pages needs
+  neither. ardoco.de shipped that bug — every link in its feed 404ed.
+- `src/integrations/sitemap-shape.ts` rewrites each sitemap entry to the file
+  that was actually emitted, because `@astrojs/sitemap` keys its trailing
+  slash on `build.format === 'directory'` and under `'preserve'` publishes
+  `/people` for a page that is `people/index.html`.
+
+`npm run verify` is what makes the policy enforceable: every internal link,
+canonical, sitemap entry and feed link is resolved to a file **by its exact
+shape** — `/a/b/` is `a/b/index.html` and nothing else, `/a/b` is `a/b.html`
+and nothing else — so a link and a file that disagree fail the build instead
+of becoming a 404 on the host. The check used to accept either spelling,
+which is precisely how a build under the wrong pairing passed every check
+while linking to files that did not exist.
+
+Want a different mix — flat project pages, say? Move that route between
+`<name>.astro` and `<name>/index.astro`, teach its helper in `paths.ts` what
+`paperPath()` knows, and the audit tells you about anything you missed.
 
 ## The asset baseline
 
@@ -125,6 +171,15 @@ Commit both together, so the change and its authorisation are one commit.
 `@astrojs/sitemap` emits `/sitemap-index.xml`, which points at `/sitemap-0.xml`
 and any further pages. `src/pages/robots.txt.ts` is generated from `SITE.url`
 and points at the index, so the two cannot drift apart.
+
+`npm run verify` asserts that linkage rather than the filename: it reads the
+`Sitemap:` line out of the built `robots.txt`, requires that file to exist in
+`dist/`, follows it to every sitemap it lists, and resolves every URL in them
+to a file on disk. A crawler learns the sitemap's address from `robots.txt`
+and nowhere else, so a sitemap under a name `robots.txt` does not point at is
+one nothing will read — and a `robots.txt` pointing at a file that was not
+emitted is a 404 handed to every crawler. Rename the sitemap however you like,
+as long as `robots.txt` still names it.
 
 The integration lists pages Astro builds and nothing else, and a file in
 `public/` is not one — so `astro.config.ts` walks `public/assets/pdf/`

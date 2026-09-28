@@ -2,14 +2,14 @@
 import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import { Image } from 'astro:assets';
-import Base from '../../layouts/Base.astro';
-import Prose from '../../components/Prose.astro';
-import Figure from '../../components/Figure.astro';
-import { PROJECTS } from '../../lib/paths.ts';
+import Base from '../../../layouts/Base.astro';
+import Prose from '../../../components/Prose.astro';
+import Figure from '../../../components/Figure.astro';
+import { PROJECTS } from '../../../lib/paths.ts';
 /* ▼ FEATURE:papers ▼ */
-import VenueBadge from '../../components/pub/VenueBadge.astro';
-import { paperPath } from '../../lib/paths.ts';
-import { paperPublication, paperVenueShort, paperYear } from '../../lib/papers.ts';
+import VenueBadge from '../../../components/pub/VenueBadge.astro';
+import { paperPath } from '../../../lib/paths.ts';
+import { paperPublication, paperVenueShort, paperYear } from '../../../lib/papers.ts';
 /* ▲ FEATURE:papers ▲ */
 
 export const getStaticPaths = (async () => {

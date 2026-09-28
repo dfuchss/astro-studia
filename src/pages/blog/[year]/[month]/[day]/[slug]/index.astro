@@ -1,16 +1,16 @@
 ---
 import { render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import Base from '../../../../../layouts/Base.astro';
-import Prose from '../../../../../components/Prose.astro';
+import Base from '../../../../../../layouts/Base.astro';
+import Prose from '../../../../../../components/Prose.astro';
 import {
   publishedPosts,
   permalink,
   permalinkParts,
   formatPostDate,
   slugifyTag,
-} from '../../../../../lib/blog.ts';
-import { tagPath } from '../../../../../lib/paths.ts';
+} from '../../../../../../lib/blog.ts';
+import { tagPath } from '../../../../../../lib/paths.ts';
 
 export const getStaticPaths = (async () => {
   // publishedPosts() drops drafts, so a draft has no route at all — it is not

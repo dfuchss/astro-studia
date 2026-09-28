@@ -5,20 +5,24 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
 import { SITE } from './src/consts.ts';
+import { URL_POLICY } from './src/lib/paths.ts';
 import basePaths from './src/integrations/base-paths.ts';
+import sitemapShape from './src/integrations/sitemap-shape.ts';
 
 export default defineConfig({
   // Imported rather than written out, so the site's address exists in exactly
   // one place. src/pages/robots.txt.ts reads the same constant.
   site: SITE.url,
 
-  // Emit <route>/index.html and publish trailing-slash URLs. The pairing
-  // matters: with 'always' + 'directory', Astro.url.pathname is the address a
-  // visitor sees, so canonical links, OG URLs and internal hrefs can all use it
-  // directly. (Astro's other build format, 'preserve', makes it the *file*
-  // path — "/papers/foo.html" — and then every one of those needs a helper.)
-  trailingSlash: 'always',
-  build: { format: 'directory' },
+  // Both derived from URL_POLICY in src/lib/paths.ts, which is where the
+  // choice is made and explained. They are one decision, not two: 'directory'
+  // pairs with 'always' (every page is <route>/index.html at a slash URL), and
+  // 'preserve' pairs with 'ignore' (a page's file mirrors its source, so the
+  // paper pages are flat /papers/<slug> files and the surface is mixed). Set
+  // them by hand and the link helpers, the feed and the canonical URLs would
+  // no longer agree with the files on disk — which the audit then reports.
+  trailingSlash: URL_POLICY === 'preserve' ? 'ignore' : 'always',
+  build: { format: URL_POLICY },
 
   integrations: [
     // Emits /sitemap-index.xml plus /sitemap-0.xml. src/pages/robots.txt.ts
@@ -30,6 +34,13 @@ export default defineConfig({
     // DBLP find papers that way — and a list maintained by hand is a list that
     // silently stops matching the directory.
     sitemap({ customPages: publicPdfs() }),
+
+    // Runs after the sitemap is written and makes each entry name the file
+    // that was actually emitted. @astrojs/sitemap adds a trailing slash only
+    // when build.format is 'directory', so under 'preserve' it publishes
+    // /people for a page that is people/index.html — see the integration's
+    // header. A no-op under the default policy.
+    sitemapShape(),
 
     // Makes `base` below actually work for hand-written links. Astro prefixes
     // the URLs it generates itself but not a `/cv/` you typed, and there is no
@@ -74,7 +85,12 @@ function publicPdfs(dir: string = 'public/assets/pdf', out: string[] = []): stri
     const rel = posix.join(dir, name.name);
     if (name.isDirectory()) publicPdfs(rel, out);
     else if (name.name.toLowerCase().endsWith('.pdf')) {
-      out.push(new URL(rel.replace(/^public/, ''), SITE.url).href);
+      // Concatenated, not new URL(path, SITE.url): with a base configured
+      // SITE.url is "https://host/repo", and resolving a root-absolute path
+      // against it drops the last segment — the sitemap then advertised
+      // /assets/pdf/… at the domain root, where nothing is. robots.txt.ts
+      // builds its one URL the same way, for the same reason.
+      out.push(`${SITE.url.replace(/\/$/, '')}${rel.replace(/^public/, '')}`);
     }
   }
   return out;

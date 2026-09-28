@@ -1,21 +1,23 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
-import Base from '../../../layouts/Base.astro';
-import Prose from '../../../components/Prose.astro';
-import Figure from '../../../components/Figure.astro';
-import VenueBadge from '../../../components/pub/VenueBadge.astro';
-import ScholarMeta from '../../../components/pub/ScholarMeta.astro';
-import CopyButton from '../../../components/CopyButton.astro';
-import { PAPERS, projectPath } from '../../../lib/paths.ts';
-import { isSelfName } from '../../../lib/authors.ts';
+import Base from '../../layouts/Base.astro';
+import Prose from '../../components/Prose.astro';
+import Figure from '../../components/Figure.astro';
+import VenueBadge from '../../components/pub/VenueBadge.astro';
+import ScholarMeta from '../../components/pub/ScholarMeta.astro';
+import CopyButton from '../../components/CopyButton.astro';
+import { PAPERS, projectPath } from '../../lib/paths.ts';
+import { isSelfName } from '../../lib/authors.ts';
 import {
+  linkLabel,
   paperByline,
+  paperDescription,
   paperPublication,
   paperVenue,
   paperVenueShort,
   paperYear,
-} from '../../../lib/papers.ts';
+} from '../../lib/papers.ts';
 
 export const getStaticPaths = (async () => {
   const papers = await getCollection('papers');
@@ -41,6 +43,8 @@ const d = pub?.data;
 
 const venue = paperVenue(paper);
 const year = paperYear(paper, pub);
+// The breadcrumb's leaf; undefined when there is nothing true to put there.
+const leaf = paperVenueShort(paper, pub);
 
 const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
 
@@ -62,7 +66,10 @@ const projects = (await Promise.all(paper.data.projects.map((ref) => getEntry(re
 /**
  * Pretty names for the link keys used in front matter. A key with no entry
  * here falls back to itself, so adding a link never requires editing this —
- * it just renders as you typed it.
+ * it just renders as you typed it. In between, linkLabel() derives a label
+ * for a key of the form `<venue>_<kind>`: `colloquium_pdf` is "PDF
+ * (COLLOQUIUM)", so a paper presented three times can file three decks under
+ * `slides` without a row here for each.
  */
 const LINK_LABELS: Record<string, string> = {
   acm: 'ACM DL',
@@ -78,7 +85,7 @@ const LINK_LABELS: Record<string, string> = {
   archive: 'Internet Archive',
   perseus: 'Perseus',
 };
-const label = (key: string) => LINK_LABELS[key] ?? key;
+const label = (key: string) => linkLabel(key, LINK_LABELS);
 
 // Lowercase because the column heads are set in mono and read as keys, not as
 // sentences — the same voice as every other `.mono` label in the theme.
@@ -110,7 +117,13 @@ const cite = pub ? { id: `bib-${pub.id}`, bibtex: pub.data.bibtex } : undefined;
 const { connector, separator } = paperByline(venue, authors.length);
 ---
 
-<Base title={paper.data.title} description={paper.data.description} section="papers">
+{
+  /* The description falls back to the paper's own venue, never to the site's
+     blurb — see paperDescription(). ardoco.de does the same with its
+     conferenceName; a link preview for a paper should say where it appeared,
+     not what the site is. */
+}
+<Base title={paper.data.title} description={paperDescription(paper, pub)} section="papers">
   {
     pub && (
       <Fragment slot="head">
@@ -132,13 +145,21 @@ const { connector, separator } = paperByline(venue, authors.length);
            has, which is why the schema carries no separate short label for it:
            adding one would mean restating the badge in every paper's front
            matter. A page with no BibTeX entry has no badge to restate, so it
-           names its venue in `venue.short`. A paper with neither is a preprint,
-           which is what is left — see paperVenueShort(). */
+           names its venue in `venue.short`. An entry with no abbr gives the
+           proceedings or journal it names, and one that names nothing gives
+           no leaf at all — the path just stops at "papers", which is true, in
+           place of a word the template made up. See paperVenueShort(). */
       }
       <p class="kicker" data-sigil="none">
         <a href={PAPERS}>papers</a>
-        <span aria-hidden="true">/</span>{' '}
-        {paperVenueShort(paper, pub)}
+        {
+          leaf && (
+            <>
+              <span aria-hidden="true">/</span>
+              {` ${leaf}`}
+            </>
+          )
+        }
       </p>
 
       <h1>{paper.data.title}</h1>

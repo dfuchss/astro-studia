@@ -8,8 +8,8 @@
  * a route is this file plus the route directory, and the audit's internal-link
  * check tells you about anything that was missed.
  *
- * All of these end in a slash, because astro.config.ts sets
- * trailingSlash: 'always'.
+ * Whether a path ends in a slash is decided by URL_POLICY below, once, and
+ * astro.config.ts reads its two build settings from the same constant.
  *
  * ── Renaming a route ───────────────────────────────────────────────────────
  *
@@ -26,6 +26,74 @@
  * directory (`src/content/papers/`) are deliberately NOT in that list: neither
  * appears in a URL, so renaming the route does not touch them.
  */
+
+/**
+ * THE URL POLICY: how a route becomes a file, and so what its address is.
+ *
+ *   'directory'  Every page is <route>/index.html and every URL ends in a
+ *                slash: /papers/de-officiis/. Astro's trailingSlash: 'always'.
+ *                The default, and what every static host serves correctly with
+ *                no configuration.
+ *
+ *   'preserve'   A page's file mirrors its source file. src/pages/cv/index.astro
+ *                is still cv/index.html and /cv/ — but src/pages/papers/[slug].astro
+ *                is papers/de-officiis.html, published as /papers/de-officiis:
+ *                no slash, no extension. Astro's trailingSlash: 'ignore', because
+ *                the surface is mixed and 'always' or 'never' would make half of
+ *                it unreachable in dev.
+ *
+ * The second one exists for a site that cannot move: ardoco.de published its
+ * paper pages as /c/icse25 for years, they are indexed and cited that way, and
+ * a template that could only emit /c/icse25/ would be asking it to break every
+ * one of those links. Under 'preserve' the paper pages are the ONLY flat routes,
+ * on purpose — the pages tree is laid out so that every other route is an
+ * index.astro in a directory, which both policies publish at the same address.
+ * (Want a different mix? Move a route between <name>.astro and <name>/index.astro
+ * and teach its helper below the same thing paperPath() knows.)
+ *
+ * This constant is the one place the choice is made:
+ *
+ *   astro.config.ts          derives `trailingSlash` and `build.format` from it
+ *   paperPath()              is the one helper whose shape differs between the two
+ *   routePath()              turns Astro.url.pathname — the FILE path under
+ *                            'preserve' — back into the published address, for
+ *                            the canonical link, og:url and the JSON-LD
+ *   src/pages/feed.xml.ts    emits every item link absolute, so @astrojs/rss
+ *                            cannot re-shape it
+ *   src/integrations/        sitemap-shape.ts rewrites each sitemap entry to the
+ *                            file that was actually emitted, because
+ *                            @astrojs/sitemap keys its own slash logic on
+ *                            build.format and gets 'preserve' wrong
+ *
+ * and scripts/audit-site.mjs asserts the outcome: every internal link, sitemap
+ * entry, feed link and canonical must name a file on disk by its exact shape,
+ * so a page or helper that gets the policy wrong fails the build rather than
+ * shipping a 404.
+ */
+// `as`, not a type annotation: TypeScript narrows an annotated const to its
+// literal initialiser, and then reports the comparison in paperPath() as one
+// that can never be true.
+export const URL_POLICY = 'directory' as 'directory' | 'preserve';
+
+/**
+ * The published address of the page being rendered, from Astro.url.pathname.
+ *
+ * Under 'directory' the pathname IS the address and this returns it unchanged.
+ * Under 'preserve' Astro hands the components the file path — "/cv.html" for a
+ * flat route, and it is the extension that has to come off; a directory route
+ * still arrives as "/people/". Both suffixes are handled so that this does not
+ * depend on which of the two Astro chose, and 404.html keeps its extension
+ * because that page has no address of its own at all.
+ *
+ * Only BaseHead.astro and ScholarMeta.astro call it, and the audit checks
+ * every URL they emit against the page's own file — so a third caller that
+ * forgets to would be told, not silently wrong.
+ */
+export function routePath(pathname: string): string {
+  if (pathname.endsWith('/index.html')) return pathname.slice(0, -'index.html'.length);
+  if (pathname.endsWith('.html') && pathname !== '/404.html') return pathname.slice(0, -5);
+  return pathname;
+}
 
 /** The index of the paper pages. `src/pages/papers/` must agree with it. */
 export const PAPERS = '/papers/';
@@ -54,7 +122,14 @@ export const PGP_KEY = '/pgp-key/';
 export const REPOSITORIES = '/repositories/';
 export const IMPRINT = '/imprint/';
 
-export const paperPath = (slug: string) => `${PAPERS}${slug}/`;
+/**
+ * The one helper whose shape follows URL_POLICY: /papers/<slug>/ under
+ * 'directory', /papers/<slug> under 'preserve', where the route is
+ * src/pages/papers/[slug].astro and so a flat file. Every other route is an
+ * index.astro in a directory and keeps its slash under both.
+ */
+export const paperPath = (slug: string) =>
+  URL_POLICY === 'preserve' ? `${PAPERS}${slug}` : `${PAPERS}${slug}/`;
 export const projectPath = (slug: string) => `${PROJECTS}${slug}/`;
 export const tagPath = (slug: string) => `${BLOG}tag/${slug}/`;
 

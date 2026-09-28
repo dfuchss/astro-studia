@@ -1,11 +1,11 @@
 ---
 import { Image } from 'astro:assets';
-import Base from '../layouts/Base.astro';
-import Contact from '../components/Contact.astro';
+import Base from '../../layouts/Base.astro';
+import Contact from '../../components/Contact.astro';
 /* ▼ FEATURE:socials ▼ */
-import SocialRow from '../components/SocialRow.astro';
+import SocialRow from '../../components/SocialRow.astro';
 /* ▲ FEATURE:socials ▲ */
-import { SELF } from '../consts.ts';
+import { SELF } from '../../consts.ts';
 import {
   cv,
   dateRange,
@@ -16,8 +16,8 @@ import {
   splitMinor,
   groupCourses,
   parseDetail,
-} from '../lib/cv.ts';
-import { portrait, PORTRAIT_SIZE } from '../lib/portrait.ts';
+} from '../../lib/cv.ts';
+import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
 
 /*
  * Each section picks its own shape from its data unless `layout:` in cv.yml

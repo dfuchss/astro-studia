@@ -103,7 +103,12 @@ const featured = posts.filter((p) => p.data.featured);
       pill.setAttribute('aria-pressed', String(on));
     }
     if (empty) empty.hidden = visible !== 0;
-    const url = tag ? tagPath(tag) : BLOG;
+    // The base, added by hand: this is the one URL on the site built at
+    // runtime, so src/integrations/base-paths.ts — which rewrites the built
+    // bytes — cannot reach it. Without the prefix a site at /repo/ would push
+    // /blog/tag/x/ into the address bar, which is the domain root's URL.
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+    const url = base + (tag ? tagPath(tag) : BLOG);
     history.replaceState({ tag }, '', url);
   };
 

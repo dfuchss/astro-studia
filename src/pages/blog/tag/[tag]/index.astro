@@ -1,13 +1,13 @@
 ---
 import type { GetStaticPaths } from 'astro';
-import Base from '../../../layouts/Base.astro';
+import Base from '../../../../layouts/Base.astro';
 import {
   publishedPosts,
   permalink,
   formatPostDate,
   groupByTag,
   slugifyTag,
-} from '../../../lib/blog.ts';
+} from '../../../../lib/blog.ts';
 
 export const getStaticPaths = (async () => {
   const posts = await publishedPosts();
