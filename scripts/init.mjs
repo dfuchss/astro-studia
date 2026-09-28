@@ -35,15 +35,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve as resolvePath, sep } from 'node:path';
 
-import {
-  FEATURES,
-  PRESETS,
-  PRESET_HERO,
-  PRESET_FEED,
-  byId,
-  featuresFor,
-  resolve,
-} from './features.mjs';
+import { FEATURES, PRESETS, PRESET_FEED, byId, featuresFor, resolve } from './features.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -157,6 +149,29 @@ function flush(dryRun) {
   return [...dirty];
 }
 
+/**
+ * Drop queued edits for a path that has just been deleted.
+ *
+ * A file can be BOTH edited and deleted by one prune: step 4 removes fenced
+ * regions anywhere under src/, step 5 removes whole directories, and
+ * src/pages/demo/project/index.astro is an example of a file in both — it
+ * carries `publications` and `people` fences and belongs to the demo feature,
+ * which every preset drops. Without this, flush() reaches a file that is no
+ * longer there and the prune dies on an ENOENT at the very end, with every
+ * deletion already done and nothing written.
+ *
+ * Prefix-matched, because what gets deleted is usually the directory.
+ */
+function forget(rel) {
+  const prefix = rel.endsWith('/') ? rel : `${rel}/`;
+  for (const key of [...dirty]) {
+    if (key === rel || key.startsWith(prefix)) {
+      dirty.delete(key);
+      cache.set(key, null);
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // path deletion
 // ---------------------------------------------------------------------------
@@ -179,6 +194,8 @@ function deletePath(rel, dryRun) {
   }
   const kind = statSync(abs).isDirectory() ? 'directory' : 'file';
   if (!dryRun) rmSync(abs, { recursive: true, force: true });
+  // Whatever was queued for it is moot now — see forget().
+  forget(rel);
   step(`${dryRun ? 'would delete' : 'deleted'} ${kind} ${rel}`);
   return true;
 }
@@ -435,6 +452,9 @@ function removeRowsByLabel(src, landmark, labels, rel) {
  * the collections: removing the last `glob()` user leaves the import dangling,
  * and the reader — not just the type-checker — should not have to wonder.
  */
+const withoutComments = (src) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:"'`\\])\/\/[^\n]*/gm, '$1');
+
 function pruneUnusedImports(src) {
   const dropped = [];
   let out = src;
@@ -442,7 +462,17 @@ function pruneUnusedImports(src) {
     const re = /^import\s+(?:(\w+)\s*,\s*)?(?:\{([^}]*)\}\s+)?from\s+'[^']+';\r?\n/gm;
     let changed = false;
     for (const m of [...out.matchAll(re)]) {
-      const rest = out.slice(0, m.index) + out.slice(m.index + m[0].length);
+      /*
+       * COMMENTS DO NOT COUNT AS USE. `CV` survived a `--preset project` prune
+       * of src/consts.ts because the file's header comment happens to contain
+       * the word "CV" — and a binding kept for that reason is an import
+       * leading nowhere in the first file a site owner opens.
+       *
+       * The `[^:"'\`]` guard before `//` is what keeps `https://` and
+       * `href="//cdn"` from being read as the start of a line comment and
+       * eating the rest of the line with them.
+       */
+      const rest = withoutComments(out.slice(0, m.index) + out.slice(m.index + m[0].length));
       const names = [];
       if (m[1]) names.push({ raw: m[1], id: m[1] });
       for (const part of (m[2] ?? '').split(',')) {
@@ -451,6 +481,7 @@ function pruneUnusedImports(src) {
         names.push({
           raw: t,
           id: t
+            .replace(/^type\s+/, '')
             .split(/\s+as\s+/)
             .pop()
             .trim(),
@@ -533,35 +564,101 @@ function removeSectionBlock(src, name) {
 // the home page: fenced regions
 // ---------------------------------------------------------------------------
 
-const fence = (id, arrow) =>
-  new RegExp(`[ \\t]*\\{?/\\*\\s*${arrow}\\s*FEATURE:${id}\\s*${arrow}\\s*\\*/\\}?[ \\t]*`, 'g');
+/*
+ * TWO FENCE FAMILIES, ONE SCANNER.
+ *
+ *   ▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲   code an optional AREA owns
+ *   ▼ PRESET:<name> ▼ … ▲ PRESET:<name> ▲ sections one AUDIENCE wants
+ *
+ * Same syntax, same nesting rules, same "a fence with no partner is a hard
+ * error" — because a second marker dialect would be a second thing to learn,
+ * a second parser to keep correct, and a second way to get it subtly wrong.
+ * They differ only in what is done with the pair that SURVIVES: a kept feature
+ * keeps its markers (you can still drop it later), a chosen preset does not
+ * (the entry page has one shape, and there is no second choice to make).
+ */
+const fence = (kind, id, arrow) =>
+  new RegExp(`[ \\t]*\\{?/\\*\\s*${arrow}\\s*${kind}:${id}\\s*${arrow}\\s*\\*/\\}?[ \\t]*`, 'g');
+
+/** The whole line a match sits on: [start, end-after-newline). */
+function lineAround(src, m) {
+  const from = src.lastIndexOf('\n', m.index) + 1;
+  let to = m.index + m[0].length;
+  if (src[to] === '\r') to += 1;
+  if (src[to] === '\n') to += 1;
+  return [from, to];
+}
 
 /**
- * Remove every `▼ FEATURE:id ▼ … ▲ FEATURE:id ▲` region.
+ * Find the next `▼ kind:id ▼ … ▲ kind:id ▲` pair.
  *
  * Deliberately not a parser. Balanced-tag parsing of an .astro file is a
  * project of its own and fails on the interesting cases (a section wrapped in
  * `{cond && (…)}`), whereas a fence is unambiguous, survives reformatting, and
  * is visible to the person editing the file.
  */
-function removeFences(src, id) {
+function nextPair(src, kind, id) {
+  const open = fence(kind, id, '▼').exec(src);
+  if (!open) return null;
+  const closeRe = fence(kind, id, '▲');
+  closeRe.lastIndex = open.index + open[0].length;
+  const close = closeRe.exec(src);
+  if (!close) return { unbalanced: true };
+  return { open, close };
+}
+
+/** Remove every such region, markers and contents alike. */
+function removeFences(src, kind, id) {
   let out = src;
   let count = 0;
   for (;;) {
-    const open = fence(id, '▼').exec(out);
-    if (!open) break;
-    const closeRe = fence(id, '▲');
-    closeRe.lastIndex = open.index + open[0].length;
-    const close = closeRe.exec(out);
-    if (!close) return { next: out, count, unbalanced: true };
-    const from = out.lastIndexOf('\n', open.index) + 1;
-    let to = close.index + close[0].length;
-    if (out[to] === '\r') to += 1;
-    if (out[to] === '\n') to += 1;
+    const pair = nextPair(out, kind, id);
+    if (!pair) break;
+    if (pair.unbalanced) return { next: out, count, unbalanced: true };
+    const [from] = lineAround(out, pair.open);
+    const [, to] = lineAround(out, pair.close);
     out = out.slice(0, from) + out.slice(to);
     count += 1;
   }
   return { next: out, count, unbalanced: false };
+}
+
+/**
+ * Remove the MARKERS of every such region and keep what is between them.
+ *
+ * For the preset that was chosen: its sections stay, its labels go, and the
+ * file a site owner is left with has nothing in it that only made sense while
+ * there were two shapes to choose between.
+ *
+ * A marker line carrying other code as well is left in place with a warning
+ * rather than taken out with the marker. That never happens in this template —
+ * every fence is on a line of its own — but "delete a line I did not write" is
+ * not a thing a script should do quietly if it ever does.
+ */
+function unwrapFences(src, kind, id) {
+  let out = src;
+  let count = 0;
+  const kept = [];
+  for (;;) {
+    const pair = nextPair(out, kind, id);
+    if (!pair) break;
+    if (pair.unbalanced) return { next: out, count, kept, unbalanced: true };
+    /* Back to front, so the first cut does not move the second. */
+    let done = 0;
+    for (const m of [pair.close, pair.open]) {
+      const [from, to] = lineAround(out, m);
+      const line = out.slice(from, to);
+      if (line.replace(m[0], '').trim() !== '') {
+        kept.push(line.trim());
+        continue;
+      }
+      out = out.slice(0, from) + out.slice(to);
+      done += 1;
+    }
+    if (done === 0) return { next: out, count, kept, unbalanced: false, stuck: true };
+    count += 1;
+  }
+  return { next: out, count, kept, unbalanced: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -576,33 +673,128 @@ function heroComponents() {
     .map((f) => f.replace(/\.astro$/, ''));
 }
 
-function applyHero(target, dryRun) {
-  const available = heroComponents();
-  if (available.length === 0) {
-    warn(`no components in ${HERO_DIR}/ — nothing to choose between, skipping the hero`);
-    return;
-  }
-  if (!available.includes(target)) {
-    warn(
-      `${HERO_DIR}/${target}.astro does not exist (have: ${available.join(', ')}) — hero left alone`,
-    );
+/**
+ * Resolve the ▼ PRESET:… ▼ fences: keep the shape that was chosen, delete the
+ * rest, and take the chosen one's markers with them.
+ *
+ * This REPLACES the old hero-import swap, which was the whole of item 6's bug.
+ * That swap changed one `import Hero from …` line in src/pages/index.astro and
+ * nothing else, while the `demo` feature deleted the project-shaped page
+ * outright — so `--preset project` produced a project hero above a personal
+ * body ("What I work on", "Also involved in"). There is no import to swap now:
+ * one page carries both shapes, each hero inside its own preset's fences, and
+ * deleting the fences that do not apply is the whole operation.
+ *
+ * Scanned across every source file, not just the entry page, for the same
+ * reason the feature fences are: a shape's code does not only live on the
+ * front page, and the next one to grow a PRESET fence should not need an edit
+ * here.
+ */
+function applyShape(target, dryRun) {
+  if (!PRESETS.includes(target)) {
+    warn(`unknown shape "${target}" — the PRESET fences were left in place`);
     return;
   }
 
-  const src = read(INDEX);
-  if (src === null) hard(`${INDEX} is missing — cannot set the hero.`);
-  const re = /(import\s+Hero\s+from\s+')([^']*\/hero\/)([A-Za-z0-9_]+)(\.astro';)/;
-  const m = re.exec(src);
-  if (!m) {
-    warn(`${INDEX}: no \`import Hero from '…/hero/…astro'\` line — hero import left alone`);
-  } else if (m[3] === target) {
-    step(`hero already ${target}`);
-  } else {
-    put(INDEX, src.replace(re, `$1$2${target}$4`));
-    step(`hero set to ${target} in ${INDEX} (was ${m[3]})`);
+  let touched = 0;
+  for (const file of sourceFiles()) {
+    const src = read(file);
+    if (src === null || !src.includes('PRESET:')) continue;
+    let out = src;
+
+    for (const name of PRESETS) {
+      if (name === target) continue;
+      const r = removeFences(out, 'PRESET', name);
+      if (r.unbalanced) {
+        warn(`${file}: \`▼ PRESET:${name} ▼\` has no matching \`▲ PRESET:${name} ▲\``);
+        continue;
+      }
+      if (r.count > 0) {
+        out = r.next;
+        step(`removed ${r.count} \`${name}\` section${r.count === 1 ? '' : 's'} from ${file}`);
+      }
+    }
+
+    const u = unwrapFences(out, 'PRESET', target);
+    if (u.unbalanced) {
+      warn(`${file}: \`▼ PRESET:${target} ▼\` has no matching \`▲ PRESET:${target} ▲\``);
+    } else {
+      out = u.next;
+      for (const line of u.kept) warn(`${file}: left a PRESET marker sharing a line: ${line}`);
+      if (u.stuck)
+        warn(`${file}: could not unwrap a \`PRESET:${target}\` fence — check it by hand`);
+      else if (u.count > 0) {
+        step(
+          `kept ${u.count} \`${target}\` region${u.count === 1 ? '' : 's'} in ${file}, markers removed`,
+        );
+      }
+    }
+
+    if (out !== src) {
+      put(file, out);
+      touched += 1;
+    }
   }
+
+  if (touched === 0) step(`no PRESET fences to resolve — the entry page has one shape already`);
+  pruneUnusedHeroes(dryRun);
+}
+
+/**
+ * Delete the hero components nothing imports any more.
+ *
+ * Derived rather than listed in a table beside the preset names. Each hero is
+ * imported from inside its own preset's fences, so once those are resolved the
+ * source itself is the authority on which one survived — and a second list
+ * would be a second thing that can disagree with the first.
+ */
+function pruneUnusedHeroes(dryRun) {
+  const available = heroComponents();
+  if (available.length === 0) return;
+  const elsewhere = sourceFiles().filter((f) => !f.startsWith(`${HERO_DIR}/`));
   for (const name of available) {
-    if (name !== target) deletePath(`${HERO_DIR}/${name}.astro`, dryRun);
+    /*
+     * An IMPORT of it, not a mention of it. Matching the bare path kept
+     * PersonHero.astro alive through `--preset project` because
+     * src/lib/portrait.ts names it in a comment — and the hero it kept then
+     * imported a SocialRow.astro that the same prune had deleted.
+     */
+    const re = new RegExp(`from\\s+'[^']*/hero/${name}\\.astro'`);
+    const used = elsewhere.some((f) => re.test(read(f) ?? ''));
+    if (!used) deletePath(`${HERO_DIR}/${name}.astro`, dryRun);
+    else step(`kept ${HERO_DIR}/${name}.astro — still imported`);
+  }
+  pruneOrphanedModules(dryRun);
+}
+
+/**
+ * Modules that exist only to serve something that may have just been deleted.
+ *
+ * `src/lib/portrait.ts` is the case: it finds src/assets/portrait.* for the
+ * personal hero and the CV lede, and a project site that keeps neither has no
+ * use for it — or for the demo photograph it would go on shipping. Derived the
+ * same way as the heroes above, from whether anything still imports it, so
+ * this list is "modules with exactly one reason to exist" rather than a second
+ * copy of the dependency graph.
+ */
+const ORPHANS = [{ module: 'src/lib/portrait.ts', assets: ['src/assets/portrait'] }];
+
+function pruneOrphanedModules(dryRun) {
+  for (const { module, assets } of ORPHANS) {
+    if (!existsSync(join(ROOT, module))) continue;
+    const spec = module.replace(/^src\//, '').replace(/\.ts$/, '');
+    const re = new RegExp(`from\\s+'[^']*${spec.replace(/\//g, '/')}\\.ts'`);
+    const used = sourceFiles().some((f) => f !== module && re.test(read(f) ?? ''));
+    if (used) continue;
+    deletePath(module, dryRun);
+    for (const prefix of assets) {
+      const dir = prefix.slice(0, prefix.lastIndexOf('/'));
+      const base = prefix.slice(prefix.lastIndexOf('/') + 1);
+      if (!existsSync(join(ROOT, dir))) continue;
+      for (const name of readdirSync(join(ROOT, dir))) {
+        if (name === base || name.startsWith(`${base}.`)) deletePath(`${dir}/${name}`, dryRun);
+      }
+    }
   }
 }
 
@@ -799,7 +991,7 @@ function prune(drop, dryRun) {
     for (const file of fenceable) {
       const src = read(file);
       if (src === null || !src.includes(`FEATURE:${f.id}`)) continue;
-      const { next, count, unbalanced } = removeFences(src, f.id);
+      const { next, count, unbalanced } = removeFences(src, 'FEATURE', f.id);
       if (unbalanced) {
         warn(`${file}: \`▼ FEATURE:${f.id} ▼\` has no matching \`▲ FEATURE:${f.id} ▲\``);
         continue;
@@ -1010,46 +1202,83 @@ async function main() {
 
     prune(drop, opts.dryRun);
 
-    if (preset) {
-      say(bold('\nhero'));
-      const target = PRESET_HERO[preset];
-      if (!target) warn(`PRESET_HERO has no entry for \`${preset}\` — hero left alone`);
-      else applyHero(target, opts.dryRun);
-
-      say(bold('\nfeed source'));
-      const feed = PRESET_FEED[preset];
-      if (!feed) warn(`PRESET_FEED has no entry for \`${preset}\` — feed left alone`);
-      else applyFeed(feed, opts.dryRun);
+    /*
+     * ---- the entry page's shape ----
+     *
+     * src/pages/index.astro carries both, behind ▼ PRESET:… ▼ fences. Keeping
+     * one is what makes `/` coherent: hero AND sections, rather than the hero
+     * alone, which is what this used to do.
+     *
+     * Skipped when `demo` survives the prune — only an explicit --features can
+     * do that — because the switcher and its second URL are exactly the thing
+     * that needs both shapes present. Resolving the fences underneath them
+     * would leave the demo page rendering a shape that no longer exists.
+     */
+    say(bold('\nentry page'));
+    if (keep.includes('demo')) {
+      step(`\`demo\` kept, so ${INDEX} keeps both shapes and the switcher still chooses`);
     } else {
-      const available = heroComponents();
-      if (available.length > 1 && interactive) {
-        say(bold('\nhero'));
-        say(`  ${available.map((h, i) => `${i + 1}) ${h}`).join('   ')}`);
-        const a = await ask(rl, `  Which hero? [1-${available.length}, default 1] `);
-        const n = Number(a) || 1;
-        applyHero(available[n - 1] ?? available[0], opts.dryRun);
-      } else if (available.length > 1) {
-        warn(
-          `no preset given, so the hero was left as it is — pick one of ${available.join(
-            ', ',
-          )} in ${INDEX} and delete the other`,
-        );
+      let shape = preset;
+      if (!shape && interactive) {
+        say(`  ${PRESETS.map((p, i) => `${i + 1}) ${p}`).join('   ')}`);
+        const a = await ask(rl, `  Which shape should / have? [1-${PRESETS.length}, default 1] `);
+        shape = PRESETS[(Number(a) || 1) - 1] ?? PRESETS[0];
       }
+      if (!shape) {
+        shape = PRESETS[0];
+        step(`no preset given, so / takes the \`${shape}\` shape — --preset picks the other`);
+      }
+      applyShape(shape, opts.dryRun);
+    }
 
-      /*
-       * Without a preset the feed source still has to be decided, and getting
-       * it wrong is a build error rather than a cosmetic one: fromPosts imports
-       * lib/blog.ts, so keeping it without the blog does not compile.
-       */
-      const feeds = feedSources();
-      if (feeds.length > 1) {
+    /*
+     * ---- the feed source ----
+     *
+     * Getting this wrong is a build error rather than a cosmetic one:
+     * fromPosts imports lib/blog.ts, so keeping it without the blog does not
+     * compile.
+     */
+    if (feedSources().length > 0) {
+      say(bold('\nfeed source'));
+      let feed = preset ? PRESET_FEED[preset] : undefined;
+      if (preset && !feed) warn(`PRESET_FEED has no entry for \`${preset}\``);
+      if (!feed) {
         const hasBlog = keep.includes('blog');
-        const target = hasBlog ? 'fromPosts' : 'fromPapers';
-        say(bold('\nfeed source'));
-        step(
-          `no preset, so choosing ${target} from your selection (blog ${hasBlog ? 'kept' : 'dropped'})`,
-        );
-        applyFeed(target, opts.dryRun);
+        feed = hasBlog ? 'fromPosts' : 'fromPapers';
+        if (!preset) {
+          step(
+            `no preset, so choosing ${feed} from your selection (blog ${hasBlog ? 'kept' : 'dropped'})`,
+          );
+        }
+      }
+      applyFeed(feed, opts.dryRun);
+    }
+
+    /*
+     * ---- imports left with nothing to import ----
+     *
+     * A fence takes the code that used a binding but not always the binding:
+     * dropping the blog leaves `BLOG` in src/consts.ts's import from
+     * src/lib/paths.ts, and dropping the CV leaves `CV` in Contact.astro's.
+     * Neither breaks a build — they are `astro check` hints — but a site owner
+     * opening their config on day one should not find imports that lead
+     * nowhere. Same pruner content.config.ts already uses, applied to
+     * everything this run touched.
+     */
+    const editable = [...dirty].filter((rel) => /\.(astro|ts|mjs)$/.test(rel));
+    if (editable.length > 0) {
+      const cleaned = [];
+      for (const rel of editable) {
+        const src = read(rel);
+        if (src === null) continue;
+        const { next, dropped } = pruneUnusedImports(src);
+        if (dropped.length === 0) continue;
+        put(rel, next);
+        cleaned.push(`${rel} (${dropped.join(', ')})`);
+      }
+      if (cleaned.length > 0) {
+        say(bold('\nunused imports'));
+        for (const c of cleaned) step(`removed now-unused imports from ${c}`);
       }
     }
 

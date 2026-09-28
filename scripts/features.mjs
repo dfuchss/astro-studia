@@ -14,6 +14,29 @@
  * and removes them wherever they are. Put a fence around anything that exists
  * only because a feature does — an import, a const, a markup block.
  *
+ * ── Preset fences ──────────────────────────────────────────────────────────
+ *
+ * The same scanner reads a second family, named after a PRESET rather than a
+ * feature:
+ *
+ *   ▼ PRESET:profile ▼ … ▲ PRESET:profile ▲
+ *   ▼ PRESET:project ▼ … ▲ PRESET:project ▲
+ *
+ * src/pages/index.astro uses them to carry both entry-page shapes in one file:
+ * the hero and the sections a personal site wants, and the ones a project or
+ * group site wants. init keeps the chosen preset's regions and deletes the
+ * rest — and then removes the surviving markers too, because unlike a feature
+ * the shape of the entry page is decided once and there is no later choice to
+ * leave a label for.
+ *
+ * There is no `PRESET:both`. An unfenced region is already unconditional, so
+ * only the audience-specific parts carry a marker; the contact block at the
+ * bottom of the entry page is the example of one that does not.
+ *
+ * Nothing about this is declared in the manifest below either — the fences in
+ * the source are the declaration, and the preset names are the ones in
+ * `PRESETS`.
+ *
  *   scripts/init.mjs      prunes what you do not want
  *   scripts/gen-docs.mjs  regenerates the table in docs/removing-features.md
  *
@@ -86,7 +109,13 @@ export const FEATURES = [
     blurb: 'A page per work: the abstract, a figure, the links, the citation.',
     presets: ['profile', 'project'],
     requires: ['publications', 'authors'],
-    paths: ['src/pages/papers', 'src/content/papers', 'public/assets/img/papers'],
+    paths: [
+      'src/pages/papers',
+      'src/content/papers',
+      'src/components/paper',
+      'src/lib/papers.ts',
+      'public/assets/img/papers',
+    ],
     collections: ['papers'],
     sections: ['papers'],
     nav: ['papers'],
@@ -94,6 +123,10 @@ export const FEATURES = [
     manual: [
       'drop the `page = {…}` fields from src/data/papers.bib',
       'drop the second links[] entry from the bibtexLoader options in src/content.config.ts',
+      // Only bites the combination init cannot reach on its own: the `project`
+      // preset points the feed at the paper pages, so a later removal of the
+      // paper pages takes the feed's source collection with it.
+      'if the RSS feed is on src/lib/feed/fromPapers.ts, repoint it at another source — it lists the paper pages',
     ],
   },
 
@@ -108,6 +141,10 @@ export const FEATURES = [
       'src/components/project',
       'src/content/projects',
       'src/assets/projects',
+      // Project-page figures. Its own directory rather than a shared one, for
+      // the same reason papers and posts have theirs: an image referenced by a
+      // project must not be deleted by pruning some other feature.
+      'public/assets/img/projects',
     ],
     collections: ['projects'],
     sections: ['projects'],
@@ -250,7 +287,7 @@ export const FEATURES = [
     nav: [],
     footer: [],
     manual: [
-      'drop the citation chip from src/components/pub/PubEntry.astro and the metrics block from src/pages/publications/index.astro',
+      'drop the citation chip from src/components/pub/PubEntry.astro and src/components/paper/PaperEntry.astro, and the metrics block from src/pages/publications/index.astro',
       'replace formatCount() usages — it lives in lib/citations.ts',
     ],
   },
@@ -266,16 +303,17 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: [],
-    manual: ['remove <SocialRow /> from src/components/hero/ and src/pages/cv.astro'],
+    manual: [],
   },
 
   {
     id: 'pgp',
     label: 'PGP key',
-    blurb: 'A page for your public key, derived from one fingerprint in socials.yml.',
+    blurb:
+      'A page for your public key: fingerprint, key id, download, and the armored block inline.',
     presets: ['profile'],
     requires: ['socials'],
-    paths: ['src/pages/pgp-key.astro', 'src/lib/pgp.ts'],
+    paths: ['src/pages/pgp-key.astro', 'src/lib/pgp.ts', 'public/assets/pgp-key'],
     collections: [],
     sections: [],
     nav: [],
@@ -324,19 +362,19 @@ export const FEATURES = [
   },
 ];
 
-/** The hero each preset starts from. See src/components/hero/. */
 /**
- * The feed source each preset starts from, swapped the same way as the hero:
- * one import line in src/pages/feed.xml.ts, and the unused variant deleted.
+ * The feed source each preset starts from: one import line in
+ * src/pages/feed.xml.ts, and the unused variant deleted.
+ *
+ * There is no PRESET_HERO beside it any more, and no table of which sections
+ * each preset gets. Both live in the source, as ▼ PRESET:<name> ▼ fences in
+ * src/pages/index.astro — see the "Preset fences" note above — and the hero a
+ * preset uses is simply the one still imported once those are resolved. A
+ * table would be a second place the answer is written down.
  */
 export const PRESET_FEED = {
   profile: 'fromPosts',
   project: 'fromPapers',
-};
-
-export const PRESET_HERO = {
-  profile: 'PersonHero',
-  project: 'ProjectHero',
 };
 
 export const PRESETS = /** @type {Preset[]} */ (['profile', 'project']);

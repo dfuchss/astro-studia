@@ -3,36 +3,98 @@ import { getCollection } from 'astro:content';
 
 import Base from '../layouts/Base.astro';
 import DemoNotice from '../components/DemoNotice.astro';
+import Contact from '../components/Contact.astro';
 /* ▼ FEATURE:demo ▼ */
 import DemoSwitch from '../components/DemoSwitch.astro';
 /* ▲ FEATURE:demo ▲ */
-import Hero from '../components/hero/PersonHero.astro';
-import Email from '../components/Email.astro';
-import PubEntry from '../components/pub/PubEntry.astro';
 
-import { SITE } from '../consts.ts';
-import { byNewest } from '../lib/publications.ts';
+import { BLOG, PEOPLE, PROJECTS, PUBLICATIONS } from '../lib/paths.ts';
 
 /*
- * The ▼/▲ FEATURE:<id> pairs below are named after the feature in
- * scripts/features.mjs that owns them, and mark the frontmatter and markup that exist
- * only for one optional area of the site. `scripts/features.mjs` lists them
- * as `homeBlocks`, and `npm run init` deletes exactly what a matching pair
- * encloses — so they are load-bearing, not noise; leave them even when you
- * are editing the code right next to them.
+ * The entry page.
+ *
+ * ▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲ marks code that exists only because an
+ * optional AREA of the site does. The id names a feature in
+ * scripts/features.mjs, and `npm run init` deletes exactly what a matching
+ * pair encloses when you drop that feature. The markers stay behind on a
+ * feature you keep, because you can still drop it later — so leave them even
+ * when you are editing the code right next to them.
  */
+
+/* ▼ FEATURE:demo ▼ */
+/*
+ * ── This page carries BOTH entry-page shapes, until init runs ─────────────
+ *
+ * ▼ PRESET:<name> ▼ … ▲ PRESET:<name> ▲ is the second fence family, read by
+ * the same scanner. It marks the sections that belong to one AUDIENCE:
+ * `profile` is one person's site, `project` is a research project's or a
+ * group's. init keeps the preset you chose, deletes the other, and then
+ * removes the surviving markers too — unlike a feature, the shape of the entry
+ * page is chosen once and there is no second choice left to make.
+ *
+ * An UNFENCED section belongs to both. There is no `PRESET:both`: "no marker"
+ * already means "unconditional", and labelling everything would make the
+ * common case the noisy one. The contact section at the bottom is the example
+ * — how to reach you is not a thing only one kind of site has.
+ *
+ * Fences nest — a FEATURE region inside a PRESET region, or the other way
+ * round — but they must never straddle each other, because each pair is
+ * removed as a unit.
+ *
+ * The two shapes do not render at once: the audit allows exactly one <h1> per
+ * page, and two heroes is two. One renders per URL, and
+ * src/pages/demo/project/index.astro is this same page with `shape="project"`,
+ * so the switcher above the hero can link the two.
+ *
+ * That whole switch belongs to the `demo` feature, which is why this note and
+ * the `isProfile` / `isProject` guards below are fenced as one. Every preset
+ * drops `demo`, so the guards go, the other shape's sections go with their
+ * PRESET fences, and what is left is one hero and one set of sections with
+ * nothing conditional about them — and no leftover switch, and no comment
+ * describing a mechanism that is no longer here.
+ */
+type Shape = 'profile' | 'project';
+interface Props {
+  /** Which shape to render. Only the demo's second URL ever passes it. */
+  shape?: Shape;
+}
+const { shape = 'profile' } = Astro.props;
+const isProfile = shape === 'profile';
+const isProject = shape === 'project';
+/* ▲ FEATURE:demo ▲ */
+
+/* ── data the sections below read ──────────────────────────────────────── */
 
 /* ▼ FEATURE:publications ▼ */
 const pubs = await getCollection('publications');
 
-// The publications that have a page of their own, newest first.
-const featured = pubs
-  .filter((p) => p.data.pageSlug)
-  .sort(byNewest)
-  .slice(0, 3);
-
+/* ▼ PRESET:profile ▼ */
 const latestYear = pubs.length > 0 ? Math.max(...pubs.map((p) => p.data.year)) : undefined;
+/* ▲ PRESET:profile ▲ */
 
+/* ▼ FEATURE:papers ▼ */
+import PaperEntry from '../components/paper/PaperEntry.astro';
+import { featuredPapers } from '../lib/papers.ts';
+
+/*
+ * The paper pages this page shows off, from the `papers` collection — NOT from
+ * `publications.filter(pageSlug)`, which is what this was. That filter asked
+ * the bibliography which of its entries name a page, and so could not see a
+ * page whose venue is stated rather than cited: it has no BibTeX entry, so it
+ * has no row there to be filtered. The block lists pages, so it reads the
+ * collection of pages. See featuredPapers() for the selection and the order.
+ */
+const papers = await featuredPapers();
+/* ▲ FEATURE:papers ▲ */
+/* ▲ FEATURE:publications ▲ */
+
+/* ▼ FEATURE:demo ▼ */
+/* ── the personal shape ────────────────────────────────────────────────── */
+/* ▲ FEATURE:demo ▲ */
+/* ▼ PRESET:profile ▼ */
+import PersonHero from '../components/hero/PersonHero.astro';
+
+/* ▼ FEATURE:publications ▼ */
 /* ──────────────────────────────────────────────────────────────────────────
    DEMO COPY. Everything from here to the end of this block is page text, not
    configuration — it has exactly one consumer, so it lives on the page that
@@ -79,159 +141,239 @@ import { publishedPosts, permalink, formatPostDate } from '../lib/blog.ts';
 
 const posts = (await publishedPosts()).slice(0, 3);
 /* ▲ FEATURE:blog ▲ */
+/* ▲ PRESET:profile ▲ */
 
-/* ▼ FEATURE:cv ▼ */
-import { currentPosition, dateRange } from '../lib/cv.ts';
-const position = currentPosition();
-/* ▲ FEATURE:cv ▲ */
+/* ▼ FEATURE:demo ▼ */
+/* ── the project shape ─────────────────────────────────────────────────── */
+/* ▲ FEATURE:demo ▲ */
+/* ▼ PRESET:project ▼ */
+import ProjectHero from '../components/hero/ProjectHero.astro';
 
-/* ▼ FEATURE:pgp ▼ */
-import { keyId } from '../lib/pgp.ts';
-const pgp = keyId();
-/* ▲ FEATURE:pgp ▲ */
+/* ▼ FEATURE:projects ▼ */
+import ProjectCard from '../components/project/ProjectCard.astro';
+
+const subProjects = (await getCollection('projects')).sort(
+  (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),
+);
+
+/* DEMO COPY — see the note above. */
+const subProjectsBlurb =
+  'Turning Greek philosophy into Latin took more than a translator: a vocabulary that ' +
+  'did not exist yet, source texts worth basing a version on, and a way to get the ' +
+  'result down as fast as it was dictated.';
+/* ▲ FEATURE:projects ▲ */
+
+/* ▼ FEATURE:people ▼ */
+import PersonCard from '../components/people/PersonCard.astro';
+import { members } from '../lib/people.ts';
+
+const team = await members();
+/* ▲ FEATURE:people ▲ */
+/* ▲ PRESET:project ▲ */
 ---
 
 <Base section="home">
   <DemoNotice />
 
   {/* ▼ FEATURE:demo ▼ */}
-  <DemoSwitch current="person" />
+  <DemoSwitch current={shape} />
   {/* ▲ FEATURE:demo ▲ */}
-
-  <Hero />
 
   <!-- Each section carries its own data-section, so the accent changes as you
        move down the page — the same mechanism the nav uses. -->
 
-  {/* ▼ FEATURE:publications ▼ */}
-  <section class="wrap section" id="research" data-section="publications">
-    <p class="kicker" data-sigil="##">research</p>
-    <h2>What I work on</h2>
-    <ul class="interests">
-      {interests.map((i) => <li class="chip">{i}</li>)}
-    </ul>
+  {/* ▼ PRESET:profile ▼ */}
+  {/* ▼ FEATURE:demo ▼ */}
+  {
+    isProfile && (
+      <>
+        {/* ▲ FEATURE:demo ▲ */}
+        <PersonHero />
 
-    {
-      featured.length > 0 && (
-        <>
-          <h3 class="sub">Paper pages</h3>
-          <p class="blurb">
-            Some works get a page of their own — the figure, the argument, where to find the text.
+        {/* ▼ FEATURE:publications ▼ */}
+        <section class="wrap section" id="research" data-section="publications">
+          <p class="kicker" data-sigil="##">
+            research
           </p>
-          <ul class="bare">
-            {featured.map((pub) => (
-              <PubEntry pub={pub} compact />
+          <h2>What I work on</h2>
+          <ul class="interests">
+            {interests.map((i) => (
+              <li class="chip">{i}</li>
             ))}
           </ul>
-        </>
-      )
-    }
 
-    <p class="more mono">
-      <a href="/publications/">
-        all {pubs.length} publications{latestYear ? `, up to ${latestYear}` : ''} →
-      </a>
-    </p>
-  </section>
-  {/* ▲ FEATURE:publications ▲ */}
+          {/* ▼ FEATURE:papers ▼ */}
+          {papers.length > 0 && (
+            <>
+              <h3 class="sub">Paper pages</h3>
+              <p class="blurb">
+                Some works get a page of their own — the figure, the argument, where to find the
+                text.
+              </p>
+              <ul class="bare">
+                {papers.map(({ paper, pub }) => (
+                  <PaperEntry paper={paper} pub={pub} />
+                ))}
+              </ul>
+            </>
+          )}
+          {/* ▲ FEATURE:papers ▲ */}
 
-  {/* ▼ FEATURE:projects ▼ */}
-  <section class="wrap section" id="building" data-section="projects">
-    <p class="kicker" data-sigil="##">building</p>
-    <h2>Also involved in</h2>
-    <ul class="involve">
-      {
-        involvement.map((i) => (
-          <li>
-            {i.text}{' '}
-            <a href={i.link.href} rel={i.link.href.startsWith('http') ? 'noopener' : undefined}>
-              {i.link.label}
+          <p class="more mono">
+            <a href={PUBLICATIONS}>
+              all {pubs.length} publications{latestYear ? `, up to ${latestYear}` : ''} →
             </a>
-            {i.tail && <span class="muted"> {i.tail}</span>}
-          </li>
-        ))
-      }
-    </ul>
-    <p class="more mono"><a href="/projects/">my own projects →</a></p>
-  </section>
-  {/* ▲ FEATURE:projects ▲ */}
+          </p>
+        </section>
+        {/* ▲ FEATURE:publications ▲ */}
 
-  {/* ▼ FEATURE:blog ▼ */}
-  {
-    posts.length > 0 && (
-      <section class="wrap section" id="writing" data-section="blog">
-        <p class="kicker" data-sigil="##">
-          writing
-        </p>
-        <h2>Recent posts</h2>
-        <ul class="postlist">
-          {posts.map((p) => (
-            <li>
-              <a href={permalink(p.id)}>
-                <time class="mono" datetime={p.data.date.toISOString().slice(0, 10)}>
-                  {formatPostDate(p.data.date)}
-                </time>
-                <span>{p.data.title}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-        <p class="more mono">
-          <a href="/blog/">all posts →</a>
-        </p>
-      </section>
+        {/* ▼ FEATURE:projects ▼ */}
+        <section class="wrap section" id="building" data-section="projects">
+          <p class="kicker" data-sigil="##">
+            building
+          </p>
+          <h2>Also involved in</h2>
+          <ul class="involve">
+            {involvement.map((i) => (
+              <li>
+                {i.text}{' '}
+                <a href={i.link.href} rel={i.link.href.startsWith('http') ? 'noopener' : undefined}>
+                  {i.link.label}
+                </a>
+                {i.tail && <span class="muted"> {i.tail}</span>}
+              </li>
+            ))}
+          </ul>
+          <p class="more mono">
+            <a href={PROJECTS}>my own projects →</a>
+          </p>
+        </section>
+        {/* ▲ FEATURE:projects ▲ */}
+
+        {/* ▼ FEATURE:blog ▼ */}
+        {posts.length > 0 && (
+          <section class="wrap section" id="writing" data-section="blog">
+            <p class="kicker" data-sigil="##">
+              writing
+            </p>
+            <h2>Recent posts</h2>
+            <ul class="postlist">
+              {posts.map((p) => (
+                <li>
+                  <a href={permalink(p.id)}>
+                    <time class="mono" datetime={p.data.date.toISOString().slice(0, 10)}>
+                      {formatPostDate(p.data.date)}
+                    </time>
+                    <span>{p.data.title}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p class="more mono">
+              <a href={BLOG}>all posts →</a>
+            </p>
+          </section>
+        )}
+        {/* ▲ FEATURE:blog ▲ */}
+        {/* ▼ FEATURE:demo ▼ */}
+      </>
     )
   }
-  {/* ▲ FEATURE:blog ▲ */}
+  {/* ▲ FEATURE:demo ▲ */}
+  {/* ▲ PRESET:profile ▲ */}
+
+  {/* ▼ PRESET:project ▼ */}
+  {/* ▼ FEATURE:demo ▼ */}
+  {
+    isProject && (
+      <>
+        {/* ▲ FEATURE:demo ▲ */}
+        <ProjectHero />
+
+        {/* ▼ FEATURE:projects ▼ */}
+        <section class="wrap section" id="subprojects" data-section="projects">
+          <p class="kicker" data-sigil="##">
+            sub-projects
+          </p>
+          <h2>What the programme runs on</h2>
+          <p class="blurb">{subProjectsBlurb}</p>
+
+          <ul class="grid">
+            {subProjects.map((project) => (
+              <ProjectCard project={project} />
+            ))}
+          </ul>
+
+          <p class="more mono">
+            <a href={PROJECTS}>all {subProjects.length} sub-projects →</a>
+          </p>
+        </section>
+        {/* ▲ FEATURE:projects ▲ */}
+
+        {/* ▼ FEATURE:publications ▼ */}
+        <section class="wrap section" id="treatises" data-section="publications">
+          <p class="kicker" data-sigil="##">
+            treatises
+          </p>
+          <h2>The works themselves</h2>
+          {/* ▼ FEATURE:papers ▼ */}
+          <p class="blurb">
+            {papers.length} of the works carry a page of their own — the argument, not just the
+            citation.
+          </p>
+
+          <ul class="bare">
+            {papers.map(({ paper, pub }) => (
+              <PaperEntry paper={paper} pub={pub} />
+            ))}
+          </ul>
+          {/* ▲ FEATURE:papers ▲ */}
+
+          <p class="more mono">
+            <a href={PUBLICATIONS}>all {pubs.length} publications →</a>
+          </p>
+        </section>
+        {/* ▲ FEATURE:publications ▲ */}
+
+        {/* ▼ FEATURE:people ▼ */}
+        <section class="wrap section" id="circle" data-section="people">
+          <p class="kicker" data-sigil="##">
+            circle
+          </p>
+          <h2>Who it passed through</h2>
+          <p class="blurb">
+            Correspondent, secretary, editor: {team.length} people the work relied on, none of them
+            the author.
+          </p>
+
+          <ul class="grid people">
+            {team.map((member) => (
+              <PersonCard member={member} />
+            ))}
+          </ul>
+
+          <p class="more mono">
+            <a href={PEOPLE}>all {team.length} people →</a>
+          </p>
+        </section>
+        {/* ▲ FEATURE:people ▲ */}
+        {/* ▼ FEATURE:demo ▼ */}
+      </>
+    )
+  }
+  {/* ▲ FEATURE:demo ▲ */}
+  {/* ▲ PRESET:project ▲ */}
 
   <section class="wrap section" id="contact" data-section="contact">
     <p class="kicker" data-sigil="##">contact</p>
     <h2>Get in touch</h2>
-    <p class="blurb">Happy to argue about any of the above.</p>
+    <p class="blurb">Questions, corrections and arguments all welcome.</p>
 
-    <dl class="contact">
-      <div class="line">
-        <dt class="mono">email</dt>
-        <dd><Email address={SITE.email} /></dd>
-      </div>
-      {/* ▼ FEATURE:pgp ▼ */}
-      {
-        pgp && (
-          <div class="line">
-            <dt class="mono">pgp</dt>
-            <dd>
-              <a href="/pgp-key/">{pgp}</a>
-              <span class="muted"> — for anything sensitive</span>
-            </dd>
-          </div>
-        )
-      }
-      {/* ▲ FEATURE:pgp ▲ */}
-      {/* ▼ FEATURE:cv ▼ */}
-      {
-        position && (
-          /* Read from cv.yml rather than written twice, so this line cannot
-             disagree with /cv/. */
-          <div class="line">
-            <dt class="mono">where</dt>
-            <dd>
-              {position.url ? (
-                <a href={position.url} rel="noopener">
-                  {position.org ?? position.title}
-                </a>
-              ) : (
-                (position.org ?? position.title)
-              )}
-              <span class="muted"> — {dateRange(position)}</span>
-            </dd>
-          </div>
-        )
-      }
-      {/* ▲ FEATURE:cv ▲ */}
-    </dl>
-    {/* ▼ FEATURE:cv ▼ */}
-    <p class="more mono"><a href="/cv/">full cv →</a></p>
-    {/* ▲ FEATURE:cv ▲ */}
+    {
+      /* Every row from src/data/contact.yml, plus the two derived ones — see
+        that file and components/Contact.astro. */
+    }
+    <Contact />
   </section>
 </Base>
 
@@ -261,7 +403,7 @@ const pgp = keyId();
   }
 
   .blurb {
-    max-width: 58ch;
+    max-width: 60ch;
     color: var(--text-muted);
     font-size: var(--fs-small);
   }
@@ -289,23 +431,37 @@ const pgp = keyId();
     color: var(--text-faint);
   }
 
+  .grid {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: 0.9rem;
+  }
+  /* PersonCard rows read better wide than square — the same minimum /people/
+     uses for the identical grid. */
+  .grid.people {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: 0.75rem 2rem;
+  }
+
   .postlist {
     list-style: none;
     margin: 1.25rem 0 0;
     padding: 0;
   }
   /* The post list and the contact rows are the same object: a label column on
-     a hairline rule. One declaration, so they cannot drift out of alignment. */
-  .postlist a,
-  .contact .line {
+     a hairline rule. The rows moved into components/Contact.astro, so the
+     column width is a token (--label-col) rather than a number written twice —
+     the two still cannot drift out of alignment. */
+  .postlist a {
     display: grid;
-    grid-template-columns: 11rem 1fr;
+    grid-template-columns: var(--label-col) 1fr;
     gap: 0 1.25rem;
     padding: 0.6rem 0.5rem;
     border-top: 1px solid var(--border);
     font-size: var(--fs-small);
-  }
-  .postlist a {
     text-decoration: none;
     color: inherit;
     border-radius: var(--radius-s);
@@ -318,31 +474,8 @@ const pgp = keyId();
     color: var(--text-faint);
   }
 
-  .contact {
-    margin: 1.25rem 0 0;
-    max-width: 46rem;
-  }
-  .contact .line {
-    align-items: baseline;
-    transition: border-color var(--dur) var(--ease);
-  }
-  .contact .line:hover {
-    border-top-color: var(--sec-line);
-  }
-  .contact dt {
-    color: var(--text-faint);
-  }
-  .contact dd {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: var(--fs-small);
-    /* Addresses and fingerprints have no spaces to break at. */
-    overflow-wrap: anywhere;
-  }
-
   @media (max-width: 44rem) {
-    .postlist a,
-    .contact .line {
+    .postlist a {
       grid-template-columns: 1fr;
       gap: 0.15rem;
     }

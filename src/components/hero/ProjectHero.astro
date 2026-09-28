@@ -3,37 +3,85 @@ import { getCollection } from 'astro:content';
 
 import { SITE } from '../../consts.ts';
 import { intrinsic } from '../../lib/images.ts';
-import { scholarMetrics, formatCount } from '../../lib/citations.ts';
+/* ▼ FEATURE:citations ▼ */
+import { formatCount } from '../../lib/citations.ts';
+/* ▲ FEATURE:citations ▲ */
 
 /*
  * The hero for a project or group site: a mark, a name, a tagline, and the
- * actions a visitor is most likely to want. See PersonHero.astro for the
- * shape a person's site wants instead — the two take no props, so
- * src/pages/index.astro switches between them by changing one import line.
+ * actions a visitor is most likely to want.
  */
-const logo = '/favicon.svg';
+/* ▼ FEATURE:demo ▼ */
+/*
+ * See PersonHero.astro for the shape a person's site wants instead. Neither
+ * takes props: src/pages/index.astro carries both, each inside its own
+ * ▼ PRESET:… ▼ fences, and `npm run init` keeps one and deletes the other —
+ * this note with it, which is why it is fenced rather than left to describe a
+ * component that is no longer there.
+ */
+/* ▲ FEATURE:demo ▲ */
+
+/*
+ * The same mark as the nav, from SITE.brandLogo, so a site that has a logo
+ * does not show it in the corner and a favicon in the middle of its own front
+ * page. This used to be '/favicon.svg' outright, which meant ardoco.de had to
+ * edit a component to put its own logo on its own home page.
+ *
+ * The favicon is the FALLBACK, not the default: with no brand mark configured
+ * a centred hero still needs something above the title, and the favicon is the
+ * one image every site in this template is guaranteed to have.
+ */
+const logo = SITE.brandLogo?.src ?? '/favicon.svg';
 const { width: logoWidth, height: logoHeight } = intrinsic(logo);
 
+/* One row per line and each fenced, for the reason the stats below are. */
 const actions = [
-  { label: 'Explore projects', href: '/projects/', primary: true },
-  { label: 'Publications', href: '/publications/' },
+  /* ▼ FEATURE:projects ▼ */
+  { label: 'Explore projects', href: PROJECTS, primary: true },
+  /* ▲ FEATURE:projects ▲ */
+  /* ▼ FEATURE:publications ▼ */
+  { label: 'Publications', href: PUBLICATIONS },
+  /* ▲ FEATURE:publications ▲ */
   { label: 'GitHub', href: SITE.repo },
 ];
 
+/* ▼ FEATURE:projects ▼ */
+import { PROJECTS } from '../../lib/paths.ts';
+/* ▲ FEATURE:projects ▲ */
+/* ▼ FEATURE:publications ▼ */
+import { PUBLICATIONS } from '../../lib/paths.ts';
 const pubs = await getCollection('publications');
+/* ▲ FEATURE:publications ▲ */
+/* ▼ FEATURE:people ▼ */
+import { PEOPLE } from '../../lib/paths.ts';
 const people = await getCollection('people');
+/* ▲ FEATURE:people ▲ */
+/* ▼ FEATURE:citations ▼ */
+import { scholarMetrics } from '../../lib/citations.ts';
 const m = scholarMetrics();
+/* ▲ FEATURE:citations ▲ */
 
 /*
  * Counted, never typed in — same reasoning as PersonHero.astro. A group page
  * that says "12 people" by hand is wrong the day someone joins, and nothing
  * would tell you.
+ *
+ * One row per line and each fenced by the feature it counts, so pruning that
+ * feature takes its row — and its `getCollection` above — with it. Without the
+ * fences a hero kept alongside a custom selection reads a collection that is
+ * no longer declared, which is a build failure rather than a missing stat.
  */
 const stats = [
-  { value: pubs.length, label: 'publications', href: '/publications/' },
-  { value: m.total, label: 'citations', href: '/publications/' },
-  { value: m.hIndex, label: 'h-index', href: '/publications/' },
-  { value: people.length, label: 'people', href: '/people/' },
+  /* ▼ FEATURE:publications ▼ */
+  { value: pubs.length, label: 'publications', href: PUBLICATIONS },
+  /* ▲ FEATURE:publications ▲ */
+  /* ▼ FEATURE:citations ▼ */
+  { value: m.total, label: 'citations', href: PUBLICATIONS },
+  { value: m.hIndex, label: 'h-index', href: PUBLICATIONS },
+  /* ▲ FEATURE:citations ▲ */
+  /* ▼ FEATURE:people ▼ */
+  { value: people.length, label: 'people', href: PEOPLE },
+  /* ▲ FEATURE:people ▲ */
 ].filter((s) => s.value > 0);
 ---
 

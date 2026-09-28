@@ -1,25 +1,32 @@
 ---
 /**
- * The demo ships two interchangeable heroes — see src/components/hero/ — and
- * a visitor who only ever sees the one src/pages/index.astro happens to import
- * has no way to notice the other exists. This switcher sits above both entry
- * pages so a click is enough to compare them.
+ * The demo ships two entry-page shapes — see the ▼ PRESET:… ▼ fences in
+ * src/pages/index.astro — and a visitor who only ever lands on one of them has
+ * no way to notice the other exists. This switcher sits above both so a click
+ * is enough to compare them.
  *
  * Plain links, not a client-side toggle: each side is a real page Astro has
- * already rendered, so this has to work with JavaScript off. Gone the moment
- * `npm run init` runs — the fence around it is named `demo`, which is not a
- * feature in scripts/features.mjs because it has nothing to do with either
- * preset. Once you have picked a page, delete src/pages/demo/ and this file.
+ * already rendered, so this has to work with JavaScript off. Both are
+ * src/pages/index.astro — the second URL renders it with shape="project" —
+ * so what the two buttons compare is the two ▼ PRESET:… ▼ regions of one file,
+ * which is exactly what `npm run init` chooses between.
+ *
+ * Gone the moment init runs: this and src/pages/demo/ belong to the `demo`
+ * feature, which no preset includes.
  */
 interface Props {
-  /** Which entry page is rendering this instance. */
-  current: 'person' | 'project';
+  /** Which shape src/pages/index.astro is rendering. */
+  current: 'profile' | 'project';
 }
 
 const { current } = Astro.props;
 
+/*
+ * The ids are the PRESET fence names in src/pages/index.astro, not free text:
+ * `init --preset <id>` is what turns the side you pick into the only side.
+ */
 const sides = [
-  { id: 'person', label: 'Personal Academic Page', href: '/' },
+  { id: 'profile', label: 'Personal Academic Page', href: '/' },
   { id: 'project', label: 'Academic Project Page', href: '/demo/project/' },
 ] as const;
 ---
