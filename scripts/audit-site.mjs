@@ -11,7 +11,13 @@
  *
  * Each block below is one check and they are independent — delete one you do
  * not want, add one you do. Checks 1, 2, 2b and 3 are contracts this template
- * makes about itself; 4 through 8 are true of any site.
+ * makes about itself; 4 through 9 are true of any site.
+ *
+ * Checks 4, 4b and 9 share one rule: a published URL names exactly one file,
+ * by its shape (see resolvePath below). That is what makes the URL policy in
+ * src/lib/paths.ts enforceable — a link, a canonical, a sitemap entry or a
+ * feed link whose shape does not match the file that was emitted is a 404 on
+ * a static host, and it fails here rather than there.
  *
  * A note on the shape of these checks: several work by regex over built
  * output, which is a technique with one characteristic failure — change the
@@ -93,6 +99,62 @@ const pages = htmlFiles.map((f) => ({
 // A redirect stub is intentionally minimal: no nav, no canonical, no h1.
 const isStub = (p) => /<meta http-equiv="refresh"/i.test(p.html);
 const real = pages.filter((p) => !isStub(p));
+
+/*
+ * The site's own address, with the base, as the string every absolute URL it
+ * publishes about itself has to start with. SITE.url carries the base when
+ * there is one (docs/deploying.md), so this is one prefix, not two.
+ */
+const SITE_ROOT = siteUrl.replace(/\/$/, '');
+
+/* ---- resolving a published URL to the file that serves it ------------------
+ *
+ * STRICT, BY SHAPE. A URL names exactly one file, and the shape says which:
+ *
+ *     /             index.html
+ *     /a/b/         a/b/index.html
+ *     /a/b          a/b.html
+ *     /a/b.ext      a/b.ext
+ *
+ * Nothing else is tried. This used to accept a/b.html and a/b/index.html for
+ * one another, and that leniency is precisely how a build under the wrong URL
+ * policy passed every check: /projects/x/ was linked, projects/x.html was
+ * emitted, the audit found the file by the other spelling and reported green,
+ * and the deployed link was a 404. A static host does not try the other
+ * spelling. So the shape IS the contract, and a link whose shape does not
+ * match the file that exists fails here — with the other spelling named, so
+ * the message says what actually went wrong.
+ *
+ * With a base configured, dist/ is still the root of what gets deployed — the
+ * subdirectory comes from where it is deployed TO — so the base is stripped
+ * before anything is looked up on disk.
+ */
+const isFile = (p) => existsSync(p) && statSync(p).isFile();
+const resolvePath = (path) => {
+  const rel = path.replace(/^\//, '');
+  const leaf = path.split('/').pop();
+  const expected = path.endsWith('/')
+    ? join(rel, 'index.html')
+    : /\.[a-z0-9]+$/i.test(leaf)
+      ? rel
+      : `${rel}.html`;
+  const file = join(DIST, expected);
+  if (isFile(file)) return { file, expected, other: '' };
+  // The other spelling, named when it exists: that is the link/file mismatch
+  // this check exists to catch, as opposed to a plain dangling link.
+  const alt = path.endsWith('/') ? `${rel.replace(/\/$/, '')}.html` : join(rel, 'index.html');
+  const other = isFile(join(DIST, alt))
+    ? ` (${alt} exists — the link's shape does not match the file the URL policy emitted)`
+    : '';
+  return { file: undefined, expected, other };
+};
+const resolve = (raw) =>
+  resolvePath(BASE && raw.startsWith(`${BASE}/`) ? raw.slice(BASE.length) : raw);
+/** An absolute URL of this site to its site-relative path, or undefined if it is not one. */
+const ownPath = (url) => {
+  if (url === SITE_ROOT) return '/';
+  return url.startsWith(`${SITE_ROOT}/`) ? url.slice(SITE_ROOT.length) : undefined;
+};
 
 // ---- 1. every CSS custom property is defined --------------------------------
 /*
@@ -257,27 +319,13 @@ const real = pages.filter((p) => !isStub(p));
     idsOf.set(p.url, ids);
   }
 
-  // A published URL maps to a file two ways: /a/b -> a/b.html, /a/b/ -> a/b/index.html
-  //
-  // With a base configured, dist/ is still the root of what gets deployed --
-  // the subdirectory comes from where it is deployed TO -- so the base is
-  // stripped before looking anything up on disk.
-  const resolve = (raw) => {
-    const path = BASE && raw.startsWith(`${BASE}/`) ? raw.slice(BASE.length) : raw;
-    const clean = path.replace(/\/+$/, '');
-    for (const candidate of [
-      join(DIST, path),
-      join(DIST, `${clean}.html`),
-      join(DIST, clean, 'index.html'),
-      join(DIST, path, 'index.html'),
-    ]) {
-      if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
-    }
-    return undefined;
-  };
-
   let links = 0;
   let frags = 0;
+  let broken = 0;
+  const bad = (msg) => {
+    fail(msg);
+    broken += 1;
+  };
   for (const p of pages) {
     for (const m of p.html.matchAll(/\bhref="([^"]+)"/g)) {
       const raw = m[1];
@@ -285,7 +333,7 @@ const real = pages.filter((p) => !isStub(p));
         if (raw.startsWith('#')) {
           frags += 1;
           const id = decodeURIComponent(raw.slice(1));
-          if (id && !idsOf.get(p.url)?.has(id)) fail(`${p.url}: fragment ${raw} has no target`);
+          if (id && !idsOf.get(p.url)?.has(id)) bad(`${p.url}: fragment ${raw} has no target`);
         }
         continue;
       }
@@ -296,7 +344,7 @@ const real = pages.filter((p) => !isStub(p));
       // every internal URL during the build; one that slipped through points
       // at the domain root and 404s wherever the site actually lives.
       if (BASE && raw !== BASE && !raw.startsWith(`${BASE}/`)) {
-        fail(
+        bad(
           `${p.url}: link ${raw} is missing the base ${BASE} — ` +
             'the base-paths integration did not reach it',
         );
@@ -304,9 +352,9 @@ const real = pages.filter((p) => !isStub(p));
       }
 
       const [path, hash] = raw.split('#');
-      const target = resolve(decodeURIComponent(path));
+      const { file: target, expected, other } = resolve(decodeURIComponent(path));
       if (!target) {
-        fail(`${p.url}: link ${raw} does not resolve`);
+        bad(`${p.url}: link ${raw} does not resolve — expected ${expected}${other}`);
         continue;
       }
       if (hash && target.endsWith('.html')) {
@@ -314,7 +362,7 @@ const real = pages.filter((p) => !isStub(p));
         const url = '/' + relative(DIST, target).split('\\').join('/');
         const ids = idsOf.get(url);
         if (ids && !ids.has(decodeURIComponent(hash))) {
-          fail(`${p.url}: link ${raw} — #${hash} not found on ${url}`);
+          bad(`${p.url}: link ${raw} — #${hash} not found on ${url}`);
         }
       }
     }
@@ -328,7 +376,7 @@ const real = pages.filter((p) => !isStub(p));
       for (const m of p.html.matchAll(/\ssrc="(\/[^"]*)"/g)) {
         assets += 1;
         if (!m[1].startsWith(`${BASE}/`)) {
-          fail(
+          bad(
             `${p.url}: src ${m[1]} is missing the base ${BASE} — ` +
               'the base-paths integration did not reach it',
           );
@@ -337,12 +385,73 @@ const real = pages.filter((p) => !isStub(p));
     }
   }
 
+  // The summary only when nothing above failed: a ✓ under a column of ✗ is
+  // what this line used to print, and a reader skimming for ticks saw it.
   if (links < 1) fail('links: no internal links found at all — is this check stale?');
-  else {
+  else if (broken === 0) {
     ok(
       `links: ${links} internal links and ${frags} fragments resolve` +
         (BASE ? `, ${assets} subresources carry the base ${BASE}/` : ''),
     );
+  }
+}
+
+// ---- 4b. every URL a page publishes about itself names that page's file ----
+{
+  /*
+   * The canonical link, og:url, Scholar's citation_abstract_html_url and the
+   * JSON-LD `url` all claim to be the address of the page they sit on. Each one
+   * is resolved by the strict rule above and must land on the very file it was
+   * read from — not merely on some file. This is what catches a canonical
+   * built from Astro.url.pathname under a URL policy where that is the file
+   * path: "…/cv.html" resolves to nothing, and "…/404/" never did.
+   *
+   * Absolute rather than site-relative, because that is what these fields
+   * are; a canonical on another origin is a statement that this page is a
+   * copy of something elsewhere, and this template never makes one.
+   */
+  const SELF_URLS = [
+    ['canonical', /<link rel="canonical" href="([^"]+)"/g],
+    ['og:url', /<meta property="og:url" content="([^"]+)"/g],
+    ['citation_abstract_html_url', /<meta name="citation_abstract_html_url" content="([^"]+)"/g],
+  ];
+  let checked = 0;
+  let bad = 0;
+  const claim = (p, what, url) => {
+    checked += 1;
+    const path = ownPath(url);
+    if (path === undefined) {
+      fail(`${p.url}: ${what} ${url} is not on ${SITE_ROOT}`);
+      bad += 1;
+      return;
+    }
+    const { file, expected } = resolvePath(path);
+    if (file !== p.file) {
+      fail(`${p.url}: ${what} ${url} names ${expected}, not this page's file`);
+      bad += 1;
+    }
+  };
+  for (const p of real) {
+    for (const [what, re] of SELF_URLS) for (const m of p.html.matchAll(re)) claim(p, what, m[1]);
+    for (const m of p.html.matchAll(
+      /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g,
+    )) {
+      let data;
+      try {
+        data = JSON.parse(m[1]);
+      } catch {
+        fail(`${p.url}: JSON-LD block is not valid JSON`);
+        bad += 1;
+        continue;
+      }
+      // Only the article's own url; sourceOrganization.url is the site root.
+      if (typeof data.url === 'string') claim(p, 'JSON-LD url', data.url);
+    }
+  }
+  if (checked < real.length) {
+    fail(`self-urls: only ${checked} found on ${real.length} pages — is this check stale?`);
+  } else if (!bad) {
+    ok(`urls: ${checked} canonical, og:url, Scholar and JSON-LD URLs each name their own file`);
   }
 }
 
@@ -363,13 +472,26 @@ const real = pages.filter((p) => !isStub(p));
       fail(`${p.url}: no meta description`);
       bad += 1;
     }
-    if (!/<link rel="canonical"/.test(p.html)) {
-      fail(`${p.url}: no canonical link`);
+    /*
+     * A page either has a canonical or says noindex — never both, never
+     * neither. The 404 page is the noindex case: it is served for every URL
+     * that does not exist, so there is no address a canonical could truthfully
+     * name, and the one it used to carry ("/404/") was a URL that did not
+     * exist either.
+     */
+    const canonical = /<link rel="canonical"/.test(p.html);
+    const noindex = /<meta name="robots" content="noindex"/.test(p.html);
+    if (canonical === noindex) {
+      fail(
+        `${p.url}: ${canonical ? 'both a canonical link and noindex' : 'neither a canonical link nor noindex'}`,
+      );
       bad += 1;
     }
   }
   if (!bad) {
-    ok(`html: ${real.length} pages each have one h1, a title, a description and a canonical`);
+    ok(
+      `html: ${real.length} pages each have one h1, a title, a description and a canonical (or noindex)`,
+    );
   }
 }
 
@@ -531,46 +653,133 @@ const real = pages.filter((p) => !isStub(p));
   else ok('privacy: no email address appears in the built output');
 }
 
-// ---- 9. the feed and the sitemap are well-formed and not empty --------------
+// ---- 9. robots.txt names a sitemap that exists; it and the feed are sound --
 {
   /*
-   * Both are generated, both are easy to break without noticing, and both are
-   * consumed by machines that will not tell you they stopped working.
+   * All three are generated, all three are easy to break without noticing,
+   * and all three are consumed by machines that will not tell you they
+   * stopped working. Every URL they carry is resolved by the strict rule
+   * above, because a sitemap entry or a feed link with the wrong shape is a
+   * 404 nobody reading the site will ever see — a feed reader's click is the
+   * one link on the site that is never checked by a human.
    */
-  const checkXml = (name, itemTag) => {
+  const readXml = (name) => {
     const f = join(DIST, name);
     if (!existsSync(f)) {
       fail(`${name} was not generated`);
-      return;
+      return undefined;
     }
     const xml = readFileSync(f, 'utf8');
     if (!xml.trimStart().startsWith('<?xml')) {
       fail(`${name} does not start with an XML declaration`);
-      return;
+      return undefined;
     }
-    const n = (xml.match(new RegExp(`<${itemTag}[\\s>]`, 'g')) ?? []).length;
-    if (n === 0) fail(`${name} contains no <${itemTag}> entries`);
-    else ok(`${name}: ${n} <${itemTag}> entries, well-formed`);
+    return xml;
+  };
+  const count = (xml, tag) => (xml.match(new RegExp(`<${tag}[\\s>]`, 'g')) ?? []).length;
+  /** Every URL in the given element, resolved; returns how many were wrong. */
+  const resolveAll = (name, xml, re) => {
+    let bad = 0;
+    let n = 0;
+    for (const m of xml.matchAll(re)) {
+      n += 1;
+      const path = ownPath(m[1]);
+      if (path === undefined) {
+        fail(`${name}: ${m[1]} is not on ${SITE_ROOT}`);
+        bad += 1;
+        continue;
+      }
+      const { file, expected, other } = resolvePath(decodeURIComponent(path));
+      if (!file) {
+        fail(`${name}: ${m[1]} does not resolve — expected ${expected}${other}`);
+        bad += 1;
+      }
+    }
+    return { bad, n };
   };
 
-  // Only expected when the blog is still here. Removing the blog removes the
-  // feed, and an audit that then demanded one would be telling you off for
-  // following the documented removal recipe. A feed that *should* exist and
-  // does not is still a failure.
-  if (existsSync(join(SRC, 'pages/feed.xml.ts'))) checkXml('feed.xml', 'item');
   /*
-   * Whichever shape the sitemap takes. @astrojs/sitemap emits an index plus one
-   * or more numbered files; a hand-rolled endpoint is usually a single
-   * sitemap.xml. Either is fine and nothing here should prefer one — but having
-   * neither means nothing is telling a crawler what exists.
+   * THE SITEMAP IS WHICHEVER FILE robots.txt NAMES. Not a probe for the
+   * integration's filename, and not a preference between an index and a
+   * single sitemap.xml: a crawler learns the sitemap's address from
+   * robots.txt and nowhere else, so that link is the thing to assert. A
+   * sitemap under any name that robots.txt does not point at is a sitemap
+   * nothing will read, and a robots.txt pointing at a file that was not
+   * emitted is a 404 handed to every crawler.
    */
-  if (existsSync(join(DIST, 'sitemap-index.xml'))) {
-    checkXml('sitemap-index.xml', 'sitemap');
-    checkXml('sitemap-0.xml', 'url');
-  } else if (existsSync(join(DIST, 'sitemap.xml'))) {
-    checkXml('sitemap.xml', 'url');
+  const robotsFile = join(DIST, 'robots.txt');
+  if (!existsSync(robotsFile)) {
+    fail('robots.txt was not generated');
   } else {
-    fail('no sitemap was generated (expected sitemap-index.xml or sitemap.xml)');
+    const named = [...readFileSync(robotsFile, 'utf8').matchAll(/^\s*Sitemap:\s*(\S+)/gim)].map(
+      (m) => m[1],
+    );
+    if (named.length === 0) fail('robots.txt names no sitemap');
+    for (const url of named) {
+      const path = ownPath(url);
+      const rel = path?.replace(/^\//, '');
+      if (rel === undefined || !isFile(join(DIST, rel))) {
+        fail(`robots.txt points at ${url}, which is not a file in dist/`);
+        continue;
+      }
+      const xml = readXml(rel);
+      if (!xml) continue;
+      // An index lists other sitemaps, each of which must exist and list
+      // pages; a plain sitemap lists pages itself.
+      const children = /<sitemapindex[\s>]/.test(xml)
+        ? [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
+        : [];
+      if (children.length === 0 && /<sitemapindex[\s>]/.test(xml)) {
+        fail(`${rel} is a sitemap index with no <sitemap> entries`);
+        continue;
+      }
+      const leaves = children.length ? children : [url];
+      let urls = 0;
+      let bad = 0;
+      for (const leaf of leaves) {
+        const leafRel = ownPath(leaf)?.replace(/^\//, '');
+        if (leafRel === undefined || !isFile(join(DIST, leafRel))) {
+          fail(`${rel} points at ${leaf}, which is not a file in dist/`);
+          bad += 1;
+          continue;
+        }
+        const leafXml = leafRel === rel ? xml : readXml(leafRel);
+        if (!leafXml) continue;
+        const r = resolveAll(leafRel, leafXml, /<loc>([^<]+)<\/loc>/g);
+        urls += r.n;
+        bad += r.bad;
+      }
+      // The floor: at least one entry per page that carries a canonical (the
+      // 404 page has none and is rightly absent). Fewer means a route the
+      // integration did not see, or a filter that ate one.
+      const indexable = real.filter((p) => /<link rel="canonical"/.test(p.html)).length;
+      if (urls === 0) fail(`${rel} lists no pages`);
+      else if (urls < indexable) {
+        fail(`${rel} lists ${urls} URLs for ${indexable} indexable pages — is a route missing?`);
+      } else if (!bad) {
+        ok(
+          `sitemap: robots.txt → ${rel}` +
+            (children.length ? ` → ${leaves.length} file(s)` : '') +
+            `, ${urls} URLs, every one names a file on disk`,
+        );
+      }
+    }
+  }
+
+  // Only expected when the feed is still here. Removing it removes the
+  // endpoint, and an audit that then demanded one would be telling you off
+  // for following the documented removal recipe. A feed that *should* exist
+  // and does not is still a failure.
+  if (existsSync(join(SRC, 'pages/feed.xml.ts'))) {
+    const xml = readXml('feed.xml');
+    if (xml) {
+      const items = count(xml, 'item');
+      if (items === 0) fail('feed.xml contains no <item> entries');
+      else {
+        const r = resolveAll('feed.xml', xml, /<link>([^<]+)<\/link>/g);
+        if (!r.bad) ok(`feed.xml: ${items} <item> entries, ${r.n} links each name a file on disk`);
+      }
+    }
   }
 }
 

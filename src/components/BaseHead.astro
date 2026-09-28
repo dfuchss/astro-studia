@@ -1,29 +1,38 @@
 ---
 import { SITE } from '../consts.ts';
+import { routePath } from '../lib/paths.ts';
 
 interface Props {
   title?: string;
   description?: string;
+  /**
+   * A page that has no address of its own — the 404 page, which is served for
+   * every URL that does not exist. It gets no canonical and no og:url, because
+   * there is no URL those could truthfully name, and a robots noindex so a
+   * crawler that reached it through a soft 404 does not index it.
+   */
+  noindex?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, noindex = false } = Astro.props;
 
 // The page title, or the site's own on the home page — never "Home · Site".
 const pageTitle = title ? `${title} · ${SITE.title}` : SITE.title;
 const desc = description ?? SITE.description;
 
-// Safe because astro.config.ts sets trailingSlash: 'always' with
-// build.format: 'directory', which makes Astro.url.pathname the address a
-// visitor actually sees. Under build.format: 'preserve' it would be the file
-// path ("/papers/sosp67.html") and every canonical here would be wrong.
-const canonical = new URL(Astro.url.pathname, SITE.url);
+// Through routePath(), because Astro.url.pathname is only the published
+// address under the default URL policy. Under 'preserve' it is the FILE path
+// for a flat route ("/papers/sosp67.html"), and routePath() is what takes the
+// extension off — see URL_POLICY in src/lib/paths.ts. The audit checks that
+// what is emitted here names this page's own file, whichever policy is set.
+const canonical = noindex ? undefined : new URL(routePath(Astro.url.pathname), SITE.url);
 ---
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>{pageTitle}</title>
 <meta name="description" content={desc} />
-<link rel="canonical" href={canonical} />
+{canonical ? <link rel="canonical" href={canonical} /> : <meta name="robots" content="noindex" />}
 
 {
   /* Three icons, in the order a browser should prefer them. The SVG scales to
@@ -45,7 +54,7 @@ const canonical = new URL(Astro.url.pathname, SITE.url);
 <meta property="og:site_name" content={SITE.title} />
 <meta property="og:title" content={pageTitle} />
 <meta property="og:description" content={desc} />
-<meta property="og:url" content={canonical} />
+{canonical && <meta property="og:url" content={canonical} />}
 
 {
   /* The card type follows whether there is actually an image to put in it.

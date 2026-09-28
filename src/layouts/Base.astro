@@ -29,15 +29,17 @@ interface Props {
   description?: string;
   /** Picks the accent family — see the [data-section] blocks in tokens.css. */
   section?: Section;
+  /** For a page with no address of its own — the 404 page. See BaseHead. */
+  noindex?: boolean;
 }
 
-const { title, description, section } = Astro.props;
+const { title, description, section, noindex } = Astro.props;
 ---
 
 <!doctype html>
 <html lang={SITE.lang}>
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead title={title} description={description} noindex={noindex} />
     {
       /* Pages inject page-specific <head> markup here — a paper page puts its
         Highwire citation_* tags and JSON-LD through this slot. */
@@ -50,7 +52,11 @@ const { title, description, section } = Astro.props;
     <main id="main">
       <slot />
     </main>
-    <Footer />
+    {
+      /* A page can add markup to the footer through `slot="footer"`: a
+         funding notice, a logo — anything FOOTER in src/consts.ts cannot say. */
+    }
+    <Footer><slot name="footer" /></Footer>
 
     <script>
       // Mark that JS is available, so `.reveal` may start hidden. Without this

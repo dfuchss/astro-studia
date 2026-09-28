@@ -42,13 +42,16 @@ Removing an area you do not want is a short, uniform recipe — see
 
 ```
 src/
-  consts.ts           the config file: SITE, SELF, Section, NAV, FOOTER_LINKS
+  consts.ts           the config file: SITE, SELF, Section, NAV, FOOTER_LINKS, FOOTER,
+                      AUTHOR_LIMIT, STAT_LABELS, PEOPLE_CHIPS
   content.config.ts   the seven collections and their schemas
   loaders/bibtex.ts   papers.bib -> a typed `publications` collection
+  lib/paths.ts        every URL shape, and URL_POLICY — see docs/deploying.md
   data/               papers.bib, venues, authors, people, cv, contact, socials, repositories
   content/            papers/, projects/, posts/
   components/ layouts/ lib/ pages/ styles/
   integrations/       base-paths: makes `base` work for hand-written links
+                      sitemap-shape: makes every sitemap entry name the file emitted
 public/               copied verbatim; everything here is a permanent URL
 scripts/              the audit, the asset baseline, the data refreshers
 verification/         committed SHA-256 baseline for the published assets
@@ -87,15 +90,23 @@ build rather than reaching the site.
 ✓ css: dark-only, no theme toggle
 ✓ css: all 9 sections have an accent block
 ✓ a11y: 9 colour tokens all clear WCAG on --bg
-✓ links: 523 internal links and 35 fragments resolve
-✓ html: 23 pages each have one h1, a title, a description and a canonical
-✓ html: all 46 images have intrinsic dimensions
-✓ html: no text runs into a link on 23 pages
+✓ links: 549 internal links and 37 fragments resolve
+✓ urls: 54 canonical, og:url, Scholar and JSON-LD URLs each name their own file
+✓ html: 24 pages each have one h1, a title, a description and a canonical (or noindex)
+✓ html: all 47 images have intrinsic dimensions
+✓ html: no text runs into a link on 24 pages
 ✓ privacy: no third-party subresources
 ✓ privacy: no email address appears in the built output
-✓ feed.xml / sitemap-index.xml / sitemap-0.xml well-formed and non-empty
+✓ sitemap: robots.txt → sitemap-index.xml → 1 file(s), 24 URLs, every one names a file on disk
+✓ feed.xml: 2 <item> entries, 3 links each name a file on disk
 ✓ assets: 14 published file(s) byte-identical to the baseline
 ```
+
+Every link, canonical, sitemap entry and feed link is resolved to a file **by
+its exact shape** — `/a/b/` must be `a/b/index.html`, `/a/b` must be
+`a/b.html` — so a link whose shape does not match what the build emitted fails
+here rather than 404ing on the host. See the URL policy in
+[docs/deploying.md](docs/deploying.md).
 
 The last one matters more than it looks. A PDF you have published is cited in
 other people's papers and indexed by Scholar and DBLP; those URLs are permanent

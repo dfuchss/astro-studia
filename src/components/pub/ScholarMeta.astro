@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { SITE } from '../../consts.ts';
+import { routePath } from '../../lib/paths.ts';
 
 interface Props {
   pub: CollectionEntry<'publications'>;
@@ -21,7 +22,11 @@ const d = pub.data;
  */
 const container = d.booktitle ?? d.journal;
 const date = d.month ? `${d.year}/${String(d.month).padStart(2, '0')}` : String(d.year);
-const pageUrl = new URL(Astro.url.pathname, SITE.url).href;
+// routePath(), not Astro.url.pathname alone: under URL_POLICY 'preserve' the
+// pathname is this page's FILE ("/papers/foo.html"), and Scholar would be
+// handed an address that is not the one the page is published at. The same
+// call BaseHead.astro makes for the canonical, so the two cannot disagree.
+const pageUrl = new URL(routePath(Astro.url.pathname), SITE.url).href;
 const pdfUrl = d.pdfUrl ? new URL(d.pdfUrl, SITE.url).href : undefined;
 /*
  * Page ranges reach us as "44–55": the parser has already turned the BibTeX
