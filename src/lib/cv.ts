@@ -56,6 +56,22 @@ export type CvSection = {
   id: string;
   heading: string;
   layout?: CvLayout;
+  /**
+   * A noun for an entry-count printed beside the heading — `courses` renders
+   * "Teaching 24 courses".
+   *
+   * Opt-in per section, on purpose. A bare number on every heading
+   * ("Experience 10", "Education 2", "Honours 1") is noise: the entries are
+   * right there to be counted, and the number says nothing the reader wanted.
+   * A *labelled* number on the one section where the figure is itself the
+   * point — a decade of teaching, a long publication run — is information.
+   * So the noun is the switch: naming it is how a section says the count is
+   * worth reading.
+   *
+   * Write it as it should read for several entries (`courses`), or as
+   * `singular|plural` (`course|courses`) for a section that may hold one.
+   */
+  count?: string;
   entries: CvEntry[];
 };
 
@@ -130,6 +146,17 @@ export function currentPosition(): CvEntry | undefined {
  */
 export function layoutOf(section: CvSection): CvLayout {
   return section.layout ?? (section.entries.some((e) => e.start || e.end) ? 'timeline' : 'rows');
+}
+
+/**
+ * "24 courses" for a section that named a `count` noun, or nothing for one
+ * that did not. See `CvSection.count` for why this is opt-in.
+ */
+export function countLabel(section: CvSection): string | undefined {
+  if (!section.count) return undefined;
+  const n = section.entries.length;
+  const [one, many = one] = section.count.split('|');
+  return `${n} ${n === 1 ? one : many}`;
 }
 
 /** An entry's `minor` flag splits a section's main list from its collapsed tail. */

@@ -9,6 +9,11 @@
 # shapes explicitly:
 #
 #   layout   timeline | rows | cards | courses   (optional; see above)
+#   count    a noun — "courses" renders "Rhetorical instruction 24 courses"
+#            beside the heading. Opt-in, and only worth it where the number is
+#            itself the point: a bare count on every heading ("Education 2")
+#            is noise the reader can see for themselves. Write it as it reads
+#            for several, or "course|courses" for a section that may hold one.
 #
 #   cards    a grid for entries with a name, an optional "since" date and a
 #            row of highlight chips — built for Projects.
@@ -150,6 +155,10 @@ sections:
   - id: teaching
     heading: Rhetorical instruction
     layout: courses
+    # The one section here that names a `count`: a teaching record is partly a
+    # claim about volume, so "6 courses" earns its place beside the heading.
+    # Every other section leaves it off and renders a bare heading.
+    count: course|courses
     entries:
       - title: Rhetorica ad discipulos
         type: Declamation practice

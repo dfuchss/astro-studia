@@ -1,20 +1,23 @@
 ---
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
-import Email from '../components/Email.astro';
+import Contact from '../components/Contact.astro';
+/* ▼ FEATURE:socials ▼ */
 import SocialRow from '../components/SocialRow.astro';
-import { SITE, SELF } from '../consts.ts';
+/* ▲ FEATURE:socials ▲ */
+import { SELF } from '../consts.ts';
 import {
   cv,
   dateRange,
   formatDate,
   isCurrent,
   layoutOf,
+  countLabel,
   splitMinor,
   groupCourses,
   parseDetail,
 } from '../lib/cv.ts';
-import portrait from '../assets/portrait.svg';
+import { portrait, PORTRAIT_SIZE } from '../lib/portrait.ts';
 
 /*
  * Each section picks its own shape from its data unless `layout:` in cv.yml
@@ -44,34 +47,31 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
             </ul>
           )
         }
-        <p class="contact mono">
-          <span class="muted">{SELF.first} {SELF.last}</span>
-          <span aria-hidden="true">·</span>
-          <Email address={SITE.email} />
-        </p>
+        <p class="who mono">{SELF.first} {SELF.last}</p>
+        {
+          /* The same rows as the entry page's contact block, from
+            src/data/contact.yml — so a handle added there shows up here too,
+            which is exactly what it did not do when this was one hand-written
+            <Email> line. */
+        }
+        <Contact layout="inline" />
+        {/* ▼ FEATURE:socials ▼ */}
         <SocialRow />
+        {/* ▲ FEATURE:socials ▲ */}
       </div>
-      <Image class="portrait" src={portrait} alt="" width={320} height={320} />
+      <Image class="portrait" src={portrait} alt="" width={PORTRAIT_SIZE} height={PORTRAIT_SIZE} />
     </div>
-
-    <nav class="jump mono" aria-label="Jump to a section">
-      {
-        shaped.map((s) => (
-          <a class="chip" href={`#${s.id}`}>
-            {s.heading.toLowerCase()} <span>{s.entries.length}</span>
-          </a>
-        ))
-      }
-    </nav>
 
     {
       shaped.map((section) => {
         const { main, minor } = splitMinor(section.entries);
         const courses = section.layout === 'courses' ? groupCourses(section.entries) : undefined;
+        const count = countLabel(section);
         return (
           <section class="block" id={section.id}>
             <h2>
-              {section.heading} <span class="count mono">{section.entries.length}</span>
+              {section.heading}
+              {count && <span class="count mono">{count}</span>}
             </h2>
 
             {section.layout === 'cards' && (
@@ -284,7 +284,7 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     justify-content: start;
     gap: 2.5rem;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
     padding-bottom: 1.75rem;
     border-bottom: 1px solid var(--border);
   }
@@ -297,28 +297,25 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     border: 1px solid var(--sec-line);
     box-shadow: 0 0 0 6px var(--sec-dim);
   }
+  /* No cap of its own. `.profile`'s text column is already capped (64ch), and
+     a second, tighter cap inside it only pulls the summary's right edge in
+     from the interests chips and the contact line it shares that column with.
+     A `--measure` (46rem) cap would be inert here anyway — the column is
+     narrower than the token. */
   .summary {
     color: var(--text-muted);
-    max-width: 62ch;
   }
   .interests {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
     list-style: none;
-    margin: 1rem 0 0;
+    margin: 1rem 0;
     padding: 0;
   }
-  .contact {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5ch;
-    align-items: center;
-    margin: 1rem 0 0;
+  .who {
+    margin: 0 0 0.35rem;
     color: var(--text-faint);
-  }
-  .jump span {
-    color: var(--sec);
   }
 
   .block {
@@ -539,7 +536,7 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     .timeline > li,
     .rows > li {
       grid-template-columns: 1fr;
-      gap: 0.2rem;
+      gap: 0.25rem;
     }
     .timeline > li::before,
     .timeline > li::after {
