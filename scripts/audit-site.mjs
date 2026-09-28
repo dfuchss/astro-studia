@@ -95,13 +95,34 @@ const isStub = (p) => /<meta http-equiv="refresh"/i.test(p.html);
 const real = pages.filter((p) => !isStub(p));
 
 // ---- 1. every CSS custom property is defined --------------------------------
+/*
+ * `var(--x, fallback)` is NOT a property that needs defining: the fallback is
+ * the definition, and writing it that way is how a stylesheet says "callers may
+ * override this, and here is what happens when they don't". Prose.astro's
+ * `--ti` is exactly that — an inline-icon colour a page sets per icon, read as
+ * `var(--ti, var(--text-faint))` and deliberately never defined in CSS.
+ *
+ * So only a var() used WITHOUT a fallback has to resolve. Getting this wrong is
+ * not hypothetical: this check used to flag every use, and it passed only
+ * because one demo page happens to set `--ti` inline and the loop below pools
+ * inline definitions globally. Deleting three icons from that one page would
+ * have failed the audit of an untouched template — and a real site whose prose
+ * never uses an inline icon failed on day one. A check that passes for an
+ * accidental reason is worse than no check: it reports green for the wrong
+ * thing and nobody looks again.
+ */
 {
   const defined = new Set();
+  /** Every var() read, for the count. */
   const used = new Map();
+  /** Only the reads with no fallback — these are the ones that must resolve. */
+  const required = new Map();
   const collect = (text, where) => {
     for (const m of text.matchAll(/(--[a-z0-9-]+)\s*:/gi)) defined.add(m[1]);
-    for (const m of text.matchAll(/var\(\s*(--[a-z0-9-]+)/gi)) {
-      if (!used.has(m[1])) used.set(m[1], where);
+    for (const m of text.matchAll(/var\(\s*(--[a-z0-9-]+)\s*(,?)/gi)) {
+      const [, name, comma] = m;
+      if (!used.has(name)) used.set(name, where);
+      if (!comma && !required.has(name)) required.set(name, where);
     }
   };
   for (const f of cssFiles) collect(readFileSync(f, 'utf8'), relative(DIST, f));
@@ -110,9 +131,13 @@ const real = pages.filter((p) => !isStub(p));
     for (const m of p.html.matchAll(/style="([^"]*)"/g)) collect(m[1], p.url);
     for (const m of p.html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) collect(m[1], p.url);
   }
-  const undef = [...used].filter(([name]) => !defined.has(name));
+  // A floor, because this check is regex-based: if it ever stops finding
+  // properties at all it has stopped checking, and that must fail rather than
+  // report a cheerful "0 custom properties, all defined".
+  if (used.size < 20) fail(`css: only ${used.size} custom properties found — the scan is broken`);
+  const undef = [...required].filter(([name]) => !defined.has(name));
   if (undef.length) for (const [n, w] of undef) fail(`undefined custom property ${n} (${w})`);
-  else ok(`css: ${used.size} custom properties, all defined`);
+  else ok(`css: ${used.size} custom properties, all defined or defaulted`);
 }
 
 // ---- 2. dark-only: no theme switching crept back in -------------------------
