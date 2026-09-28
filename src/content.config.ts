@@ -2,6 +2,7 @@ import { defineCollection, reference } from 'astro:content';
 import { z } from 'zod';
 import { file, glob } from 'astro/loaders';
 import { bibtexLoader } from './loaders/bibtex.ts';
+import { PAPERS } from './lib/paths.ts';
 
 /*
  * The content model.
@@ -85,9 +86,16 @@ const publications = defineCollection({
       {
         field: 'page',
         as: 'pageSlug',
+        /*
+         * Built from PAPERS rather than typed out, so renaming the route does
+         * not leave a validator still insisting on the old prefix. A regex is
+         * the one place src/lib/paths.ts cannot supply the literal directly —
+         * so it supplies the string the regex is assembled from.
+         */
         resolve: (raw, { key }) => {
-          const m = /^\/papers\/([a-z0-9._-]+)\/?$/.exec(raw);
-          if (!m) throw new Error(`${key}: page = {${raw}} is not a /papers/<slug>/ path`);
+          const re = new RegExp(`^${PAPERS}([a-z0-9._-]+)/?$`);
+          const m = re.exec(raw);
+          if (!m) throw new Error(`${key}: page = {${raw}} is not a ${PAPERS}<slug>/ path`);
           return { value: m[1], file: `src/content/papers/${m[1]}.md` };
         },
       },
@@ -180,70 +188,172 @@ const linkMap = z
  */
 const papers = defineCollection({
   loader: glob({ base: 'src/content/papers', pattern: '**/*.md' }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string().optional(),
+  schema: z
+    .object({
+      title: z.string(),
+      description: z.string().optional(),
 
-    /** The BibTeX key. Everything bibliographic is read from there, not here. */
-    publication: reference('publications'),
+      /**
+       * The BibTeX key. Everything bibliographic is read from there, not here.
+       *
+       * OPTIONAL, because not every page with something to say is a publication.
+       * A working-group meeting, an invited lecture, a national workshop: the
+       * venue publishes no proceedings, so there is no entry to point at and
+       * nothing to cite. Such a page states its venue and its year itself — see
+       * `venue` and `year` below, and the refinements under this object, which
+       * make "derived from BibTeX" and "stated by the page" the only two
+       * possibilities rather than a spectrum.
+       */
+      publication: reference('publications').optional(),
 
-    /**
-     * Authors as entries in authors.yml, so the page can link each to their
-     * ORCID. Separate from the BibTeX author list on purpose: that one is
-     * strings, this one is identities.
+      /**
+       * The year, for a page that has no `publication`.
+       *
+       * Only then. With an entry the year comes from the BibTeX, and a second
+       * copy here would be a fact that can drift; without one, nothing else on
+       * the page knows when this happened, and an undated paper sorts last on
+       * every list and reaches the feed with no date at all. So exactly one of
+       * the two is present, which the refinement below enforces.
+       */
+      year: z.number().int().optional(),
+
+      /**
+       * The venue line, stated outright, for a page with no `publication`.
+       *
+       * A paper page's venue has exactly two possible sources: the BibTeX entry
+       * (plus `conferenceName` below for the series' own homepage), or this. The
+       * presence of this object IS which one — nothing else has to be consulted.
+       *
+       * ONE OBJECT, NOT FOUR SIBLING STRINGS. ardoco.de reached this case with
+       * `pubEmoji`, `pubPrefixText`, `pubBylineConnector` and `pubShortName` as
+       * four independent top-level fields, and that shape misleads twice over. It
+       * hides that the four mean nothing apart from each other — each one reads
+       * as something any paper might set. And because `pubPrefixText` had to
+       * carry a default ('Paper at') for the pages that state nothing, the page
+       * then asked `pubPrefixText !== 'Paper at'` to find out whether a venue had
+       * been stated at all: a sentinel string standing in for the presence of the
+       * thing it is part of. An optional object cannot get into that state.
+       *
+       * It is also the honest home for the label's LANGUAGE. Stating your own
+       * venue is how a page not written in English says where it happened
+       * ("Präsentation auf der Jahrestagung der GI-FG Architekturen 2024"), and
+       * the moment that sentence is German every English word the template
+       * supplies next to it is wrong. There is one: the byline's "by". So it
+       * comes from here too. The serial "and" between author names does not
+       * become a fifth field — it simply goes away in this case, because a comma
+       * is language-neutral and a per-language conjunction is the accident above
+       * starting over.
+       *
+       * `status` is not consulted for a stated venue: a talk is neither published
+       * nor to appear, and the label already says what happened.
+       */
+      venue: z
+        .object({
+          /** The whole sentence, in the page's own language. Not a prefix. */
+          label: z.string(),
+          /** The event's own page, if it has one. */
+          url: z.url().optional(),
+          /**
+           * A flag or other mark, set before the label. ardoco.de uses 🇩🇪 to say
+           * a talk was given in German.
+           */
+          mark: z.string().optional(),
+          /**
+           * A short form for the places the sentence does not fit: the
+           * breadcrumb on the page itself, a row on /papers/, a project's list
+           * of related papers. A publication has its venue badge for that; a
+           * stated venue has only this. Defaults to `label`.
+           */
+          short: z.string().optional(),
+          /** The byline's "by", in the page's language: "von", "par", "a". */
+          bylineConnector: z.string().default('by'),
+        })
+        .optional(),
+
+      /**
+       * Authors as entries in authors.yml, so the page can link each to their
+       * ORCID. Separate from the BibTeX author list on purpose: that one is
+       * strings, this one is identities.
+       */
+      authors: z.array(reference('authors')).default([]),
+
+      /**
+       * Where this paper is in the pipeline, spelled out. The sites this template
+       * came from each had a boolean here — one `inPress`, the other
+       * `alreadyPublished` — and a boolean has to be read as a negation half the
+       * time: `inPress: false` is true of a paper that is out and of one that was
+       * never submitted. A name per state also leaves room for the third one
+       * (withdrawn, retracted) that a flag has nowhere to put.
+       */
+      status: z.enum(['published', 'to-appear']).default('published'),
+
+      /**
+       * The conference or series' OWN homepage. It is none of the three things
+       * next to it: `abbr` badges the proceedings the paper was printed in,
+       * `links.paper` points at the paper in a publisher's library, and the DOI
+       * is the record. This one answers "what is this venue, and does it run
+       * again next year", which none of the others can.
+       *
+       * This is the DERIVED path's companion, unchanged: it names the venue of a
+       * paper that has a BibTeX entry, and the page wraps it in "Published at" /
+       * "To appear at". A page that states its own `venue` must not also set it —
+       * two venue sentences with no rule for which wins.
+       */
+      conferenceName: z.string().optional(),
+      conferenceUrl: z.url().optional(),
+
+      /**
+       * Second and later outings for the same work: a doctoral symposium, a
+       * national workshop, an invited talk. Deliberately not in papers.bib —
+       * those venues are usually non-archival, so there is nothing to cite, and
+       * one BibTeX entry per talk would show the same paper twice or five times
+       * on /publications/.
+       */
+      additionalPresentations: z
+        .array(z.object({ name: z.string(), shortName: z.string().optional(), url: z.url() }))
+        .default([]),
+
+      /**
+       * The projects this work came out of. Stated here and nowhere else: each
+       * project page derives its own publication list by scanning this field, so
+       * the two directions cannot drift apart the way two hand-kept lists do.
+       * Pointing at a project that has a `redirect` is fine — the paper page
+       * links out to it instead of to a page that was never generated. Dropping
+       * the projects collection means dropping this field in the same edit;
+       * reference() makes the dependency real rather than advisory.
+       */
+      projects: z.array(reference('projects')).default([]),
+
+      /** Sort key for /papers/. Lower comes first. */
+      order: z.number().int().default(100),
+      featured: z.boolean().default(false),
+
+      figure: figure.optional(),
+
+      links: z.object({ paper: linkMap, replication: linkMap, slides: linkMap }).default({}),
+    })
+    /*
+     * The three rules that keep "derived" and "stated" from blurring. They are
+     * refinements rather than prose in the comments above because the failure
+     * they prevent is silent: a page with both sources renders whichever one
+     * the markup happens to check first, and a page with neither renders a
+     * venue line with nothing in it and sorts to the end of every list.
      */
-    authors: z.array(reference('authors')).default([]),
-
-    /**
-     * Where this paper is in the pipeline, spelled out. The sites this template
-     * came from each had a boolean here — one `inPress`, the other
-     * `alreadyPublished` — and a boolean has to be read as a negation half the
-     * time: `inPress: false` is true of a paper that is out and of one that was
-     * never submitted. A name per state also leaves room for the third one
-     * (withdrawn, retracted) that a flag has nowhere to put.
-     */
-    status: z.enum(['published', 'to-appear']).default('published'),
-
-    /**
-     * The conference or series' OWN homepage. It is none of the three things
-     * next to it: `abbr` badges the proceedings the paper was printed in,
-     * `links.paper` points at the paper in a publisher's library, and the DOI
-     * is the record. This one answers "what is this venue, and does it run
-     * again next year", which none of the others can.
-     */
-    conferenceName: z.string().optional(),
-    conferenceUrl: z.url().optional(),
-
-    /**
-     * Second and later outings for the same work: a doctoral symposium, a
-     * national workshop, an invited talk. Deliberately not in papers.bib —
-     * those venues are usually non-archival, so there is nothing to cite, and
-     * one BibTeX entry per talk would show the same paper twice or five times
-     * on /publications/.
-     */
-    additionalPresentations: z
-      .array(z.object({ name: z.string(), shortName: z.string().optional(), url: z.url() }))
-      .default([]),
-
-    /**
-     * The projects this work came out of. Stated here and nowhere else: each
-     * project page derives its own publication list by scanning this field, so
-     * the two directions cannot drift apart the way two hand-kept lists do.
-     * Pointing at a project that has a `redirect` is fine — the paper page
-     * links out to it instead of to a page that was never generated. Dropping
-     * the projects collection means dropping this field in the same edit;
-     * reference() makes the dependency real rather than advisory.
-     */
-    projects: z.array(reference('projects')).default([]),
-
-    /** Sort key for /papers/. Lower comes first. */
-    order: z.number().int().default(100),
-    featured: z.boolean().default(false),
-
-    figure: figure.optional(),
-
-    links: z.object({ paper: linkMap, replication: linkMap, slides: linkMap }).default({}),
-  }),
+    .refine((d) => Boolean(d.publication) !== Boolean(d.venue), {
+      message:
+        'a paper page needs exactly one venue source: a `publication` (the BibTeX entry) or a stated `venue`',
+      path: ['venue'],
+    })
+    .refine((d) => !(d.venue && (d.conferenceName || d.conferenceUrl)), {
+      message:
+        '`conferenceName`/`conferenceUrl` belong to a paper with a `publication`; a stated `venue` already carries its own label and url',
+      path: ['conferenceName'],
+    })
+    .refine((d) => Boolean(d.publication) !== (d.year !== undefined), {
+      message:
+        'set `year` only on a paper with no `publication` — with an entry the year comes from the BibTeX, and without one nothing else has a date',
+      path: ['year'],
+    }),
 });
 
 /**
@@ -280,6 +390,18 @@ const projects = defineCollection({
        */
       repositories: z.array(z.object({ name: z.string(), url: z.url() })).default([]),
       logo: image().optional(),
+      /*
+       * An overview diagram for the project's page. The SAME sub-schema the
+       * papers collection uses, not a second one that looks like it: a figure
+       * is a figure, and two shapes would be two places to fix the day `plate`
+       * or `frame` changes. Omit it and nothing renders — an approach page
+       * without a diagram is a page without a diagram, not a broken one.
+       *
+       * Note where it lives: `logo` goes through image() and so belongs in
+       * src/assets/, while a figure is a path under public/ — see the comment
+       * on the `figure` schema above for why the two are served differently.
+       */
+      figure: figure.optional(),
     }),
 });
 

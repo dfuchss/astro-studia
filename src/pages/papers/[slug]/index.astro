@@ -6,9 +6,16 @@ import Prose from '../../../components/Prose.astro';
 import Figure from '../../../components/Figure.astro';
 import VenueBadge from '../../../components/pub/VenueBadge.astro';
 import ScholarMeta from '../../../components/pub/ScholarMeta.astro';
-import CopyButton from '../../../components/pub/CopyButton.astro';
-import { projectPath } from '../../../lib/paths.ts';
-import { isSelf } from '../../../lib/authors.ts';
+import CopyButton from '../../../components/CopyButton.astro';
+import { PAPERS, projectPath } from '../../../lib/paths.ts';
+import { isSelfName } from '../../../lib/authors.ts';
+import {
+  paperByline,
+  paperPublication,
+  paperVenue,
+  paperVenueShort,
+  paperYear,
+} from '../../../lib/papers.ts';
 
 export const getStaticPaths = (async () => {
   const papers = await getCollection('papers');
@@ -18,23 +25,24 @@ export const getStaticPaths = (async () => {
 const { paper } = Astro.props;
 const { Content } = await render(paper);
 
-// Everything bibliographic comes from the BibTeX entry, never from this
-// page's front matter — so a paper has exactly one source of truth for its
-// venue, year and DOI, and they cannot drift apart.
-const pub = await getEntry(paper.data.publication);
-if (!pub) throw new Error(`${paper.id}: publication ${paper.data.publication.id} not found`);
-const d = pub.data;
+/*
+ * Everything bibliographic comes from the BibTeX entry, never from this page's
+ * front matter — so a paper has exactly one source of truth for its venue,
+ * year and DOI, and they cannot drift apart.
+ *
+ * `pub` is undefined for a page that has no entry at all: a talk at a venue
+ * that publishes nothing. That is a legitimate page, and it is why every read
+ * below is optional. A `publication` that is DECLARED and does not resolve is
+ * still fatal — paperPublication() throws — because the page it would render
+ * looks nearly right and the typo would reach the site.
+ */
+const pub = await paperPublication(paper);
+const d = pub?.data;
+
+const venue = paperVenue(paper);
+const year = paperYear(paper, pub);
 
 const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
-
-/*
- * authors.yml holds one display name per person, while isSelf() matches on a
- * surname — so the surname is the last whitespace-separated word. That is right
- * for everyone except a compound name ("van der Aalst" reduces to "Aalst"), and
- * the fix when it bites is to list that spelling in SELF.surnames, which is
- * exactly what that list is for.
- */
-const surname = (a: { name: string }) => a.name.split(/\s+/).at(-1) ?? a.name;
 
 /*
  * The projects this paper came out of. The other direction of the same edge —
@@ -72,50 +80,80 @@ const LINK_LABELS: Record<string, string> = {
 };
 const label = (key: string) => LINK_LABELS[key] ?? key;
 
+// Lowercase because the column heads are set in mono and read as keys, not as
+// sentences — the same voice as every other `.mono` label in the theme.
 const linkRows = [
-  { title: 'Paper', map: paper.data.links.paper },
-  { title: 'Replication', map: paper.data.links.replication },
-  { title: 'Slides', map: paper.data.links.slides },
+  { title: 'paper', map: paper.data.links.paper },
+  { title: 'replication', map: paper.data.links.replication },
+  { title: 'slides', map: paper.data.links.slides },
 ].filter((row) => row.map && Object.keys(row.map).length > 0);
 
-const inParts = [d.booktitle ?? d.journal ?? d.school ?? d.institution, d.location].filter(Boolean);
+const inParts = [d?.booktitle ?? d?.journal ?? d?.school ?? d?.institution, d?.location].filter(
+  Boolean,
+);
 
 // The two links a reader actually came for. They are repeated further down in
 // the link rows, which is the point: those rows are an index of everywhere the
 // work lives, and nobody should have to read an index to find the PDF.
-const hasActions = Boolean(d.pdfUrl || d.doi);
+const hasActions = Boolean(d?.pdfUrl || d?.doi);
 
-// The id CopyButton copies from, in the cite section below.
-const bibId = `bib-${pub.id}`;
+/*
+ * The citation, and the id CopyButton copies from. One object rather than two
+ * loose consts so the Cite section below has a single thing to test: either
+ * there is a record to copy or there is a sentence saying why there is not.
+ */
+const cite = pub ? { id: `bib-${pub.id}`, bibtex: pub.data.bibtex } : undefined;
+
+// The connector in front of the names and the separator between them, which are
+// not the same in the derived and the stated case — see paperByline(). Shared
+// with the paper rows on the entry pages rather than restated here.
+const { connector, separator } = paperByline(venue, authors.length);
 ---
 
 <Base title={paper.data.title} description={paper.data.description} section="papers">
-  <ScholarMeta slot="head" pub={pub} />
+  {
+    pub && (
+      <Fragment slot="head">
+        <ScholarMeta pub={pub} />
+      </Fragment>
+    )
+  }
 
   <article class="wrap section">
     <header class="head">
-      <div class="meta">
-        <VenueBadge abbr={d.abbr} />
-        <span class="mono year">{d.year}</span>
-        {
-          /* Only the unpublished state is worth saying. A "published" badge on
-             forty pages out of forty-one is noise that makes the one page that
-             needs it harder to spot, not easier. */
-          paper.data.status === 'to-appear' && <span class="chip status">to appear</span>
-        }
-      </div>
+      {
+        /* One line doing both jobs: where you are, and what this is. A separate
+           breadcrumb above a venue kicker said the same thing twice in a row,
+           and the slug it ended on ("de-re-publica") was the one part a reader
+           already knows — they just clicked it. So the path's leaf is the venue
+           label instead.
+
+           The venue abbreviation is the shortest true name a published paper
+           has, which is why the schema carries no separate short label for it:
+           adding one would mean restating the badge in every paper's front
+           matter. A page with no BibTeX entry has no badge to restate, so it
+           names its venue in `venue.short`. A paper with neither is a preprint,
+           which is what is left — see paperVenueShort(). */
+      }
+      <p class="kicker" data-sigil="none">
+        <a href={PAPERS}>papers</a>
+        <span aria-hidden="true">/</span>{' '}
+        {paperVenueShort(paper, pub)}
+      </p>
 
       <h1>{paper.data.title}</h1>
 
       {
         authors.length > 0 && (
-          <p class="authors">
+          <p class="byline">
+            {/* The trailing space is in the string: a space between two
+                expressions is whitespace between markup nodes, and which of
+                those survive is not something to bet a byline on. */}
+            {connector && `${connector} `}
             {authors.map((a, i) => (
               <>
-                {i > 0 && <span aria-hidden="true">, </span>}
-                <span
-                  class:list={['author', { self: isSelf({ first: '', last: surname(a.data) }) }]}
-                >
+                {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
+                <span class:list={['author', { self: isSelfName(a.data.name) }]}>
                   {a.data.name}
                   {/*
                    * The badge is the link, not the name. A name that is a link
@@ -143,30 +181,60 @@ const bibId = `bib-${pub.id}`;
         )
       }
 
-      {inParts.length > 0 && <p class="venue-line">{inParts.join(', ')}</p>}
-
       {
-        paper.data.conferenceName && (
-          <p class="conf">
-            {paper.data.status === 'to-appear' ? 'To appear at' : 'Published at'}{' '}
-            {paper.data.conferenceUrl ? (
-              <a href={paper.data.conferenceUrl} rel="noopener">
-                {paper.data.conferenceName}
-              </a>
-            ) : (
-              <span>{paper.data.conferenceName}</span>
-            )}
-          </p>
-        )
+        /* Badge, year and the venue sentence on one flex row: they are one
+           fact — where this was published — and stacking them as three lines
+           made the header read as a form with three fields. */
       }
+      <p class="venue-line">
+        <VenueBadge abbr={d?.abbr} />
+        {year !== undefined && <span class="mono year">{year}</span>}
+        {
+          /* Plain text, not a pill. The sentence beside it already says
+             "Published at X" or "To appear at X", and a pill repeating that is
+             the same fact twice in one row. This only covers the case where
+             there is no venue sentence to carry it — then the status has
+             nowhere else to be said, and only the unpublished state is worth
+             saying. */
+          paper.data.status === 'to-appear' && !venue && <span>To appear</span>
+        }
+        {
+          /* One sentence, two sources: "Published at <conference>" derived from
+             the paper's BibTeX entry, or the label the page states itself —
+             which is already a whole sentence, in its own language, and so gets
+             no English prefix in front of it. See paperVenue(). */
+          venue && (
+            <span>
+              {venue.mark && `${venue.mark} `}
+              {venue.prefix && `${venue.prefix} `}
+              {venue.url ? (
+                <a href={venue.url} rel="noopener">
+                  {venue.label}
+                </a>
+              ) : (
+                venue.label
+              )}
+            </span>
+          )
+        }
+      </p>
+
+      {inParts.length > 0 && <p class="imprint">{inParts.join(', ')}</p>}
 
       {
         paper.data.additionalPresentations.length > 0 && (
-          <p class="conf">
+          <p class="also">
             Also presented at{' '}
             {paper.data.additionalPresentations.map((p, i) => (
               <>
-                {i > 0 && <span aria-hidden="true">, </span>}
+                {/* `additionalPresentations.length`, not `authors.length` —
+                    this list is not the byline, and the two happening to be
+                    the same length in the demo is what hid it. */}
+                {i > 0 && (
+                  <span aria-hidden="true">
+                    {i === paper.data.additionalPresentations.length - 1 ? ', and ' : ', '}
+                  </span>
+                )}
                 <a href={p.url} rel="noopener" title={p.shortName ? p.name : undefined}>
                   {p.shortName ?? p.name}
                 </a>
@@ -179,12 +247,12 @@ const bibId = `bib-${pub.id}`;
       {
         hasActions && (
           <p class="actions">
-            {d.pdfUrl && (
+            {d?.pdfUrl && (
               <a class="chip primary" href={d.pdfUrl}>
                 Read the PDF
               </a>
             )}
-            {d.doi && (
+            {d?.doi && (
               <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
                 DOI
               </a>
@@ -211,32 +279,46 @@ const bibId = `bib-${pub.id}`;
 
     {
       (projects.length > 0 || linkRows.length > 0) && (
-        <section class="links" aria-label="Links">
-          {projects.length > 0 && (
-            <div class="row">
-              <h2 class="mono row-title">Projects</h2>
-              <div class="chips">
-                {projects.map((p) => (
-                  <a class="chip" href={p.href} rel={p.external ? 'noopener' : undefined}>
-                    {p.title}
-                    {p.external && <span aria-hidden="true">↗</span>}
-                  </a>
-                ))}
+        <section class="links" aria-labelledby="links-h">
+          <h2 class="mono" id="links-h">
+            Links
+          </h2>
+          {/* One column per group, plain links rather than chips: a chip reads
+              as an action, and this section is an index of everywhere the work
+              lives. The projects are a column like any other — they are one
+              more place to go from here, and giving them their own row of chips
+              made the section look like two sections. */}
+          <div class="link-grid">
+            {projects.length > 0 && (
+              <div>
+                <h3 class="mono">projects</h3>
+                <ul>
+                  {projects.map((p) => (
+                    <li>
+                      <a href={p.href} rel={p.external ? 'noopener' : undefined}>
+                        {p.title}
+                        {p.external && <span aria-hidden="true">↗</span>}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          )}
-          {linkRows.map((row) => (
-            <div class="row">
-              <h2 class="mono row-title">{row.title}</h2>
-              <div class="chips">
-                {Object.entries(row.map!).map(([key, href]) => (
-                  <a class="chip" href={href} rel="noopener">
-                    {label(key)}
-                  </a>
-                ))}
+            )}
+            {linkRows.map((row) => (
+              <div>
+                <h3 class="mono">{row.title}</h3>
+                <ul>
+                  {Object.entries(row.map!).map(([key, href]) => (
+                    <li>
+                      <a href={href} rel="noopener">
+                        {label(key)}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
       )
     }
@@ -257,10 +339,32 @@ const bibId = `bib-${pub.id}`;
          *
          * Both sites this template came from tried it and moved back. */
       }
-      <div class="cite-body">
-        <CopyButton target={bibId} />
-        <pre id={bibId}>{d.bibtex}</pre>
-      </div>
+      {
+        cite ? (
+          <div class="cite-body">
+            <CopyButton target={cite.id} />
+            <pre id={cite.id}>{cite.bibtex}</pre>
+          </div>
+        ) : (
+          /*
+           * The section STAYS, with a sentence in place of the record.
+           *
+           * Hiding it would be the tidier markup and the worse page: a reader
+           * who has just read a talk and wants to cite it would find the
+           * heading missing and conclude that this site does not offer
+           * citations, or that something failed to load. The absence is a fact
+           * about the venue, not about the page, and the only way to say that
+           * is to say it. No CopyButton: there is nothing to copy, and a button
+           * that copies an empty string is worse than no button.
+           */
+          <p class="uncited">
+            This was a talk at a venue that publishes no proceedings, so there is no bibliographic
+            record of it and nothing to cite — that is a fact about the venue rather than a gap in
+            this page.
+            {linkRows.length > 0 && ' What it did leave behind is under Links, above.'}
+          </p>
+        )
+      }
     </section>
   </article>
 </Base>
@@ -269,40 +373,65 @@ const bibId = `bib-${pub.id}`;
   /* Header, figure, prose, links and the cite block all size to --measure, so
      their left and right edges line up the whole way down the page instead of
      each block picking its own width. */
+  .kicker a {
+    color: inherit;
+  }
+  .kicker a:hover {
+    color: var(--sec-strong);
+  }
+
   .head,
   .links,
   .cite {
     max-width: var(--measure);
   }
 
-  .meta {
+  .head {
+    margin-bottom: 1.75rem;
+  }
+
+  /* Its own clamp rather than the global --fs-h1: a paper title is a sentence,
+     not a page name, and at display size it becomes a wall four lines deep. */
+  h1 {
+    font-size: clamp(1.6rem, 1.1rem + 2.2vw, 2.5rem);
+    margin-bottom: 0.75rem;
+  }
+
+  /* 1.8 because the ORCID badges sit above the baseline: at the default
+     line-height they touch the names on the line above. */
+  .byline {
+    margin: 0 0 0.65rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  .venue-line {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.9rem;
+    gap: 0.6rem;
+    margin: 0 0 0.5rem;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
   }
   .year {
     color: var(--text-faint);
   }
-  .status {
-    border-color: var(--sec-line);
-    background: var(--sec-dim);
-    color: var(--sec-strong);
-  }
 
-  h1 {
-    margin-bottom: 0.5rem;
-  }
-
-  .authors,
-  .venue-line,
-  .conf {
+  /* The imprint: proceedings and place, the part a reader copies into a
+     footnote rather than clicks. Italic, and below the badge row, because it
+     is bibliography, not navigation. */
+  .imprint,
+  .also {
     margin: 0 0 0.35rem;
     color: var(--text-muted);
     font-size: var(--fs-small);
   }
-  .venue-line {
+  .imprint {
     font-style: italic;
+  }
+  .also {
+    color: var(--text-faint);
   }
   /* The site's own author reads at full strength; the co-authors are context.
      Which one is "own" comes from SELF.surnames in src/consts.ts, so a group
@@ -347,32 +476,45 @@ const bibId = `bib-${pub.id}`;
   .links {
     margin-top: 2.5rem;
   }
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.5rem 1rem;
-    padding: 0.7rem 0;
-    border-top: 1px solid var(--border);
+  /* auto-fit rather than a fixed column count: three or four groups sit side by
+     side on a wide page and collapse to one column on a phone, no media query. */
+  .link-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: 1.25rem;
   }
-  .row-title {
-    /* Fixed column so the chip rows line up under one another, but allowed to
-       wrap onto its own line before it squeezes them. */
-    flex: 0 0 6rem;
-    margin: 0;
+  .link-grid h3 {
+    margin: 0 0 0.5rem;
     font-size: var(--fs-mono);
-    font-weight: 500;
     color: var(--text-faint);
+    text-transform: lowercase;
   }
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
+  .link-grid ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.35rem;
+  }
+  .link-grid a {
+    font-size: var(--fs-small);
   }
 
   .cite {
     margin-top: 2.5rem;
   }
+  /* A statement, not a warning: the same muted grey as the imprint line, at the
+     small size the rest of the header apparatus uses. Anything louder — a
+     border, a colour — would read as an error on a page where nothing is
+     wrong. */
+  .uncited {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+  }
+  /* Both section headings are labels, not titles: this page's one h1 is the
+     paper, and a display-size "Links" would compete with it. */
+  .links h2,
   .cite h2 {
     font-size: var(--fs-mono);
     font-weight: 500;

@@ -14,6 +14,10 @@ description: >-
 publication: cicero_de_amicitia_2021
 authors: [cicero, marek]
 order: 3
+# `featured` is what the entry pages' paper block selects on — three of the four
+# demo papers carry it, so the block is visibly a curated subset of /papers/
+# rather than all of it.
+featured: true
 
 # Not out yet: the paper page badges this as "to appear" and /papers/ marks the
 # row. An enum rather than a flag, so front matter never has to be read as a

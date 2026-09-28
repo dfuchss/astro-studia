@@ -1,20 +1,37 @@
 ---
-import { getCollection, getEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import VenueBadge from '../../components/pub/VenueBadge.astro';
 import { paperPath } from '../../lib/paths.ts';
+import { paperPublication, paperVenue, paperVenueShort, paperYear } from '../../lib/papers.ts';
 
 const papers = (await getCollection('papers')).sort(
   (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),
 );
 
-// Each paper page pulls its venue and year from the BibTeX entry it points at,
-// the same as the detail page does.
+/*
+ * Each row pulls its venue and year from the BibTeX entry the page points at,
+ * the same as the detail page does — or, for a page with no entry, from what
+ * that page states about itself. Both through the same helpers, so this list
+ * and the page it links to cannot disagree about where something appeared.
+ *
+ * `tag` is the venue named in words, and it is here only for the rows that have
+ * no badge: a page with no BibTeX entry has nothing in the badge column, and a
+ * row showing a title and a year alone does not say where the work appeared.
+ */
 const rows = await Promise.all(
-  papers.map(async (paper) => ({
-    paper,
-    pub: await getEntry(paper.data.publication),
-  })),
+  papers.map(async (paper) => {
+    const pub = await paperPublication(paper);
+    const venue = paperVenue(paper);
+    return {
+      paper,
+      pub,
+      year: paperYear(paper, pub),
+      tag: pub?.data.abbr
+        ? undefined
+        : [venue?.mark, paperVenueShort(paper, pub)].filter(Boolean).join(' '),
+    };
+  }),
 );
 ---
 
@@ -35,7 +52,7 @@ const rows = await Promise.all(
 
     <ul class="list">
       {
-        rows.map(({ paper, pub }) => (
+        rows.map(({ paper, pub, year, tag }) => (
           <li class="item reveal">
             <div class="badge">
               <VenueBadge abbr={pub?.data.abbr} />
@@ -45,9 +62,10 @@ const rows = await Promise.all(
                 <a href={paperPath(paper.id)}>{paper.data.title}</a>
               </h2>
               {paper.data.description && <p class="desc">{paper.data.description}</p>}
-              {pub && (
+              {year !== undefined && (
                 <p class="mono meta">
-                  {pub.data.year}
+                  {year}
+                  {tag && <span> · {tag}</span>}
                   {/* The one thing about a paper that changes after it is
                       written, so it belongs in the list and not only on the
                       page: a reader scanning for what is new wants it here. */}

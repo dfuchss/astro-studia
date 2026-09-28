@@ -54,7 +54,14 @@ export function byYear(pubs: Pub[]): { year: number; items: Pub[] }[] {
  *   UTC, not local. Constructing this in a local zone west of UTC shifts the
  *   day backwards, so the same commit produces different dates depending on
  *   where it was built.
+ *
+ * And a third, which only became reachable when a paper page was allowed to
+ * state its own `year`: Date.UTC maps a year of 0-99 onto 1900-1999, so
+ * `year: 44` silently becomes 1944. setUTCFullYear is the only way to say a
+ * two-digit year and mean it.
  */
 export function publicationDate(d: { year: number; month?: number }): Date {
-  return new Date(Date.UTC(d.year, (d.month ?? 1) - 1, 1));
+  const date = new Date(Date.UTC(d.year, (d.month ?? 1) - 1, 1));
+  if (d.year >= 0 && d.year <= 99) date.setUTCFullYear(d.year);
+  return date;
 }

@@ -33,6 +33,22 @@ export const isSelf = (p: Person) => SELF_SURNAMES.includes(fold(p.last));
 export const fullName = (p: Person) => [p.first, p.last].filter(Boolean).join(' ');
 
 /**
+ * Is the bearer of this DISPLAY NAME the person the site is about?
+ *
+ * authors.yml holds one display name per person, while isSelf() matches on a
+ * surname — so the surname is the last whitespace-separated word. That is right
+ * for everyone except a compound name ("van der Aalst" reduces to "Aalst"), and
+ * the fix when it bites is to list that spelling in SELF.surnames, which is
+ * exactly what that list is for.
+ *
+ * Here rather than on each page that renders an authors.yml byline, so a paper
+ * page and a paper row on an entry page cannot disagree about whose name to
+ * emphasise.
+ */
+export const isSelfName = (name: string) =>
+  isSelf({ first: '', last: name.split(/\s+/).at(-1) ?? name });
+
+/**
  * Author list with truncation.
  *
  * The limit is 4, with a grace clause: at exactly limit + 1 authors it shows

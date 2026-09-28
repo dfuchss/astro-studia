@@ -23,6 +23,13 @@ const container = d.booktitle ?? d.journal;
 const date = d.month ? `${d.year}/${String(d.month).padStart(2, '0')}` : String(d.year);
 const pageUrl = new URL(Astro.url.pathname, SITE.url).href;
 const pdfUrl = d.pdfUrl ? new URL(d.pdfUrl, SITE.url).href : undefined;
+/*
+ * Page ranges reach us as "44–55": the parser has already turned the BibTeX
+ * `--` into an en dash. Split on any of the three dashes it might use so a
+ * single-page entry (`pages = {24}`) simply yields no last page.
+ */
+const DASHES = /\s*[–—-]\s*/;
+const [firstPage, lastPage] = (d.pages ?? '').split(DASHES);
 ---
 
 <meta name="citation_title" content={d.title} />
@@ -33,7 +40,8 @@ const pdfUrl = d.pdfUrl ? new URL(d.pdfUrl, SITE.url).href : undefined;
 {d.publisher && <meta name="citation_publisher" content={d.publisher} />}
 {d.doi && <meta name="citation_doi" content={d.doi} />}
 {d.volume && <meta name="citation_volume" content={d.volume} />}
-{d.pages && <meta name="citation_firstpage" content={d.pages.split('--')[0]} />}
+{firstPage && <meta name="citation_firstpage" content={firstPage} />}
+{lastPage && <meta name="citation_lastpage" content={lastPage} />}
 {pdfUrl && <meta name="citation_pdf_url" content={pdfUrl} />}
 <meta name="citation_abstract_html_url" content={pageUrl} />
 
