@@ -7,6 +7,16 @@ An academic website template: publications from BibTeX, paper pages, projects,
 a blog, a CV, people. Built with <a href="https://astro.build/">Astro</a>.
 </p>
 
+<p align="center">
+<strong><a href="https://dfuchss.github.io/astro-studia/">Live demo</a></strong>
+· <a href="https://github.com/dfuchss/astro-studia/wiki">Documentation</a>
+· <a href="https://dfuchss.github.io/astro-studia/demo/project/">Project-site variant</a>
+</p>
+
+<p align="center">
+<img src=".github/media/home.webp" alt="The entry page: a name, a one-line role, a portrait and a row of publication and citation counts, in a dark palette with monospace section labels." width="840">
+</p>
+
 ---
 
 Eight content areas, one integration, **no UI framework, no CSS framework, no
@@ -15,6 +25,43 @@ there is no package boundary between you and the markup.
 
 Extracted from two production sites, [fuchss.org](https://fuchss.org) and
 [ardoco.de](https://ardoco.de), which are hand-written in the same style.
+
+The demo is this repository, deployed from `main` by the workflow it ships with.
+Everything in it is placeholder content: the works are Cicero's, the website is
+not.
+
+## What it looks like
+
+One template, two starting points. `npm run init` prunes to either, and you can
+mix the features freely afterwards — the presets only pre-tick the boxes.
+
+<table>
+<tr>
+<td width="50%"><a href="https://dfuchss.github.io/astro-studia/"><img src=".github/media/home.webp" alt="Personal academic page: name, one-line role, portrait, and a row of publication and citation counts." width="100%"></a></td>
+<td width="50%"><a href="https://dfuchss.github.io/astro-studia/demo/project/"><img src=".github/media/project.webp" alt="Academic project page: project title, action chips, sub-projects and a team roster." width="100%"></a></td>
+</tr>
+<tr>
+<td align="center"><code>--preset profile</code> · one person</td>
+<td align="center"><code>--preset project</code> · a project or group</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td width="33%"><a href="https://dfuchss.github.io/astro-studia/publications/"><img src=".github/media/publications.webp" alt="Publications grouped by year, each entry with a coloured venue badge, authors, and DOI and BibTeX chips." width="100%"></a></td>
+<td width="33%"><a href="https://dfuchss.github.io/astro-studia/papers/de-officiis/"><img src=".github/media/paper.webp" alt="A paper page: breadcrumb, title, author byline with ORCID badges, venue line and abstract." width="100%"></a></td>
+<td width="33%"><a href="https://dfuchss.github.io/astro-studia/cv/"><img src=".github/media/cv.webp" alt="A CV page with a dated timeline rail down the left of each section." width="100%"></a></td>
+</tr>
+<tr>
+<td align="center"><a href="https://dfuchss.github.io/astro-studia/publications/">Publications</a><br><sub>parsed from BibTeX</sub></td>
+<td align="center"><a href="https://dfuchss.github.io/astro-studia/papers/de-officiis/">Paper page</a><br><sub>one per work</sub></td>
+<td align="center"><a href="https://dfuchss.github.io/astro-studia/cv/">CV</a><br><sub>rendered from YAML</sub></td>
+</tr>
+</table>
+
+It is dark only, on purpose: one palette to get right instead of two, and no
+flash of the wrong one on load. Five hex values in `src/styles/tokens.css` are
+the whole palette — see [docs/Theming.md](docs/Theming.md).
 
 ## Getting started in five minutes
 
