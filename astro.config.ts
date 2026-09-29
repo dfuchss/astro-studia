@@ -36,7 +36,7 @@ export default defineConfig({
 
   // For https://<user>.github.io/<repo>/: set this to '/<repo>' and include
   // the path in SITE.url. docs/Deploying.md.
-  // base: '/astro-studia',
+  base: '/astro-studia',
 
   // Redirects for URLs you have already published elsewhere and cannot move:
   // redirects: { '/old-path/': '/new-path/' },

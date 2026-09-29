@@ -22,7 +22,7 @@ export type Tagline =
 
 export const SITE = {
   /** No trailing slash. With a `base` configured, include that path. */
-  url: 'https://example.com',
+  url: 'https://dfuchss.github.io/astro-studia',
 
   title: 'Marcus Tullius Cicero — Studia Theme demo',
 
