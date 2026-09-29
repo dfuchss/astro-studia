@@ -32,7 +32,6 @@ if (!existsSync(DIST)) {
 
 // ---- configuration, read by regex: a plain node script has no TS loader ----
 const consts = readFileSync(join(SRC, 'consts.ts'), 'utf8');
-const astroConfig = readFileSync(join(ROOT, 'astro.config.ts'), 'utf8');
 
 const siteUrl = consts.match(/url:\s*'([^']+)'/)?.[1];
 if (!siteUrl) {
@@ -41,9 +40,17 @@ if (!siteUrl) {
 }
 const OWN_HOST = new URL(siteUrl).host;
 
-/** The base path, when the site is deployed into a subdirectory. Check 4
-    asserts every internal URL carries it. */
-const BASE = (astroConfig.match(/^\s*base:\s*'([^']+)'/m)?.[1] ?? '').replace(/\/$/, '');
+/**
+ * The base path, when the site is deployed into a subdirectory. Check 4 asserts
+ * every internal URL carries it.
+ *
+ * Taken from SITE.url's own path, which is where astro.config.ts gets `base`
+ * from too. It used to grep astro.config.ts for a `base: '…'` string literal —
+ * which stops matching the moment that value is computed rather than written
+ * out, and then this reads '' and check 4 quietly stops checking while still
+ * printing green. Read the same single source the build reads.
+ */
+const BASE = new URL(siteUrl).pathname.replace(/\/$/, '');
 
 const ALLOWED = new Set(
   [

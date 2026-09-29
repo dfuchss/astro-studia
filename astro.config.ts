@@ -34,9 +34,12 @@ export default defineConfig({
     shikiConfig: { theme: 'github-dark-default', wrap: true },
   },
 
-  // For https://<user>.github.io/<repo>/: set this to '/<repo>' and include
-  // the path in SITE.url. docs/Deploying.md.
-  base: '/astro-studia',
+  // Derived from SITE.url rather than written again: a site at
+  // https://user.github.io/repo/ would otherwise state "/repo" here and in
+  // consts.ts, and two copies of one fact drift. A site at the domain root
+  // gives '/', which is Astro's default and changes nothing.
+  // docs/Deploying.md.
+  base: new URL(SITE.url).pathname,
 
   // Redirects for URLs you have already published elsewhere and cannot move:
   // redirects: { '/old-path/': '/new-path/' },
