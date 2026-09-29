@@ -16,7 +16,7 @@
  *    only a warning: that is what a second run looks like, and it must be safe.
  *
  * 2. It reports rather than repairs: after pruning it runs check, build and
- *    verify, and stops on the first failure.
+ *    audit, and stops on the first failure.
  */
 import { existsSync, readFileSync, writeFileSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
@@ -36,7 +36,6 @@ const INDEX = 'src/pages/index.astro';
 const HERO_DIR = 'src/components/hero';
 const FEED_DIR = 'src/lib/feed';
 const FEED_ENDPOINT = 'src/pages/feed.xml.ts';
-const BASELINE = 'verification/asset-sha256.txt';
 const SCAFFOLDING = ['scripts/init.mjs', 'scripts/features.mjs', 'scripts/gen-docs.mjs'];
 
 /**
@@ -1262,23 +1261,8 @@ async function main() {
       return 0;
     }
 
-    /*
-     * ---- reset the asset baseline ----
-     *
-     * A removed feature takes its pinned images with it. Re-pinning HERE is
-     * correct because the prune is the authorisation; a script that re-pinned
-     * on any later run would be a baseline that checks nothing.
-     */
-    if (existsSync(join(ROOT, BASELINE))) {
-      say('');
-      say(bold('asset baseline'));
-      const r = spawnSync('npm', ['run', '--silent', 'baseline'], { cwd: ROOT, stdio: 'pipe' });
-      if (r.status === 0) step(`re-pinned ${BASELINE} for the files this site now publishes`);
-      else warn(`could not run \`npm run baseline\` — run it by hand, then verify again`);
-    }
-
-    // ---- check, build, verify ----
-    const results = runCommands(['check', 'build', 'verify']);
+    // ---- check, build, audit ----
+    const results = runCommands(['check', 'build', 'audit']);
     say('');
     say(bold('Results'));
     for (const r of results) say(`  ${r.ok ? '✓' : '✗'} npm run ${r.name}`);
@@ -1288,14 +1272,13 @@ async function main() {
       say('');
       say(bold('✗ THE PRUNE LEFT SOMETHING DANGLING.'));
       say(`  ${failed.map((r) => `npm run ${r.name}`).join(' and ')} failed.`);
-      for (const line of baselineAdvice(failed)) say(line);
       say('  Read the output above: something still refers to a feature that is gone,');
       say('  or one of the TODO items above is now load-bearing. This script will not');
       say('  guess at a repair — fix it by hand (git diff shows everything it did).');
       return 1;
     }
 
-    say('\n✓ check, build and verify all pass.');
+    say('\n✓ check, build and audit all pass.');
 
     // ---- the scaffolding ----
     say('');
@@ -1318,35 +1301,6 @@ async function main() {
   } finally {
     rl?.close();
   }
-}
-
-/**
- * One failure is expected rather than dangling: `verification/asset-sha256.txt`
- * pins published assets by hash, and a removed feature takes its images with
- * it. Saying so beats letting the site owner read it as a broken prune.
- */
-function baselineAdvice(failed) {
-  // Only meaningful when the build itself succeeded: with no fresh dist/ every
-  // pinned asset looks missing, and the advice would be noise on top of a real
-  // failure.
-  if (!failed.some((r) => r.name === 'verify')) return [];
-  if (failed.some((r) => r.name === 'build')) return [];
-  const baseline = read('verification/asset-sha256.txt');
-  if (baseline === null) return [];
-  const gone = baseline
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l && !l.startsWith('#'))
-    .map((l) => l.split(/\s+/).slice(1).join(' '))
-    .filter((rel) => rel && !existsSync(join(ROOT, 'dist', rel)));
-  if (gone.length === 0) return [];
-  return [
-    '',
-    `  ${gone.length} asset${gone.length === 1 ? '' : 's'} pinned in verification/asset-sha256.txt`,
-    `  belonged to a feature you removed (${gone.slice(0, 3).join(', ')}${gone.length > 3 ? ', …' : ''}).`,
-    '  That part is expected: run `npm run baseline` to re-pin what the site now',
-    '  publishes, then `npm run verify` again.',
-  ];
 }
 
 /**

@@ -39,7 +39,7 @@ additionalPresentations:
 projects: [latin-vocabulary]
 
 figure:
-  src: /assets/img/papers/mixed-constitution.svg
+  src: ../../assets/papers/mixed-constitution.svg
   alt: >-
     Consul, senate and assembly, each connected to the other two and together
     constituting the res publica.

@@ -1,9 +1,11 @@
 ---
-import { intrinsic } from '../lib/images.ts';
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 
 interface Props {
-  /** Path under public/, e.g. "/assets/img/papers/overview.svg". */
-  src: string;
+  /** An image from src/assets/, as `image()` in the collection schema yields
+      it — so the width, height and format below come from the build. */
+  src: ImageMetadata;
   alt: string;
   /** A white plate behind the image: dark line art on transparency is close
       to invisible here. False for an image with its own background. */
@@ -16,12 +18,10 @@ interface Props {
 
 const { src, alt, plate = true, frame, caption } = Astro.props;
 
-const { width, height } = intrinsic(src);
-
 /* Vectors are capped at the prose measure, so a small wide diagram does not
    dwarf its text; rasters at their own pixel width, past which they go soft. */
-const isVector = src.endsWith('.svg');
-const maxWidth = isVector ? 'var(--measure)' : `${width}px`;
+const isVector = src.format === 'svg';
+const maxWidth = isVector ? 'var(--measure)' : `${src.width}px`;
 ---
 
 <figure
@@ -44,7 +44,14 @@ const maxWidth = isVector ? 'var(--measure)' : `${width}px`;
         </div>
       )
     }
-    <img src={src} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
+    <Image
+      src={src}
+      alt={alt}
+      width={src.width}
+      height={src.height}
+      loading="lazy"
+      decoding="async"
+    />
   </div>
   {caption && <figcaption>{caption}</figcaption>}
 </figure>

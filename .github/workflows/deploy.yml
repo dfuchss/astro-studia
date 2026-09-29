@@ -1,4 +1,4 @@
-name: Build, verify and deploy
+name: Build, audit and deploy
 
 on:
   push:
@@ -48,11 +48,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Asset byte-identity, plus the structural and accessibility audit.
-      # Deliberately before the deploy step, so a regression fails the workflow
-      # instead of reaching the site.
-      - name: Verify
-        run: npm run verify
+      # The structural and accessibility audit of the built output, plus the
+      # host files GitHub Pages needs. Deliberately before the deploy step, so a
+      # regression fails the workflow instead of reaching the site.
+      - name: Audit
+        run: npm run audit
 
       - name: Deploy to gh-pages
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

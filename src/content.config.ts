@@ -1,4 +1,4 @@
-import { defineCollection, reference } from 'astro:content';
+import { defineCollection, reference, type SchemaContext } from 'astro:content';
 import { z } from 'zod';
 import { file, glob } from 'astro/loaders';
 import { bibtexLoader } from './loaders/bibtex.ts';
@@ -35,20 +35,24 @@ const authors = defineCollection({
     key here is a published URL. */
 const people = defineCollection({
   loader: file('src/data/people.yml'),
-  schema: z.object({
-    /** Name and ORCID come from authors.yml, not from here. */
-    author: reference('authors'),
-    order: z.number().int(),
-    role: z.string().optional(),
-    /** Path under public/. Figure/img dimensions are read off disk. */
-    image: z.string(),
-    email: z.string().optional(),
-    url: z.url().optional(),
-    github: z.string().optional(),
-    /** Every surname this person publishes under; links an author name in the
-        publication list back to this entry. */
-    surnames: z.array(z.string()).min(1),
-  }),
+  /* A function so it can take `image()`. It works under a file() loader as it
+     does under glob(): the path is relative to the file the entry was loaded
+     from, which here is src/data/people.yml — so `../assets/…`. */
+  schema: ({ image }) =>
+    z.object({
+      /** Name and ORCID come from authors.yml, not from here. */
+      author: reference('authors'),
+      order: z.number().int(),
+      role: z.string().optional(),
+      /** A portrait under src/assets/, relative to src/data/. */
+      image: image(),
+      email: z.string().optional(),
+      url: z.url().optional(),
+      github: z.string().optional(),
+      /** Every surname this person publishes under; links an author name in the
+          publication list back to this entry. */
+      surnames: z.array(z.string()).min(1),
+    }),
 });
 
 const publications = defineCollection({
@@ -116,17 +120,25 @@ const publications = defineCollection({
   }),
 });
 
-/** An image under public/; Figure.astro reads the dimensions off disk. */
-const figure = z.object({
-  src: z.string(),
-  alt: z.string(),
-  /** A white plate behind it. True for dark line art on transparency, which
-      is invisible on this background; false for an image with its own. */
-  plate: z.boolean().default(true),
-  /** A window frame with this titlebar label. Explicit rather than derived
-      from `plate`: the two coincide often enough to look right until they don't. */
-  frame: z.string().optional(),
-});
+/**
+ * A figure: an image from src/assets/, through the asset pipeline, so the
+ * dimensions and the hashed filename come from the build rather than from a
+ * disk read at render time.
+ *
+ * A factory rather than a constant, because `image()` is handed to a schema and
+ * cannot be imported — and both collections that take a figure pass their own.
+ */
+const figureFor = ({ image }: SchemaContext) =>
+  z.object({
+    src: image(),
+    alt: z.string(),
+    /** A white plate behind it. True for dark line art on transparency, which
+        is invisible on this background; false for an image with its own. */
+    plate: z.boolean().default(true),
+    /** A window frame with this titlebar label. Explicit rather than derived
+        from `plate`: the two coincide often enough to look right until they don't. */
+    frame: z.string().optional(),
+  });
 
 /** label -> URL, rendered as a row of chips. A record, because every paper
     lives in a different handful of places. */
@@ -146,114 +158,116 @@ const linkMap = z
  */
 const papers = defineCollection({
   loader: glob({ base: 'src/content/papers', pattern: '**/*.md' }),
-  schema: z
-    .object({
-      title: z.string(),
-      description: z.string().optional(),
+  /** A function so it can take `image()` — the figure goes through src/assets/. */
+  schema: ({ image }) =>
+    z
+      .object({
+        title: z.string(),
+        description: z.string().optional(),
 
-      /**
-       * The BibTeX key. Everything bibliographic is read from there, not here.
-       * OPTIONAL: a talk at a venue that publishes nothing has no entry to
-       * point at, and states its `venue` and `year` itself instead. The
-       * refinements below make those the only two possibilities.
-       */
-      publication: reference('publications').optional(),
+        /**
+         * The BibTeX key. Everything bibliographic is read from there, not here.
+         * OPTIONAL: a talk at a venue that publishes nothing has no entry to
+         * point at, and states its `venue` and `year` itself instead. The
+         * refinements below make those the only two possibilities.
+         */
+        publication: reference('publications').optional(),
 
-      /** The year, only for a page with no `publication`; with one it comes
+        /** The year, only for a page with no `publication`; with one it comes
           from the entry. */
-      year: z.number().int().optional(),
+        year: z.number().int().optional(),
 
-      /**
-       * The venue, stated outright, for a page with no `publication`. The
-       * presence of this object IS which of the two sources a page has.
-       *
-       * One object, not four sibling strings: the four mean nothing apart
-       * from each other, and four loose fields once ended in a default prefix
-       * doubling as the "is a venue stated at all?" sentinel. It is also the
-       * home of the label's language — a German sentence makes every English
-       * word the template adds beside it wrong, so the byline's "by" lives
-       * here and the serial "and" between names goes away. `status` is not
-       * consulted for a stated venue.
-       */
-      venue: z
-        .object({
-          /** The whole sentence, in the page's own language. Not a prefix. */
-          label: z.string(),
-          /** The event's own page, if it has one. */
-          url: z.url().optional(),
-          /** A flag or other mark, before the label. */
-          mark: z.string().optional(),
-          /** For the breadcrumb and the list rows, where the sentence does not
+        /**
+         * The venue, stated outright, for a page with no `publication`. The
+         * presence of this object IS which of the two sources a page has.
+         *
+         * One object, not four sibling strings: the four mean nothing apart
+         * from each other, and four loose fields once ended in a default prefix
+         * doubling as the "is a venue stated at all?" sentinel. It is also the
+         * home of the label's language — a German sentence makes every English
+         * word the template adds beside it wrong, so the byline's "by" lives
+         * here and the serial "and" between names goes away. `status` is not
+         * consulted for a stated venue.
+         */
+        venue: z
+          .object({
+            /** The whole sentence, in the page's own language. Not a prefix. */
+            label: z.string(),
+            /** The event's own page, if it has one. */
+            url: z.url().optional(),
+            /** A flag or other mark, before the label. */
+            mark: z.string().optional(),
+            /** For the breadcrumb and the list rows, where the sentence does not
               fit. Defaults to `label`. */
-          short: z.string().optional(),
-          /** The byline's "by", in the page's language: "von", "par", "a". */
-          bylineConnector: z.string().default('by'),
-        })
-        .optional(),
+            short: z.string().optional(),
+            /** The byline's "by", in the page's language: "von", "par", "a". */
+            bylineConnector: z.string().default('by'),
+          })
+          .optional(),
 
-      /** Authors as authors.yml entries, so each can link to an ORCID. The
+        /** Authors as authors.yml entries, so each can link to an ORCID. The
           BibTeX author list is strings; this one is identities. */
-      authors: z.array(reference('authors')).default([]),
+        authors: z.array(reference('authors')).default([]),
 
-      /** Spelled out rather than a boolean: `inPress: false` is true of a paper
+        /** Spelled out rather than a boolean: `inPress: false` is true of a paper
           that is out and of one never submitted. */
-      status: z.enum(['published', 'to-appear']).default('published'),
+        status: z.enum(['published', 'to-appear']).default('published'),
 
-      /**
-       * The conference or series' OWN homepage, which neither `abbr` (the
-       * proceedings), `links.paper` (the publisher's copy) nor the DOI points
-       * at. For a paper with an entry; the page wraps it in "Published at".
-       */
-      conferenceName: z.string().optional(),
-      conferenceUrl: z.url().optional(),
+        /**
+         * The conference or series' OWN homepage, which neither `abbr` (the
+         * proceedings), `links.paper` (the publisher's copy) nor the DOI points
+         * at. For a paper with an entry; the page wraps it in "Published at".
+         */
+        conferenceName: z.string().optional(),
+        conferenceUrl: z.url().optional(),
 
-      /** Later outings for the same work. Not in papers.bib, where one entry
+        /** Later outings for the same work. Not in papers.bib, where one entry
           per talk would show the same paper five times on /publications/. */
-      additionalPresentations: z
-        .array(z.object({ name: z.string(), shortName: z.string().optional(), url: z.url() }))
-        .default([]),
+        additionalPresentations: z
+          .array(z.object({ name: z.string(), shortName: z.string().optional(), url: z.url() }))
+          .default([]),
 
-      /**
-       * The projects this work came out of, stated here and nowhere else: a
-       * project page derives its paper list by scanning this field. A project
-       * with a `redirect` is fine; the page links out to it.
-       */
-      projects: z.array(reference('projects')).default([]),
+        /**
+         * The projects this work came out of, stated here and nowhere else: a
+         * project page derives its paper list by scanning this field. A project
+         * with a `redirect` is fine; the page links out to it.
+         */
+        projects: z.array(reference('projects')).default([]),
 
-      /** Sort key for /papers/. Lower comes first. */
-      order: z.number().int().default(100),
-      featured: z.boolean().default(false),
+        /** Sort key for /papers/. Lower comes first. */
+        order: z.number().int().default(100),
+        featured: z.boolean().default(false),
 
-      figure: figure.optional(),
+        figure: figureFor({ image }).optional(),
 
-      links: z.object({ paper: linkMap, replication: linkMap, slides: linkMap }).default({}),
-    })
-    /* Refinements rather than prose, because the failure is silent: a page
+        links: z.object({ paper: linkMap, replication: linkMap, slides: linkMap }).default({}),
+      })
+      /* Refinements rather than prose, because the failure is silent: a page
        with both sources renders whichever the markup checks first, and one
        with neither renders an empty venue line and sorts last. */
-    .refine((d) => Boolean(d.publication) !== Boolean(d.venue), {
-      message:
-        'a paper page needs exactly one venue source: a `publication` (the BibTeX entry) or a stated `venue`',
-      path: ['venue'],
-    })
-    .refine((d) => !(d.venue && (d.conferenceName || d.conferenceUrl)), {
-      message:
-        '`conferenceName`/`conferenceUrl` belong to a paper with a `publication`; a stated `venue` already carries its own label and url',
-      path: ['conferenceName'],
-    })
-    .refine((d) => Boolean(d.publication) !== (d.year !== undefined), {
-      message:
-        'set `year` only on a paper with no `publication` — with an entry the year comes from the BibTeX, and without one nothing else has a date',
-      path: ['year'],
-    }),
+      .refine((d) => Boolean(d.publication) !== Boolean(d.venue), {
+        message:
+          'a paper page needs exactly one venue source: a `publication` (the BibTeX entry) or a stated `venue`',
+        path: ['venue'],
+      })
+      .refine((d) => !(d.venue && (d.conferenceName || d.conferenceUrl)), {
+        message:
+          '`conferenceName`/`conferenceUrl` belong to a paper with a `publication`; a stated `venue` already carries its own label and url',
+        path: ['conferenceName'],
+      })
+      .refine((d) => Boolean(d.publication) !== (d.year !== undefined), {
+        message:
+          'set `year` only on a paper with no `publication` — with an entry the year comes from the BibTeX, and without one nothing else has a date',
+        path: ['year'],
+      }),
 });
 
 /** Things you have made. An entry with `redirect` is a link out and gets no
     page of its own. */
 const projects = defineCollection({
   loader: glob({ base: 'src/content/projects', pattern: '**/*.md' }),
-  /** A function so it can take `image()`: logos go through the asset
-      pipeline from src/assets/, figures are paths under public/. */
+  /** A function so it can take `image()`: the logo and the figure both go
+      through the asset pipeline from src/assets/. */
   schema: ({ image }) =>
     z.object({
       title: z.string(),
@@ -273,7 +287,7 @@ const projects = defineCollection({
       logo: image().optional(),
       /** An overview diagram: the same sub-schema the papers use, so the two
           cannot mean different things. */
-      figure: figure.optional(),
+      figure: figureFor({ image }).optional(),
     }),
 });
 

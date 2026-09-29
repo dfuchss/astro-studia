@@ -1,7 +1,7 @@
 # Deploying
 
 `.github/workflows/deploy.yml` runs on every push and pull request to `main`:
-install, `prettier --check`, `astro check`, `docs:check`, `build`, `verify`, then
+install, `prettier --check`, `astro check`, `docs:check`, `build`, `audit`, then
 publish `dist/` to the `gh-pages` branch — the last step only on a non-PR push to
 `main`.
 
@@ -10,8 +10,9 @@ needs one secret and one thing done by hand first — see
 [Publishing the docs to the wiki](#publishing-the-docs-to-the-wiki) at the
 bottom.
 
-Verify runs **before** the publish. That ordering is the entire point: a
-broken link or a changed PDF fails the workflow instead of reaching the site.
+The audit runs **before** the publish. That ordering is the entire point: a
+broken link or a missing `.nojekyll` fails the workflow instead of reaching the
+site.
 
 ## GitHub Pages
 
@@ -24,9 +25,9 @@ broken link or a changed PDF fails the workflow instead of reaching the site.
 `public/.nojekyll` is already there and must stay. Without it Pages runs Jekyll
 over the output, and Jekyll ignores directories beginning with an underscore —
 which is where Astro puts every hashed asset. The failure mode is a live site
-with no CSS, so `verify` checks for it.
+with no CSS, so `npm run audit` checks for it.
 
-`verify` also checks that `dist/CNAME` exists whenever `public/CNAME` does. The
+The audit also checks that `dist/CNAME` exists whenever `public/CNAME` does. The
 deploy replaces the branch wholesale, so a CNAME that stops being emitted is a
 domain that stops resolving, and nothing else would notice.
 
@@ -66,7 +67,7 @@ the end of the build. You write `/cv/` everywhere, and it is correct at the
 root and in a subdirectory alike. (Starlight's ecosystem arrived at the same
 answer for the same reason.) It is a no-op when no base is set.
 
-`npm run verify` then proves it worked: with a base configured, any internal
+`npm run audit` then proves it worked: with a base configured, any internal
 link or subresource that does not carry it fails the build. So this cannot
 regress quietly into a site whose every link is broken.
 
@@ -139,7 +140,7 @@ every one of those links. Flip the constant and nothing else needs an edit:
   slash on `build.format === 'directory'` and under `'preserve'` publishes
   `/people` for a page that is `people/index.html`.
 
-`npm run verify` is what makes the policy enforceable: every internal link,
+`npm run audit` is what makes the policy enforceable: every internal link,
 canonical, sitemap entry and feed link is resolved to a file **by its exact
 shape** — `/a/b/` is `a/b/index.html` and nothing else, `/a/b` is `a/b.html`
 and nothing else — so a link and a file that disagree fail the build instead
@@ -151,26 +152,31 @@ Want a different mix — flat project pages, say? Move that route between
 `<name>.astro` and `<name>/index.astro`, teach its helper in `paths.ts` what
 `paperPath()` knows, and the audit tells you about anything you missed.
 
-## The asset baseline
+## What stays in `public/`
 
-`verification/asset-sha256.txt` pins the SHA-256 of everything under
-`public/assets/`, and `verify` checks the built copies against it.
+`public/` is copied verbatim, so everything in it is a URL you have promised to
+keep. That is the test for putting a file there, and the reason the list is
+short:
 
-This is worth more than it looks on an academic site. A PDF you have published
-is cited in other people's papers and indexed by Google Scholar, DBLP and your
-institutional repository. Those URLs are permanent whether or not you meant
-them to be — and they do not break through deliberate deletion. They break
-through an image optimiser, a "clean up assets" commit, or a tool that rewrites
-a file in place. None of those announce themselves.
+| Path                                                                                        | Why it needs a fixed URL                                        |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`, `site.webmanifest` | browsers and app installers fetch these by name                 |
+| `.nojekyll`                                                                                 | the host reads it, not a page                                   |
+| `assets/img/og.png`                                                                         | named by an absolute URL in a `<meta>` tag                      |
+| `assets/img/brand-mark.svg`                                                                 | a configured path, `SITE.brandLogo` — see [Theming](Theming.md) |
+| `assets/pdf/**`                                                                             | linked from papers, and fed to the sitemap's `customPages`      |
+| `assets/pgp-key/*.asc`                                                                      | downloaded, and read at build time by `src/lib/pgp.ts`          |
+| the images a post links to at full size                                                     | an `<a href>` to an image is a URL like any other               |
 
-When you genuinely add or replace an asset:
+Everything else is an image, and every image a collection schema names lives in
+`src/assets/` and goes through Astro's pipeline instead: hashed filename,
+intrinsic dimensions from the build, and `1x`/`2x` variants where a component
+asks for them. See [Content](Content.md), "Where images live".
 
-```bash
-npm run baseline     # rewrites the file
-git add public/assets verification/asset-sha256.txt
-```
-
-Commit both together, so the change and its authorisation are one commit.
+A PDF you have published is cited in other people's papers and indexed by Google
+Scholar, DBLP and your institutional repository, so treat `public/assets/pdf/`
+as append-only: replacing a file there in place changes what a citation resolves
+to.
 
 ## Sitemap and robots
 
@@ -178,7 +184,7 @@ Commit both together, so the change and its authorisation are one commit.
 and any further pages. `src/pages/robots.txt.ts` is generated from `SITE.url`
 and points at the index, so the two cannot drift apart.
 
-`npm run verify` asserts that linkage rather than the filename: it reads the
+`npm run audit` asserts that linkage rather than the filename: it reads the
 `Sitemap:` line out of the built `robots.txt`, requires that file to exist in
 `dist/`, follows it to every sitemap it lists, and resolves every URL in them
 to a file on disk. A crawler learns the sitemap's address from `robots.txt`

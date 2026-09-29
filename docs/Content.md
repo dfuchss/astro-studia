@@ -15,6 +15,36 @@ in collection "publications" (field: abbr) references "NOPE" in collection
 "venues", but that entry does not exist.
 ```
 
+## Where images live
+
+One rule: **an image a collection schema names lives in `src/assets/`**, and the
+schema declares it with Astro's `image()` helper. The path is written relative to
+the file the entry came from, so from a markdown page under
+`src/content/papers/` that is `../../assets/papers/overview.svg`, and from
+`src/data/people.yml` it is `../assets/people/cicero.svg`. The build then gives
+you a hashed filename, the intrinsic `width` and `height` the audit requires, and
+`1x`/`2x` variants where a component asks for them.
+
+| Field                        | Lives in                | Written as                            |
+| ---------------------------- | ----------------------- | ------------------------------------- |
+| `figure.src` on a paper page | `src/assets/papers/`    | `../../assets/papers/<name>.svg`      |
+| `figure.src` on a project    | `src/assets/projects/`  | `../../assets/projects/<name>.svg`    |
+| `logo` on a project          | `src/assets/projects/`  | `../../assets/projects/<name>.svg`    |
+| `image` in `people.yml`      | `src/assets/people/`    | `../assets/people/<name>.svg`         |
+| your portrait                | `src/assets/portrait.*` | nothing — the filename is the setting |
+
+`image()` works the same under a `file()` loader as under `glob()`: `people` is
+one YAML file rather than a directory of markdown, and its paths resolve relative
+to `src/data/` because that is where the entry was loaded from.
+
+`public/` is for files that need a URL that never moves — the favicons, the
+manifest, `og.png` (a `<meta>` tag names it absolutely), your PDFs, your PGP key,
+the brand mark that `SITE.brandLogo` points at, and any image a post **links** to
+at full size. [Deploying](Deploying.md) has the full list and the reasoning.
+
+An image you write into prose by hand is the one exception, and it stays in
+`public/` — see [Images in a post](#images-in-a-post) below for why.
+
 ## Publications — `src/data/papers.bib`
 
 Standard BibTeX, plus three fields that are this template's. All three are
@@ -99,7 +129,7 @@ authors: [surname, other] # keys from authors.yml
 order: 1
 featured: true # also list it in the entry page's paper block
 figure:
-  src: /assets/img/papers/overview.svg
+  src: ../../assets/papers/overview.svg # relative to this file; see "Where images live"
   alt: A description someone who cannot see it would want.
   plate: true # white plate behind dark-on-transparent line art
   frame: approach overview # window frame, with this as its titlebar label
@@ -189,16 +219,17 @@ entries and not others and the rest gather under a final "Other" group rather
 than dropping off the page. An entry with `redirect` gets no page of its own
 and links straight out — useful for work that lives on someone else's site.
 
-Logos go in `src/assets/projects/` and run through Astro's image pipeline
-(hashed filename, dimensions known at build time). That is the difference
-between `src/assets/` and `public/`: only `public/` has stable URLs.
+Logos go in `src/assets/projects/`, like the page figure below, and run through
+Astro's image pipeline — hashed filename, dimensions known at build time. That is
+the difference between `src/assets/` and `public/`: only `public/` has URLs that
+never move, and only things that need one belong there.
 
 An optional `figure` puts an overview diagram above the prose — the same field,
 with the same four keys, that a paper page takes:
 
 ```yaml
 figure:
-  src: /assets/img/projects/translation-strategies.svg
+  src: ../../assets/projects/translation-strategies.svg
   alt: Three strategies for moving a term between languages.
   plate: false # true (the default) for dark line art on transparency
   frame: translation strategies # omit for no window frame
@@ -206,9 +237,9 @@ figure:
 
 It is the same sub-schema in `src/content.config.ts`, not a copy of it, so the
 two can never mean different things. Leave it out and the page renders without
-one. The path is under `public/`, like every figure — `Figure.astro` reads the
-dimensions off disk — and `public/assets/img/projects/` belongs to the projects
-feature, so a figure filed there cannot be deleted by pruning something else.
+one. The path goes through `image()` like the logo, and `src/assets/projects/`
+belongs to the projects feature, so a figure filed there cannot be deleted by
+pruning something else.
 
 ## Posts — `src/content/posts/`
 
@@ -243,6 +274,10 @@ file, stacking on a narrow screen:
   <figcaption>What changed.</figcaption>
 </figure>
 ```
+
+Those two paths are under `public/`, and have to be: each image is **linked** at
+full size, and a link needs a URL Astro has not renamed. See
+[Images in a post](#images-in-a-post).
 
 **An icon-led list**, for a set of tools or components — each row an inline icon,
 a name, a description, and a row of links:
@@ -284,7 +319,7 @@ other.
 ```
 
 That one needs its host added to `ALLOWED_THIRD_PARTY` in `src/consts.ts`, or
-`npm run verify` fails — on purpose. An iframe is the one thing in prose that
+`npm run audit` fails — on purpose. An iframe is the one thing in prose that
 sees your readers' IP addresses, so it should take a deliberate edit.
 
 ### Images in a post
@@ -308,6 +343,14 @@ Write the tag directly — remark passes HTML through untouched:
 ```
 
 Drop `class="no-plate"` when the image _is_ dark-on-transparent line art.
+
+**These live in `public/`, not `src/assets/`.** Astro rewrites a relative image
+path only in markdown's own `![](…)` syntax; an `<img>` you write by hand is
+passed through exactly as typed, so a `src` into `src/assets/` would point at
+nothing in the built output. That is the trade for the two things `![](…)` cannot
+express, and it is why `public/assets/img/posts/` and `public/assets/img/papers/`
+still exist. Everything a **schema** names goes through `image()` instead — see
+[Where images live](#where-images-live).
 
 ## A group site rather than a personal one
 
@@ -344,7 +387,7 @@ directory** (`src/content/papers/`) never appear in a URL, so a route rename
 does not touch them — rename them too if you like the symmetry, but that is a
 separate edit and `reference()` will tell you if you do half of it.
 
-Then `npm run build && npm run verify`: the audit resolves every internal link
+Then `npm run build && npm run audit`: the audit resolves every internal link
 in the built output, so anything still pointing at the old prefix is a failure
 naming the page it is on.
 
@@ -371,7 +414,7 @@ naming the row, not a label with nothing beside it.
 
 **An address goes in `email:`, never in `value:`.** `email:` renders through
 `src/components/Email.astro`, which splits and rot13s the address so it is not
-in the served bytes; `npm run verify` greps the built output for anything
+in the served bytes; `npm run audit` greps the built output for anything
 address-shaped and fails the deploy if one appears. A `value:` that looks like
 an address is rejected at build time with the row's label, so you find out from
 the file that caused it rather than from the audit afterwards.

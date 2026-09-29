@@ -71,7 +71,7 @@ function validate(input: unknown): ResolvedRow[] {
       throw new Error(
         `${where}: \`value: ${row.value}\` is an email address. Write it as ` +
           '`email:` instead — a raw address in the markup is shipped in the ' +
-          'served bytes and fails `npm run verify`.',
+          'served bytes and fails `npm run audit`.',
       );
     }
 

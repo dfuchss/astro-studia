@@ -33,7 +33,7 @@ edits and a hex-to-rgb conversion, which is how the two source sites ended up
 with `--green-line: rgb(74 222 128 / 38%)` sitting next to `#4ade80`.
 
 **Keep each base at 3:1 against `--bg`, and the `--text*` values at 4.5:1.**
-`npm run verify` checks this and will tell you which token and by how much. The
+`npm run audit` checks this and will tell you which token and by how much. The
 check derives its own list, so a sixth family is covered without your adding it
 anywhere — see [Verification](Verification.md).
 

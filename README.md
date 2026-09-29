@@ -33,7 +33,7 @@ Then, in order:
 | 4   | `src/content/`          | Your posts, projects and paper pages.                                                    |
 | 5   | `src/assets/portrait.*` | Your photo. Any common extension; the filename is the whole setting.                     |
 | 6   | `src/pages/index.astro` | Your home page copy, under the `DEMO COPY` banner.                                       |
-| 7   | —                       | `npm run check && npm run build && npm run verify`                                       |
+| 7   | —                       | `npm run check && npm run build && npm run audit`                                        |
 
 Removing an area you do not want is a short, uniform recipe, and `npm run init`
 performs the mechanical part of it:
@@ -58,7 +58,7 @@ repository's [wiki](https://github.com/dfuchss/astro-studia/wiki).
 | [Content](docs/Content.md)                     | the seven collections, their schemas, and what markdown can express |
 | [Theming](docs/Theming.md)                     | the palette, the section accents, the widths, the primitives        |
 | [Removing features](docs/Removing-Features.md) | the deletion recipe, and what belongs to what                       |
-| [Deploying](docs/Deploying.md)                 | Pages, base paths, the URL policy, the asset baseline, the wiki     |
+| [Deploying](docs/Deploying.md)                 | Pages, base paths, the URL policy, the wiki                         |
 | [Verification](docs/Verification.md)           | what each check asserts, and why it is written that way             |
 | [Architecture](docs/Architecture.md)           | how the loader, collections, integrations and scripts fit together  |
 
@@ -77,8 +77,7 @@ src/
   integrations/       base-paths: makes `base` work for hand-written links
                       sitemap-shape: makes every sitemap entry name the file emitted
 public/               copied verbatim; everything here is a permanent URL
-scripts/              the audit, the asset baseline, the data refreshers
-verification/         committed SHA-256 baseline for the published assets
+scripts/              the audit, the setup wizard, the data refreshers
 docs/                 the wiki, page per file: quickstart, configuration, content,
                       theming, removing features, deploying, verification, architecture
 ```
@@ -105,14 +104,12 @@ Three fields in `papers.bib` are this template's rather than BibTeX's, and all
 three are checked at build time: `abbr` (the venue badge), `pdf` (a file you
 host) and `page` (this work's own page). See [docs/Content.md](docs/Content.md).
 
-## What `npm run verify` guards
+## What `npm run audit` guards
 
 Run by the deploy workflow **before** it publishes, so a regression fails the
 build rather than reaching the site.
 
 ```
-✓ assets: 14 published file(s) byte-identical to the baseline
-✓ dist/.nojekyll present
 ✓ css: 62 custom properties, all defined or defaulted
 ✓ css: dark-only, no theme toggle
 ✓ css: all 9 sections have an accent block
@@ -126,6 +123,7 @@ build rather than reaching the site.
 ✓ privacy: no email address appears in the built output
 ✓ sitemap: robots.txt → sitemap-index.xml → 1 file(s), 24 URLs, every one names a file on disk
 ✓ feed.xml: 2 <item> entries, 3 links each name a file on disk
+✓ dist/.nojekyll present
 ```
 
 Every link, canonical, sitemap entry and feed link is resolved to a file **by
@@ -134,17 +132,16 @@ its exact shape** — `/a/b/` must be `a/b/index.html`, `/a/b` must be
 here rather than 404ing on the host. See the URL policy in
 [docs/Deploying.md](docs/Deploying.md).
 
-The first one matters more than it looks. A PDF you have published is cited in
-other people's papers and indexed by Scholar and DBLP; those URLs are permanent
-whether you meant them to be or not, and they break through an image optimiser
-or a tidy-up commit rather than a deliberate deletion. See
+The last one matters more than it looks. Without `.nojekyll`, GitHub Pages runs
+Jekyll over the output, Jekyll ignores directories beginning with an underscore,
+and `/_astro/` — every hashed stylesheet and script — is simply not served. A
+`dist/CNAME present` line joins it whenever you have a `public/CNAME`. See
 [docs/Deploying.md](docs/Deploying.md).
 
-The first two lines come from `scripts/verify-invariants.mjs` and the rest from
-`scripts/audit-site.mjs`; each is one independent block. Delete the ones you do
-not want; add your own — [docs/Verification.md](docs/Verification.md) says what
-each asserts, and why every regex-based check names a floor on how little is too
-little.
+All of it is `scripts/audit-site.mjs`, one independent block per check. Delete
+the ones you do not want; add your own — [docs/Verification.md](docs/Verification.md)
+says what each asserts, and why every regex-based check names a floor on how
+little is too little.
 
 ## Scripts
 
@@ -154,9 +151,7 @@ little.
 | `npm run build`       | → `dist/`                                                   |
 | `npm run check`       | `astro check` + `prettier --check`                          |
 | `npm run format`      | `prettier --write`                                          |
-| `npm run audit`       | the structural and accessibility audit of `dist/`           |
-| `npm run verify`      | asset byte-identity, then the audit                         |
-| `npm run baseline`    | rewrite the asset baseline after changing `public/assets/`  |
+| `npm run audit`       | the one gate: every check over `dist/` — see below          |
 | `npm run favicons`    | rasterize `public/favicon.svg` into PNGs                    |
 | `npm run data:github` | refresh `src/data/github-metadata.json`                     |
 | `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)    |
@@ -170,7 +165,7 @@ makes a fresh clone build offline.
 
 ## Deploying
 
-`.github/workflows/deploy.yml` checks, builds and verifies on every push and
+`.github/workflows/deploy.yml` checks, builds and audits on every push and
 pull request to `main`, then publishes `dist/` to the `gh-pages` branch. Three
 further workflows are opt-in: two refresh the committed data files, and
 `docs.yml` publishes `docs/` to this repository's wiki. All three need the `PAT`

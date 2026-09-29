@@ -1,5 +1,5 @@
 # Only for scripts/update_scholar_citations.py, which is opt-in. Nothing in
-# `npm run build`, `npm run check` or `npm run verify` needs Python at all, and
+# `npm run build`, `npm run check` or `npm run audit` needs Python at all, and
 # scripts/update_bib.py is standard library only.
 pyyaml
 scholarly

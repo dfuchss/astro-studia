@@ -24,7 +24,7 @@
 #
 #           A plain `value:` that looks like an address is a BUILD ERROR
 #           naming this file, not a silently harvestable mailto. It has to be,
-#           because `npm run verify` greps the built output for anything
+#           because `npm run audit` greps the built output for anything
 #           address-shaped and fails the deploy — and finding that out from the
 #           audit, after the fact, is the worse way to learn it.
 #

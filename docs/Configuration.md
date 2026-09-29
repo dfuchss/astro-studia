@@ -314,12 +314,12 @@ is a string that can point at nothing.
 | `src/assets/portrait.{jpg,png,webp,avif,svg}` | `src/lib/portrait.ts` finds it by `import.meta.glob` at build time, so `<Image>` can optimise it and the audit gets its intrinsic dimensions. None, or two of them, is a build error naming the path.                                        |
 | `public/assets/pgp-key/<FINGERPRINT>.asc`     | `/pgp-key/` inlines the armored block in a `<pre>` with a copy button, read at build time so it works without JS and is indexable. No file there is a **supported** state: the page keeps the fingerprint, the key id and the download link. |
 | `public/assets/pdf/**.pdf`                    | `astro.config.ts` walks the directory recursively and feeds the result to the sitemap's `customPages`, because the integration lists pages Astro builds and a file in `public/` is not one. Adding a paper needs no upkeep.                  |
-| `public/CNAME`                                | Copied into `dist/`, and `npm run verify` then fails if it ever stops being emitted — the deploy replaces the branch wholesale, so that would be a domain that stops resolving.                                                              |
+| `public/CNAME`                                | Copied into `dist/`, and `npm run audit` then fails if it ever stops being emitted — the deploy replaces the branch wholesale, so that would be a domain that stops resolving.                                                               |
 | `public/.htaccess`                            | Copied verbatim. `ErrorDocument 404 /404.html` for a host that is not GitHub Pages. See [Deploying](Deploying.md).                                                                                                                           |
 
 `public/.nojekyll` is already there and must stay: without it GitHub Pages runs
 Jekyll, which ignores directories beginning with an underscore — which is where
-Astro puts every hashed asset. `verify` checks for it.
+Astro puts every hashed asset. `npm run audit` checks for it.
 
 ## `astro.config.ts`
 

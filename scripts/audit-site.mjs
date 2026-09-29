@@ -1,8 +1,8 @@
 /*
  * Structural and accessibility audit of dist/, run offline against the built
- * bytes before anything is published (`npm run audit`, or `npm run verify` for
- * the asset checks too). Each block is one independent check; what each one
- * asserts and why is in docs/Verification.md.
+ * bytes before anything is published (`npm run audit` — the one gate, which the
+ * deploy workflow runs before it publishes). Each block is one independent
+ * check; what each one asserts and why is in docs/Verification.md.
  *
  * A note on the shape of these checks: several work by regex over built
  * output, which is a technique with one characteristic failure — change the
@@ -423,8 +423,9 @@ const ownPath = (url) => {
 
 // ---- 6. images carry intrinsic dimensions -----------------------------------
 {
-  // src/assets/ images get them from Astro, public/ images from intrinsic()
-  // in src/lib/images.ts, an <img> written by hand in markdown from you.
+  // Images from src/assets/ get them from Astro, the configured brand mark from
+  // intrinsic() in src/lib/images.ts, an <img> written by hand in markdown from
+  // you.
   let imgs = 0;
   let bad = 0;
   for (const p of pages) {
@@ -670,7 +671,24 @@ const ownPath = (url) => {
   }
 }
 
-// ---- 10. weight --------------------------------------------------------------
+// ---- 10. the files that make the host serve the site correctly --------------
+{
+  // GitHub Pages runs Jekyll over the output unless this exists, and Jekyll
+  // ignores directories beginning with an underscore — which is where Astro
+  // puts every hashed asset. The failure is a live site with no CSS.
+  if (existsSync(join(DIST, '.nojekyll'))) ok('dist/.nojekyll present');
+  else fail('dist/.nojekyll is missing — GitHub Pages would skip /_astro/');
+
+  // Only checked when you have one. The deploy replaces the gh-pages branch
+  // wholesale, so a CNAME that stops being emitted is a domain that stops
+  // resolving, and nothing in the build would otherwise notice.
+  if (existsSync(join(ROOT, 'public/CNAME'))) {
+    if (existsSync(join(DIST, 'CNAME'))) ok('dist/CNAME present');
+    else fail('public/CNAME exists but dist/CNAME does not');
+  }
+}
+
+// ---- 11. weight --------------------------------------------------------------
 {
   const sum = (list) => list.reduce((n, f) => n + statSync(f).size, 0);
   const kb = (n) => `${(n / 1024).toFixed(1)} KB`;

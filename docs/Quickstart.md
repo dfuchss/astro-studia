@@ -83,16 +83,12 @@ npm run init -- --features cv,imprint         # keep exactly these
 npm run init -- --preset profile --yes        # skip the confirmation
 ```
 
-Three things it does that are worth expecting:
+Two things it does that are worth expecting:
 
-- **It re-pins the asset baseline.** `verification/asset-sha256.txt` fixes the
-  demo's published files by hash, and a removed feature takes its images with it,
-  so `npm run verify` would otherwise fail on assets that are meant to be gone.
-  The prune is the authorisation for that one reset — and the only one. See
-  [Deploying](Deploying.md).
-- **It runs `check`, `build` and `verify` afterwards and stops if one fails.** A
+- **It runs `check`, `build` and `audit` afterwards and stops if one fails.** A
   prune that left something dangling is a thing to read, not to paper over;
-  `git diff` still has the whole story.
+  `git diff` still has the whole story. Nothing needs re-pinning or regenerating
+  after a prune — a pruned tree is just a smaller tree.
 - **It offers to delete its own scaffolding** — `scripts/init.mjs`,
   `scripts/features.mjs`, `scripts/gen-docs.mjs` and their npm scripts. Say no if
   you want to prune again later.
@@ -108,10 +104,10 @@ full table of what belongs to what.
 ```bash
 npm run check      # astro check + prettier --check
 npm run build      # → dist/
-npm run verify     # asset byte-identity, then the audit
+npm run audit      # every check over dist/
 ```
 
-`verify` is the one to read. It resolves every internal link, canonical, sitemap
+`audit` is the one to read. It resolves every internal link, canonical, sitemap
 entry and feed link to a file on disk by its exact shape, and prints a line per
 check:
 
@@ -121,12 +117,12 @@ check:
 ✓ sitemap: robots.txt → sitemap-index.xml → 1 file(s), 24 URLs, every one names a file on disk
 ```
 
-[Verification](Verification.md) says what each of the fifteen lines asserts.
+[Verification](Verification.md) says what each of the fourteen lines asserts.
 
 ## 5. Deploy
 
 `.github/workflows/deploy.yml` is already there. It installs, checks, builds and
-**verifies before it publishes**, then pushes `dist/` to the `gh-pages` branch on
+**audits before it publishes**, then pushes `dist/` to the `gh-pages` branch on
 a non-PR push to `main`.
 
 1. Settings → Pages → deploy from the `gh-pages` branch.
@@ -158,5 +154,5 @@ order of how often you will see them:
 | `contact.yml row N (label): …`                      | a row with neither or both of `value` and `email`, or an address in `value` |
 | `portrait: no src/assets/portrait.<ext> found`      | or two of them, which is equally an error                                   |
 | `link /x/ does not resolve — expected x/index.html` | a link whose shape disagrees with the file the URL policy emitted           |
-| `published asset changed: …`                        | run `npm run baseline` if that was deliberate                               |
+| `dist/.nojekyll is missing`                         | `public/.nojekyll` was deleted; without it Pages serves no CSS              |
 | `section 'x' … has no [data-section='x'] block`     | a new `Section` member without its accent block in `tokens.css`             |

@@ -140,7 +140,7 @@ in this directory usually exists because two consumers had drifted apart.
 | `contact.ts`      | the contact rows, validated, with `email: true` resolved                                                              |
 | `pgp.ts`          | key id, grouped fingerprint, download path and the armored block — all from one value                                 |
 | `portrait.ts`     | your portrait, found by `import.meta.glob` over `src/assets/portrait.*`                                               |
-| `images.ts`       | intrinsic dimensions of an image under `public/`, read off disk                                                       |
+| `images.ts`       | intrinsic dimensions of the configured brand mark under `public/`, read off disk                                      |
 | `feed/`           | `FeedItem`, plus two interchangeable sources — `fromPosts` and `fromPapers`                                           |
 
 Two patterns recur and are worth recognising:
@@ -188,7 +188,7 @@ So this rewrites the output instead. Only URL-bearing attributes — `href`, `sr
 `srcset`, and `content` on exactly the meta tags where it is a URL. `<script>` and
 `<style>` bodies are masked out first and restored after, because a leading slash
 means something else entirely in there. It is a no-op when no base is set, and
-`npm run verify` proves it worked when one is.
+`npm run audit` proves it worked when one is.
 
 Its `content` matcher is worth a second look if you change it: it matches against
 the **whole tag**, not the attribute alone, because an earlier version tested the
@@ -265,11 +265,9 @@ unit.
 | Script                        | Run by                       | Is                                                                                           |
 | ----------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `features.mjs`                | —                            | the manifest: what each optional area is made of. Two consumers, no prose copy.              |
-| `init.mjs`                    | `npm run init`               | prunes the template to a feature set, then checks, builds and verifies                       |
+| `init.mjs`                    | `npm run init`               | prunes the template to a feature set, then checks, builds and audits                         |
 | `gen-docs.mjs`                | `npm run docs`, `docs:check` | regenerates the feature table in [Removing features](Removing-Features.md) from the manifest |
-| `audit-site.mjs`              | `npm run audit`              | the structural and accessibility audit of `dist/`                                            |
-| `verify-invariants.mjs`       | `npm run verify`             | asset byte-identity and the host files, then the audit                                       |
-| `generate-asset-baseline.mjs` | `npm run baseline`           | rewrites `verification/asset-sha256.txt`. A deliberate act, never automatic.                 |
+| `audit-site.mjs`              | `npm run audit`              | the one gate: every check over `dist/`, including the host files                             |
 | `generate-favicons.mjs`       | `npm run favicons`           | rasterizes `public/favicon.svg` into the PNGs beside it                                      |
 | `fetch-github-metadata.mjs`   | `npm run data:github`        | writes the committed `src/data/github-metadata.json`                                         |
 | `update_bib.py`               | `npm run bib:check`          | checks `papers.bib` against Crossref. Python stdlib only.                                    |
@@ -313,12 +311,12 @@ the failure that matters here is a green job whose result silently never ships. 
 
 ## CI
 
-| Workflow                     | On                                              | Does                                                                                                            |
-| ---------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `deploy.yml`                 | push and PR to `main`                           | install, prettier, `astro check`, docs sync, build, verify, then publish `dist/` to `gh-pages` on a non-PR push |
-| `docs.yml`                   | push to `main` touching `docs/**`, or manually  | copies `docs/` into this repository's wiki                                                                      |
-| `update-github-metadata.yml` | manually, or a push touching `repositories.yml` | refreshes and commits `github-metadata.json`                                                                    |
-| `update-citations.yml`       | manually                                        | refreshes and commits `citations.yml`                                                                           |
+| Workflow                     | On                                              | Does                                                                                                           |
+| ---------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `deploy.yml`                 | push and PR to `main`                           | install, prettier, `astro check`, docs sync, build, audit, then publish `dist/` to `gh-pages` on a non-PR push |
+| `docs.yml`                   | push to `main` touching `docs/**`, or manually  | copies `docs/` into this repository's wiki                                                                     |
+| `update-github-metadata.yml` | manually, or a push touching `repositories.yml` | refreshes and commits `github-metadata.json`                                                                   |
+| `update-citations.yml`       | manually                                        | refreshes and commits `citations.yml`                                                                          |
 
 ## `docs/` and the wiki
 

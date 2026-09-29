@@ -11,5 +11,3 @@ src/data/papers.bib
 src/data/citations.yml
 src/data/github-metadata.json
 
-# A committed contract, not source. See scripts/generate-asset-baseline.mjs.
-verification/

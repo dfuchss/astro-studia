@@ -9,14 +9,15 @@ order: 1
 logo: ../../assets/projects/vocabulary.svg
 
 # An overview diagram for this page. Optional, and the SAME shape a paper
-# page's `figure` takes — a path under public/, alt text, and the two
-# presentation flags. Drop the block and the page renders without it.
+# page's `figure` takes — a path into src/assets/ relative to this file, like
+# `logo` above, alt text, and the two presentation flags. Drop the block and the
+# page renders without it.
 #
 # `plate: false` because this drawing brings its own background; a diagram
 # exported as dark line art on transparency wants the default (true), or it is
 # very nearly invisible on a near-black page.
 figure:
-  src: /assets/img/projects/translation-strategies.svg
+  src: ../../assets/projects/translation-strategies.svg
   alt: >-
     Three strategies for moving a term between languages: borrowing it,
     calquing it, and reusing an existing Latin word in a new sense.

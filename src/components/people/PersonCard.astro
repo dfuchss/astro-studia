@@ -1,5 +1,6 @@
 ---
-import { intrinsic } from '../../lib/images.ts';
+import { Image } from 'astro:assets';
+
 import Email from '../Email.astro';
 import type { Member } from '../../lib/people.ts';
 import { PEOPLE_CHIPS } from '../../consts.ts';
@@ -12,7 +13,10 @@ const { member } = Astro.props;
 const { entry, author } = member;
 const d = entry.data;
 
-const { width, height } = intrinsic(d.image);
+/* The side of the box the CSS below renders it in. Only the width is passed:
+   a portrait that is not square keeps its aspect ratio and is cropped by
+   `object-fit: cover`, rather than being squashed into a square by sharp. */
+const PORTRAIT = 72;
 
 // Each of these is optional in people.yml, so a person with none of them
 // renders as a name and a portrait and nothing looks broken. The words on
@@ -30,12 +34,12 @@ const profiles = [
 ---
 
 <li class="person reveal" id={entry.id}>
-  <img
+  <Image
     class="portrait"
     src={d.image}
     alt=""
-    width={width}
-    height={height}
+    width={PORTRAIT}
+    densities={[1, 2]}
     loading="lazy"
     decoding="async"
   />

@@ -4,8 +4,13 @@ import { join } from 'node:path';
 /**
  * Intrinsic dimensions of an image under public/, which never touches Astro's
  * image pipeline, so nothing else knows how big it is — and the audit fails an
- * <img> without width and height. Images from src/assets/ get theirs from
- * <Image> and do not need this.
+ * <img> without width and height.
+ *
+ * ONE caller remains: the brand mark named by `SITE.brandLogo` in consts.ts,
+ * read by Nav.astro and ProjectHero.astro (whose fallback is /favicon.svg).
+ * That one is configuration — a path you set or unset — rather than an import,
+ * so it cannot come from src/assets/. Everything a collection schema names goes
+ * through `image()` instead and gets its dimensions from the build.
  *
  * Resolved from the working directory, NOT from import.meta.url: during
  * `astro build` this module is bundled into dist/.prerender/chunks/, so a URL

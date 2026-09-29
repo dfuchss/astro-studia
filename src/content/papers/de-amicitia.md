@@ -30,7 +30,7 @@ status: to-appear
 projects: [latin-vocabulary, perseus-corpus]
 
 figure:
-  src: /assets/img/papers/officia-plate.svg
+  src: ../../assets/papers/officia-plate.svg
   alt: The four sources of duty, drawn as four linked circles.
   # This figure carries its own background, so it must NOT be plated.
   plate: false

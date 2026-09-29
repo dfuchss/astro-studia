@@ -1,16 +1,14 @@
 # Verification
 
 ```bash
-npm run verify    # node scripts/verify-invariants.mjs && npm run audit
+npm run audit    # node scripts/audit-site.mjs
 ```
 
-Twelve independent checks in `scripts/audit-site.mjs`, two in
-`scripts/verify-invariants.mjs`, and one block that only reports. Fifteen `✓`
-lines on the demo as shipped, because the sitemap check prints two:
+One gate, one script. Thirteen independent checks in `scripts/audit-site.mjs` and
+one block that only reports. Fourteen `✓` lines on the demo as shipped, because
+the sitemap check prints two — fifteen once you add a `public/CNAME`:
 
 ```
-✓ assets: 14 published file(s) byte-identical to the baseline
-✓ dist/.nojekyll present
 ✓ css: 62 custom properties, all defined or defaulted
 ✓ css: dark-only, no theme toggle
 ✓ css: all 9 sections have an accent block
@@ -24,12 +22,13 @@ lines on the demo as shipped, because the sitemap check prints two:
 ✓ privacy: no email address appears in the built output
 ✓ sitemap: robots.txt → sitemap-index.xml → 1 file(s), 24 URLs, every one names a file on disk
 ✓ feed.xml: 2 <item> entries, 3 links each name a file on disk
+✓ dist/.nojekyll present
   bundle: 48.0 KB CSS across 3 file(s), 0.0 KB external JS; most inline JS on one page: 1.8 KB (/publications/index.html)
 ```
 
 `.github/workflows/deploy.yml` runs this **before** it publishes. That ordering
-is the whole point: a broken link or a changed PDF fails the workflow instead of
-reaching the site.
+is the whole point: a broken link or a missing `.nojekyll` fails the workflow
+instead of reaching the site.
 
 Everything runs against the built bytes in `dist/`, offline. Nothing here crawls
 the live site, because a check that crawls the live site tells you about a problem
@@ -94,46 +93,11 @@ With a `base` configured, `dist/` is still the root of what is deployed — the
 subdirectory comes from where it is deployed _to_ — so the base is stripped before
 anything is looked up on disk.
 
-## `scripts/verify-invariants.mjs`
-
-Two checks. This file is meant to grow into the list of promises **your** site has
-made to the outside world.
-
-### 1. Published assets are byte-identical to the baseline
-
-`verification/asset-sha256.txt` pins the SHA-256 of everything under
-`public/assets/`, and this compares the built copies against it. A missing file
-and a changed file are both failures, and both messages end with "if that was on
-purpose, run `npm run baseline`".
-
-This is worth more on an academic site than it looks. A PDF you have published is
-cited in other people's papers and indexed by Google Scholar, DBLP and your
-institutional repository. Those URLs are permanent whether or not you meant them
-to be — and they do not break through deliberate deletion. They break through an
-image optimiser, a "clean up assets" commit, or a tool that rewrites a file in
-place. None of those announce themselves.
-
-An **empty** baseline is not a failure, just a note: a fresh clone has nothing
-published yet, and pinning the demo's placeholders would only be something to
-undo. See [Deploying](Deploying.md) for when to re-pin, and why `npm run init` is
-allowed to do it once and no script is allowed to do it again.
-
-### 2. The files that make the host serve the site correctly
-
-`dist/.nojekyll` must exist, always. Without it GitHub Pages runs Jekyll over the
-output, and Jekyll ignores directories beginning with an underscore — which is
-where Astro puts every hashed asset. The failure mode is a live site with no CSS.
-
-`dist/CNAME` must exist whenever `public/CNAME` does. Only then: not everyone has
-a custom domain. The deploy replaces the `gh-pages` branch wholesale, so a CNAME
-that stops being emitted is a domain that stops resolving, and nothing else in the
-build would notice.
-
 ## `scripts/audit-site.mjs`
 
-Checks 1, 2, 2b and 3 are contracts this template makes about itself; 4 through 9
-are true of any site. Each block is independent — delete one you do not want, add
-one you do.
+Checks 1, 2, 2b and 3 are contracts this template makes about itself; 4 through
+10 are true of any site. Each block is independent — delete one you do not want,
+add one you do.
 
 Two values are read out of `src/consts.ts` and `astro.config.ts` by regex rather
 than imported, because this is a plain Node script with no TypeScript loader:
@@ -243,12 +207,14 @@ Every `<img>` needs `width` and `height`. Without them the page reflows as each
 image loads, which is both the worst of the layout-shift metrics and genuinely
 unpleasant to read.
 
-Images from `src/assets/` get them from Astro's `<Image>`; images in `public/` get
-them from `intrinsic()` in `src/lib/images.ts`, which reads the SVG `viewBox` or
-the PNG or JPEG header off disk (those three formats, which is what `public/`
-holds; `src/assets/` may be anything Astro reads); an `<img>` written by hand in markdown gets
-them from you. That last one is why `.prose` documents the raw `<figure>` form —
-markdown's `![](…)` cannot carry either attribute. See [Content](Content.md).
+Every image a collection schema names comes from `src/assets/` through Astro's
+`<Image>`, which supplies both attributes. The one image that does not is the
+brand mark in `SITE.brandLogo`, which is a configured path under `public/`; that
+one gets them from `intrinsic()` in `src/lib/images.ts`, which reads the SVG
+`viewBox` or the PNG or JPEG header off disk. An `<img>` written by hand in
+markdown gets them from you — which is why `.prose` documents the raw `<figure>`
+form, since markdown's `![](…)` cannot carry either attribute. See
+[Content](Content.md).
 
 ### 6b. Text does not run into a link
 
@@ -345,7 +311,22 @@ does not is still a failure. It must have at least one `<item>`, and every `<lin
 in it must name a file on disk — which is why `feed.xml.ts` emits every item link
 absolute rather than letting `@astrojs/rss` re-shape a relative one.
 
-### 10. Weight
+### 10. The files that make the host serve the site correctly
+
+`dist/.nojekyll` must exist, always. Without it GitHub Pages runs Jekyll over the
+output, and Jekyll ignores directories beginning with an underscore — which is
+where Astro puts every hashed asset. The failure mode is a live site with no CSS.
+
+`dist/CNAME` must exist whenever `public/CNAME` does. Only then: not everyone has
+a custom domain. The deploy replaces the `gh-pages` branch wholesale, so a CNAME
+that stops being emitted is a domain that stops resolving, and nothing else in the
+build would notice.
+
+Both are about the **host** rather than the HTML, which is why they read files in
+`dist/` and `public/` instead of parsing a page. They are also the two cheapest
+checks here and the two with the largest blast radius.
+
+### 11. Weight
 
 Not a check: it prints and asserts nothing.
 
@@ -360,9 +341,10 @@ are excluded — they are data, not behaviour.
 
 ## Adding your own
 
-`verify-invariants.mjs` is the place for a promise about _your_ site: a URL you
-have committed to keeping, a file that must be published, a count that must not
-drop. `audit-site.mjs` is the place for a structural rule about the HTML.
+`audit-site.mjs` is the whole gate, so a new check goes there — a structural rule
+about the HTML, or a promise about _your_ site: a URL you have committed to
+keeping, a file that must be published, a count that must not drop. Check 10 is
+the pattern for the second kind.
 
 Whichever you pick, give it a floor. If your check works by looking for something
 and counting what it found, say out loud how little is too little — otherwise the

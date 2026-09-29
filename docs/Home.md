@@ -38,7 +38,7 @@ And four smaller ones that come with them: `/feed.xml`, `/pgp-key/`,
 **Everything ships on.** A commented-out feature is not type-checked, not built,
 not audited, and rots within two Astro releases — so the demo content doubles as
 the test suite, and every code path in here is exercised by
-`npm run build && npm run verify`. The price is that your first half hour is
+`npm run build && npm run audit`. The price is that your first half hour is
 deletion. [Removing features](Removing-Features.md) is that recipe, and
 `npm run init` performs most of it for you.
 
@@ -48,10 +48,10 @@ or a BibTeX key pointing at a page that does not exist stops the build and names
 the offender. In a template language each of those is a silent lookup that
 renders empty, and you learn about it when a reader tells you.
 
-**What the site publishes is checked before it is published.** `npm run verify`
+**What the site publishes is checked before it is published.** `npm run audit`
 resolves every internal link, canonical URL, sitemap entry and feed link to a
-file on disk _by its exact shape_, pins your published PDFs by hash, and fails
-the deploy if an email address reaches the served bytes.
+file on disk _by its exact shape_, asserts the host files GitHub Pages needs, and
+fails the deploy if an email address reaches the served bytes.
 [Verification](Verification.md) says what each check asserts and what went wrong
 once to make it exist.
 
@@ -64,7 +64,7 @@ once to make it exist.
 | [Content](Content.md)                     | the seven collections, their schemas, and what markdown can express                   |
 | [Theming](Theming.md)                     | the palette, the section accents, the widths, the primitives                          |
 | [Removing features](Removing-Features.md) | the uniform deletion recipe, and what belongs to what                                 |
-| [Deploying](Deploying.md)                 | GitHub Pages, base paths, the URL policy, the asset baseline                          |
+| [Deploying](Deploying.md)                 | GitHub Pages, base paths, the URL policy, what stays in `public/`                     |
 | [Verification](Verification.md)           | what each check asserts, and why it is written the way it is                          |
 | [Architecture](Architecture.md)           | how the BibTeX loader, the collections, the integrations and the scripts fit together |
 

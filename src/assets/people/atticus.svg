@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="TPA">
   <!-- DEMO AVATAR. A monogram, so the repository ships no photographs of
-       anyone. Replace with a portrait — a .jpg works the same way, and
-       src/lib/images.ts reads the dimensions out of either. -->
+       anyone. Replace with a portrait — a .jpg works the same way, because
+       Astro's image pipeline reads the dimensions out of either. -->
   <defs>
     <radialGradient id="g-atticus" cx="32%" cy="26%" r="86%">
       <stop offset="0%" stop-color="#55d39a" stop-opacity="0.28"/>

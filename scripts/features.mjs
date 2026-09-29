@@ -21,9 +21,6 @@
  *
  * `profile`  one person: publications, a CV, a blog, software, a GitHub list.
  * `project`  a project or group: sub-projects, paper pages, a team.
- *
- * `npm run verify` fails after ANY prune until the asset baseline is re-pinned,
- * because it pins demo images a removed feature took with it; init does that.
  */
 
 /** @typedef {'profile' | 'project'} Preset */
@@ -78,6 +75,10 @@ export const FEATURES = [
       'src/content/papers',
       'src/components/paper',
       'src/lib/papers.ts',
+      // Front-matter figures, through the asset pipeline, and the two
+      // full-size images the demo page links to from its prose, which stay
+      // under public/ because a link needs a URL that does not move.
+      'src/assets/papers',
       'public/assets/img/papers',
     ],
     collections: ['papers'],
@@ -104,11 +105,11 @@ export const FEATURES = [
       'src/pages/projects',
       'src/components/project',
       'src/content/projects',
+      // Logos and page figures both. Its own directory rather than a shared
+      // one, for the same reason papers and posts have theirs: an image
+      // referenced by a project must not be deleted by pruning some other
+      // feature.
       'src/assets/projects',
-      // Project-page figures. Its own directory rather than a shared one, for
-      // the same reason papers and posts have theirs: an image referenced by a
-      // project must not be deleted by pruning some other feature.
-      'public/assets/img/projects',
     ],
     collections: ['projects'],
     sections: ['projects'],
@@ -205,7 +206,7 @@ export const FEATURES = [
       'src/components/people',
       'src/lib/people.ts',
       'src/data/people.yml',
-      'public/assets/img/people',
+      'src/assets/people',
     ],
     collections: ['people'],
     sections: ['people'],
