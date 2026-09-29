@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dfuchss.github.io/astro-studia/sitemap-index.xml
