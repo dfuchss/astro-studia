@@ -19,9 +19,10 @@ a blog, a CV, people. Built with <a href="https://astro.build/">Astro</a>.
 
 ---
 
-Eight content areas, one integration, **no UI framework, no CSS framework, no
-theme layer**, dark only. Every line of it is source you can read and change —
-there is no package boundary between you and the markup.
+Eight content areas, three integrations — one of them Astro's sitemap, two of
+them this template's own — and **no UI framework, no CSS framework, no theme
+layer**, dark only. Every line of it is source you can read and change — there
+is no package boundary between you and the markup.
 
 Extracted from two production sites, [fuchss.org](https://fuchss.org) and
 [ardoco.de](https://ardoco.de), which are hand-written in the same style.
@@ -60,8 +61,9 @@ mix the features freely afterwards — the presets only pre-tick the boxes.
 </table>
 
 It is dark only, on purpose: one palette to get right instead of two, and no
-flash of the wrong one on load. Five hex values in `src/styles/tokens.css` are
-the whole palette — see [docs/Theming.md](docs/Theming.md).
+flash of the wrong one on load. The accent palette in `src/styles/tokens.css` is
+one base hex per family, with each family's other four roles mixed from it — see
+[docs/Theming.md](docs/Theming.md).
 
 ## Getting started in five minutes
 
@@ -72,15 +74,21 @@ cd my-site && npm install && npm run dev
 
 Then, in order:
 
-| #   | Edit                    | For                                                                                      |
-| --- | ----------------------- | ---------------------------------------------------------------------------------------- |
-| 1   | `src/consts.ts`         | Your name, URL and email. Delete the `NAV` rows you do not want. Set `demoNotice: null`. |
-| 2   | `src/styles/tokens.css` | Five hex values. That is the whole palette — see [docs/Theming.md](docs/Theming.md).     |
-| 3   | `src/data/`             | Your `papers.bib`, venues, CV and `contact.yml`. All of it is demo content.              |
-| 4   | `src/content/`          | Your posts, projects and paper pages.                                                    |
-| 5   | `src/assets/portrait.*` | Your photo. Any common extension; the filename is the whole setting.                     |
-| 6   | `src/pages/index.astro` | Your home page copy, under the `DEMO COPY` banner.                                       |
-| 7   | —                       | `npm run check && npm run build && npm run audit`                                        |
+| #   | Edit                    | For                                                                                                       |
+| --- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| 1   | `src/consts.ts`         | **`SITE.url` first** — see below. Then your name, email, the `NAV` rows you want, and `demoNotice: null`. |
+| 2   | `src/styles/tokens.css` | One base hex per accent family. See [docs/Theming.md](docs/Theming.md).                                   |
+| 3   | `src/data/`             | Your `papers.bib`, venues, CV and `contact.yml`. All of it is demo content.                               |
+| 4   | `src/content/`          | Your posts, projects and paper pages.                                                                     |
+| 5   | `src/assets/portrait.*` | Your photo. Any common extension; the filename is the whole setting.                                      |
+| 6   | `src/pages/index.astro` | Your home page copy, under the `DEMO COPY` banner.                                                        |
+| 7   | —                       | `npm run check && npm run build && npm run audit`                                                         |
+
+`SITE.url` is first because both sides of the base come from it:
+`astro.config.ts` derives `base` from its path, and `npm run audit` derives the
+base it expects from the same value. Left as shipped, the site builds with
+`/astro-studia` on every URL **and passes every check** — the links and the audit
+agree with each other — and breaks the moment it is deployed anywhere else.
 
 Removing an area you do not want is a short, uniform recipe, and `npm run init`
 performs the mechanical part of it:
@@ -121,7 +129,8 @@ src/
   data/               papers.bib, venues, authors, people, cv, contact, socials, repositories
   content/            papers/, projects/, posts/
   components/ layouts/ lib/ pages/ styles/
-  integrations/       base-paths: makes `base` work for hand-written links
+  integrations/       base-paths: makes `base` work for hand-written links, in
+                      the dev server and in the build alike
                       sitemap-shape: makes every sitemap entry name the file emitted
 public/               copied verbatim; everything here is a permanent URL
 scripts/              the audit, the setup wizard, the data refreshers
@@ -163,6 +172,7 @@ build rather than reaching the site.
 ✓ a11y: 9 colour tokens all clear WCAG on --bg
 ✓ links: 549 internal links and 37 fragments resolve
 ✓ urls: 54 canonical, og:url, Scholar and JSON-LD URLs each name their own file
+✓ manifest: 3 URLs across 1 .webmanifest name a file on disk, all carrying the base /astro-studia/
 ✓ html: 24 pages each have one h1, a title, a description and a canonical (or noindex)
 ✓ html: all 47 images have intrinsic dimensions
 ✓ html: no text runs into a link on 24 pages
@@ -192,23 +202,33 @@ little is too little.
 
 ## Scripts
 
-| Command               | Does                                                        |
-| --------------------- | ----------------------------------------------------------- |
-| `npm run dev`         | dev server at http://localhost:4321                         |
-| `npm run build`       | → `dist/`                                                   |
-| `npm run check`       | `astro check` + `prettier --check`                          |
-| `npm run format`      | `prettier --write`                                          |
-| `npm run audit`       | the one gate: every check over `dist/` — see below          |
-| `npm run favicons`    | rasterize `public/favicon.svg` into PNGs                    |
-| `npm run data:github` | refresh `src/data/github-metadata.json`                     |
-| `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)    |
-| `npm run init`        | prune the template to the features you want                 |
-| `npm run docs`        | regenerate the feature table in `docs/Removing-Features.md` |
-| `npm run docs:check`  | fail if that table is out of date (run in CI)               |
+| Command               | Does                                                                          |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `npm run dev`         | dev server at http://localhost:4321; `/` redirects to the based root          |
+| `npm run start`       | the same thing under the name other toolchains expect                         |
+| `npm run dev:fresh`   | clears `.astro` and Vite's cache first, for when a stale one is the suspect   |
+| `npm run build`       | → `dist/`                                                                     |
+| `npm run preview`     | serve the built `dist/` locally, to look at the bytes rather than the sources |
+| `npm run check`       | `astro check` + `prettier --check`                                            |
+| `npm run format`      | `prettier --write`                                                            |
+| `npm run audit`       | the one gate: every check over `dist/` — see below                            |
+| `npm run favicons`    | rasterize `public/favicon.svg` into PNGs                                      |
+| `npm run data:github` | refresh `src/data/github-metadata.json`                                       |
+| `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)                      |
+| `npm run init`        | prune the template to the features you want — _scaffolding_                   |
+| `npm run docs`        | regenerate the feature table in `docs/Removing-Features.md` — _scaffolding_   |
+| `npm run docs:check`  | fail if that table is out of date (run in CI) — _scaffolding_                 |
 
-Node 22 or newer (`.nvmrc`). The build needs no network, no token and no
-Python: `citations.yml` and `github-metadata.json` are committed, which is what
-makes a fresh clone build offline.
+The based root is `/astro-studia/` as shipped, because `base` is derived from
+`SITE.url`; dev and the build serve identical URLs. The three
+_scaffolding_ commands are the ones `npm run init` offers to delete, along with
+`scripts/init.mjs`, `features.mjs` and `gen-docs.mjs` — which is why
+`deploy.yml` guards its `docs:check` step on the generator still existing.
+
+Node 22 or newer (`.nvmrc`; `.devcontainer/devcontainer.json` pins the same for
+GitHub Codespaces and VS Code dev containers). The build needs no network, no
+token and no Python: `citations.yml` and `github-metadata.json` are committed,
+which is what makes a fresh clone build offline.
 
 ## Deploying
 

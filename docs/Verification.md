@@ -4,9 +4,9 @@
 npm run audit    # node scripts/audit-site.mjs
 ```
 
-One gate, one script. Thirteen independent checks in `scripts/audit-site.mjs` and
-one block that only reports. Fourteen `✓` lines on the demo as shipped, because
-the sitemap check prints two — fifteen once you add a `public/CNAME`:
+One gate, one script. Every check in `scripts/audit-site.mjs` is an independent
+block, plus one at the end that only reports, and each prints a `✓` line — the
+sitemap check prints two, and a `public/CNAME` adds one more:
 
 ```
 ✓ css: 62 custom properties, all defined or defaulted
@@ -15,6 +15,7 @@ the sitemap check prints two — fifteen once you add a `public/CNAME`:
 ✓ a11y: 9 colour tokens all clear WCAG on --bg
 ✓ links: 549 internal links and 37 fragments resolve
 ✓ urls: 54 canonical, og:url, Scholar and JSON-LD URLs each name their own file
+✓ manifest: 3 URLs across 1 .webmanifest name a file on disk, all carrying the base /astro-studia/
 ✓ html: 24 pages each have one h1, a title, a description and a canonical (or noindex)
 ✓ html: all 47 images have intrinsic dimensions
 ✓ html: no text runs into a link on 24 pages
@@ -57,6 +58,7 @@ one is loud by default. So each such check names a minimum:
 | internal links    | 1 internal link                                  |
 | self-URLs         | one per page that is not a redirect stub         |
 | sitemap           | one `<loc>` per page that carries a canonical    |
+| manifest          | one URL in the manifest's JSON                   |
 | feed              | one `<item>`                                     |
 
 The same instinct applies to the scope of a check. Check 1 used to flag **every**
@@ -69,8 +71,8 @@ no check, because it reports green for the wrong thing and nobody looks again.
 
 ## Resolving a URL to a file: strict, by shape
 
-Four of the checks share one rule, and it is the most load-bearing thing in the
-script. A published URL names **exactly one** file, and its shape says which:
+Several of the checks share one rule, and it is the most load-bearing thing in
+the script. A published URL names **exactly one** file, and its shape says which:
 
 ```
 /            index.html
@@ -95,14 +97,17 @@ anything is looked up on disk.
 
 ## `scripts/audit-site.mjs`
 
-Checks 1, 2, 2b and 3 are contracts this template makes about itself; 4 through
-10 are true of any site. Each block is independent — delete one you do not want,
+Checks 1, 2, 2b and 3 are contracts this template makes about itself; 4 to 10
+are true of any site. Each block is independent — delete one you do not want,
 add one you do.
 
-Two values are read out of `src/consts.ts` and `astro.config.ts` by regex rather
-than imported, because this is a plain Node script with no TypeScript loader:
-`SITE.url` (which gives the site's own host) and `base`. `ALLOWED_THIRD_PARTY` is
-read the same way.
+Everything it needs from configuration is read out of `src/consts.ts` by regex
+rather than imported, because this is a plain Node script with no TypeScript
+loader: `SITE.url` — which gives the site's own host and, from its path, the base
+— and `ALLOWED_THIRD_PARTY`. It does not open `astro.config.ts`. It used to,
+grepping there for a `base: '…'` literal, which stopped matching the moment that
+value became derived; the check then read an empty base and went on printing
+green. Read the same single source the build reads.
 
 Redirect stubs are excluded from the per-page checks: a stub is intentionally
 minimal — no nav, no canonical, no `<h1>` — so demanding those of it would be
@@ -189,6 +194,31 @@ Absolute rather than site-relative, because that is what these fields are: a
 canonical on another origin is a statement that this page is a copy of something
 elsewhere, and this template never makes one. `sourceOrganization.url` in the
 JSON-LD is the site root and is deliberately not checked.
+
+### 4c. The web app manifest's URLs carry the base and name real files
+
+The page scan never hands this file over and check 4 reads attributes, so
+`dist/site.webmanifest` shipped `"src": "/favicon-32.png"` and all three of its
+icons 404ed on a project page. No page links an icon, so nothing else here would
+have noticed.
+
+```
+✓ manifest: 3 URLs across 1 .webmanifest name a file on disk, all carrying the base /astro-studia/
+```
+
+**Every** root-absolute string in the parsed JSON counts as a URL — not only the
+keys `src/integrations/base-paths.ts` knows how to rewrite. That asymmetry is the
+point: a manifest key nobody has taught the rewriter fails here, loudly, rather
+than shipping without a base. The `<link rel="manifest">` on the pages is
+resolved by the strict shape rule too, so the manifest is whichever file the
+pages actually name — the same rule as `robots.txt` and the sitemap. The trailing
+clause about the base drops out when no base is set.
+
+The whole block is **skipped when there is neither a manifest nor a
+`<link rel="manifest">`**, because removing both is a supported subtraction and
+an audit that then demanded one would be telling you off for it. The floor is one
+URL: a manifest has icons, so none at all means the JSON walk has stopped
+walking.
 
 ### 5. Per-page document basics
 

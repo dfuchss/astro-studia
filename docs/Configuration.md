@@ -15,7 +15,7 @@ a value goes, grep for it; there is nothing decorative in there but
 
 | Field         | Is                                                                                                                                                                                                                                                                            |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `url`         | The site's address, **no trailing slash**. `astro.config.ts` and `src/pages/robots.txt.ts` both read it, so it is written once. With a `base` configured it includes that path.                                                                                               |
+| `url`         | The site's address, **no trailing slash**, path included. The first field to set — see below.                                                                                                                                                                                 |
 | `title`       | The `<title>` suffix. Can afford to disambiguate.                                                                                                                                                                                                                             |
 | `brand`       | What the nav shows. Has to fit beside the nav items on a phone, so a word or two.                                                                                                                                                                                             |
 | `brandPrompt` | A fainter prefix before the brand — the shell-prompt conceit, `~/name`. `null` for a plain wordmark. Pure decoration.                                                                                                                                                         |
@@ -29,6 +29,17 @@ a value goes, grep for it; there is nothing decorative in there but
 | `ogImage`     | The 1200×630 link-preview card, or `null`. See below.                                                                                                                                                                                                                         |
 | `copyright`   | The footer's "© 2026 —". Kept separate from `brand` because a site _about_ someone is not necessarily copyright them.                                                                                                                                                         |
 | `demoNotice`  | **Delete this (set it to `null`).** While it is set, a banner sits on the entry page and a line runs in the footer saying the content is a demo, so an unmodified deploy cannot be mistaken for a real site. `components/DemoNotice.astro` renders nothing when it is `null`. |
+
+### `url`
+
+The whole address, no trailing slash, **path included** for a project page. Its
+path _is_ the base: `astro.config.ts` reads `base` off it, and
+`scripts/audit-site.mjs` derives the base it expects from the same value — so a
+site left on the shipped `https://dfuchss.github.io/astro-studia` builds with
+`/astro-studia` on every URL **and passes the audit**, because the links and the
+check agree with each other. The first thing to disagree is the host.
+`src/pages/robots.txt.ts` reads it too, and `base` is derived, never configured
+— see [Deploying](Deploying.md).
 
 ### `brandLogo`
 
@@ -111,6 +122,13 @@ colour of the page it leads to.
 `[data-section='…']` block in `tokens.css`. Forget the second and the build fails
 — `scripts/audit-site.mjs` collects every value out of the built HTML and every
 selector out of the built CSS and compares them.
+
+`tokens.css` always covers one value more than the union has members, which is
+why the audit reports nine sections where the union lists eight. The extra one is
+`contact`: `src/pages/index.astro` sets `data-section="contact"` on its contact
+section, and the union types only what `<body data-section>` takes, so a section
+of a page that is not an area of the site never joins it. The audit reads the
+built HTML, where the two are the same attribute.
 
 `NAV` is the top bar: a `label`, an `href` (from `src/lib/paths.ts`, not a
 literal) and the `section` whose accent the link carries. The demo ships every
@@ -241,7 +259,9 @@ build offline with no network and no token:
 | `citations.yml`        | `scripts/update_scholar_citations.py` | `.github/workflows/update-citations.yml`       |
 | `github-metadata.json` | `scripts/fetch-github-metadata.mjs`   | `.github/workflows/update-github-metadata.yml` |
 
-Both workflows are opt-in and on demand only, and both need a PAT. See
+Both workflows are opt-in and neither ships on a schedule. `update-citations.yml`
+runs on demand only; `update-github-metadata.yml` also triggers on a push to
+`main` touching `src/data/repositories.yml`. Both need a classic `PAT`. See
 [Deploying](Deploying.md).
 
 ### `cv.yml`
@@ -309,13 +329,13 @@ Five things are configured by putting a file somewhere, with no line in
 `src/consts.ts` at all. That is deliberate in each case: a configured path string
 is a string that can point at nothing.
 
-| Put it at                                     | And                                                                                                                                                                                                                                          |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/assets/portrait.{jpg,png,webp,avif,svg}` | `src/lib/portrait.ts` finds it by `import.meta.glob` at build time, so `<Image>` can optimise it and the audit gets its intrinsic dimensions. None, or two of them, is a build error naming the path.                                        |
-| `public/assets/pgp-key/<FINGERPRINT>.asc`     | `/pgp-key/` inlines the armored block in a `<pre>` with a copy button, read at build time so it works without JS and is indexable. No file there is a **supported** state: the page keeps the fingerprint, the key id and the download link. |
-| `public/assets/pdf/**.pdf`                    | `astro.config.ts` walks the directory recursively and feeds the result to the sitemap's `customPages`, because the integration lists pages Astro builds and a file in `public/` is not one. Adding a paper needs no upkeep.                  |
-| `public/CNAME`                                | Copied into `dist/`, and `npm run audit` then fails if it ever stops being emitted — the deploy replaces the branch wholesale, so that would be a domain that stops resolving.                                                               |
-| `public/.htaccess`                            | Copied verbatim. `ErrorDocument 404 /404.html` for a host that is not GitHub Pages. See [Deploying](Deploying.md).                                                                                                                           |
+| Put it at                                              | And                                                                                                                                                                                                                                          |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/assets/portrait.{avif,gif,jpeg,jpg,png,svg,webp}` | `src/lib/portrait.ts` finds it by `import.meta.glob` at build time, so `<Image>` can optimise it and the audit gets its intrinsic dimensions. None, or two of them, is a build error naming the path.                                        |
+| `public/assets/pgp-key/<FINGERPRINT>.asc`              | `/pgp-key/` inlines the armored block in a `<pre>` with a copy button, read at build time so it works without JS and is indexable. No file there is a **supported** state: the page keeps the fingerprint, the key id and the download link. |
+| `public/assets/pdf/**.pdf`                             | `astro.config.ts` walks the directory recursively and feeds the result to the sitemap's `customPages`, because the integration lists pages Astro builds and a file in `public/` is not one. Adding a paper needs no upkeep.                  |
+| `public/CNAME`                                         | Copied into `dist/`, and `npm run audit` then fails if it ever stops being emitted — the deploy replaces the branch wholesale, so that would be a domain that stops resolving.                                                               |
+| `public/.htaccess`                                     | Copied verbatim. `ErrorDocument 404 /404.html` for a host that is not GitHub Pages. See [Deploying](Deploying.md).                                                                                                                           |
 
 `public/.nojekyll` is already there and must stay: without it GitHub Pages runs
 Jekyll, which ignores directories beginning with an underscore — which is where
@@ -323,15 +343,16 @@ Astro puts every hashed asset. `npm run audit` checks for it.
 
 ## `astro.config.ts`
 
-Three things you may want to change, all commented in place:
+Two things you may want to change, both commented in place:
 
-- **`base`** — for a project page at `https://<user>.github.io/<repo>/`. Set it to
-  `'/<repo>'` and put the full address including that path in `SITE.url`. The
-  `base-paths` integration handles every hand-written internal link and asset,
-  including the ones in markdown and YAML no helper function could reach.
 - **`redirects`** — for URLs you have published elsewhere and cannot move.
 - **`markdown.shikiConfig`** — the code-block theme.
 
-`trailingSlash` and `build.format` are **derived** from `URL_POLICY` in
-`src/lib/paths.ts` and should not be set by hand; they are one decision, not two.
-See [Deploying](Deploying.md).
+Three values in there are **derived** and must not be set by hand.
+`trailingSlash` and `build.format` come from `URL_POLICY` in `src/lib/paths.ts`:
+one decision, not two. `base` comes from `SITE.url`'s path, so a project page is
+one edit — the whole address in `SITE.url` — and writing `base: '/<repo>'` out as
+well is the second copy the derivation exists to prevent. The `base-paths`
+integration then carries it onto every hand-written internal link and asset,
+including the ones in markdown and YAML no helper could reach. See
+[Deploying](Deploying.md).

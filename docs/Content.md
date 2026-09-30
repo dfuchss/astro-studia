@@ -15,6 +15,35 @@ in collection "publications" (field: abbr) references "NOPE" in collection
 "venues", but that entry does not exist.
 ```
 
+## Replacing the demo content
+
+Every path below holds Cicero's bytes. Grouped by directory, because the useful
+property of the list is that it is finite.
+
+| Where                  | What                                                                                                                              |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `src/consts.ts`        | `SITE.url`, `title`, `brand`, `tagline`, `description`, `email`, `repo`, `copyright`, `SELF`, `NAV`, `FOOTER`; `demoNotice: null` |
+| `src/styles/`          | `tokens.css`                                                                                                                      |
+| `src/data/`            | `papers.bib`, `venues.yml`, `authors.yml`, `people.yml`, `cv.yml`, `contact.yml`, `socials.yml`, `repositories.yml`               |
+| `src/data/`, generated | `citations.yml`, `github-metadata.json`                                                                                           |
+| `src/content/`         | `papers/`, `projects/`, `posts/`                                                                                                  |
+| `src/assets/`          | `portrait.*`, `papers/`, `projects/`, `people/`                                                                                   |
+| `src/pages/`           | `index.astro`, under the `DEMO COPY` banners                                                                                      |
+| `public/`              | `favicon.svg` (then `npm run favicons`), `site.webmanifest`, `assets/img/og.png`, `assets/img/brand-mark.svg`                     |
+| `public/assets/`       | `pgp-key/*.asc`, `pdf/editions/de-re-publica-excerpt.pdf`, `img/papers/*.svg`, `img/posts/*.svg`                                  |
+| the repository itself  | `README.md`, `.github/media/*.webp`, `LICENSE`                                                                                    |
+
+Three of those are quieter than the others:
+
+- `citations.yml` and `github-metadata.json` are keyed to the demo BibTeX entries
+  and to GitHub's `octocat`. A key nothing matches is a **silent no-op, not an
+  error** — stale rows simply never render. Empty both, then `npm run data:github`.
+- the `.asc` under `public/assets/pgp-key/` is a throwaway: nobody holds the
+  secret half, so it encrypts nothing. Delete it, and point `pgp_fingerprint` in
+  `socials.yml` at your own key or at `null`.
+- `public/site.webmanifest` says `"name": "M. T. Cicero"`. No page shows it;
+  every app installer does.
+
 ## Where images live
 
 One rule: **an image a collection schema names lives in `src/assets/`**, and the
@@ -126,6 +155,8 @@ title: The title as it should appear on the page
 description: One or two sentences. Used for the meta description too.
 publication: surname_keyword_2026 # the BibTeX key
 authors: [surname, other] # keys from authors.yml
+projects: [some-project] # keys from src/content/projects/
+status: to-appear # or `published`, the default
 order: 1
 featured: true # also list it in the entry page's paper block
 figure:
@@ -163,6 +194,20 @@ is `description`, or failing that the venue: the stated `venue.label`, the
 pages you curate here rather than everything in the directory. Both are read
 from this file and not from the BibTeX entry: they are decisions about the site,
 and `papers.bib` is a bibliography.
+
+The fields whose meaning is not obvious from the name:
+
+| Field                     | Is                                                                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                  | `published` (the default) or `to-appear`. The venue line reads "To appear at" rather than "Published at", and the row on `/papers/` is marked "· to appear" |
+| `conferenceName`          | The event the work was presented at, which the proceedings title is not. The page wraps it in "Published at"                                                |
+| `conferenceUrl`           | That event's own homepage, which neither `abbr`, `links.paper` nor the DOI points at                                                                        |
+| `additionalPresentations` | Later outings of the same work — `{ name, shortName?, url }`. Not in `papers.bib`, where one entry per talk would list the paper five times                 |
+| `projects`                | Keys from `src/content/projects/`, **written here and nowhere else**: a project page derives its own paper list by scanning this field                      |
+
+`conferenceName` and `conferenceUrl` belong only to a page with a `publication`;
+a stated `venue` already carries its own label and URL, and the schema rejects
+the combination.
 
 ### A page for a talk that was never published
 
@@ -212,12 +257,20 @@ side under `slides` — see `linkLabel()` in `src/lib/papers.ts`.
 
 ## Projects — `src/content/projects/`
 
+The filename is the URL here too: `latin-vocabulary.md` is
+`/projects/latin-vocabulary/`.
+
 `category` is an enum, so a typo fails the build — and it is optional. Leave
 it off every entry and `/projects/` is one flat list with no group headings,
 which is what a site that does not sort its projects wants; set it on some
 entries and not others and the rest gather under a final "Other" group rather
 than dropping off the page. An entry with `redirect` gets no page of its own
 and links straight out — useful for work that lives on someone else's site.
+
+`order` sorts within a group, lower first, ties broken by title. `repositories`
+is a list of `{ name, url }` rendered as chips on the project's own page: the two
+or three a reader of _this_ project needs, not the site-wide `/repositories/`
+list.
 
 Logos go in `src/assets/projects/`, like the page figure below, and run through
 Astro's image pipeline — hashed filename, dimensions known at build time. That is
@@ -243,8 +296,10 @@ pruning something else.
 
 ## Posts — `src/content/posts/`
 
-**The filename sets the permalink** and must be `YYYY-MM-DD-slug.md`. The date
-in the front matter has to agree with it, and the build fails if it does not.
+**The filename sets the permalink** and must be `YYYY-MM-DD-slug.md`:
+`2026-02-11-on-translating-philosophy.md` publishes at
+`/blog/2026/02/11/on-translating-philosophy/`. The date in the front matter has
+to agree with the filename, and the build fails if it does not.
 
 The date is taken from the filename rather than from the parsed date on
 purpose: reading a `Date` with local getters shifts the day backwards anywhere
@@ -254,7 +309,12 @@ where it was built.
 `draft: true` keeps a post out of the list, the tag pages, the feed and the
 sitemap — it is not built at all.
 
-`tags` accepts both `tags: one` and `tags: [one, two]`.
+`tags` accepts both `tags: one` and `tags: [one, two]`, and each tag gets a page
+at `/blog/tag/<tag>/`, slugified.
+
+`featured: true` puts a `★` on the post's row on `/blog/` and counts it in the
+lede there. It changes nothing about the feed, the tag pages or the post's own
+page.
 
 ### What else markdown can express
 
@@ -391,6 +451,11 @@ Then `npm run build && npm run audit`: the audit resolves every internal link
 in the built output, so anything still pointing at the old prefix is a failure
 naming the page it is on.
 
+This is three edits for `/papers/` and `/projects/` specifically, because those
+two prefixes appear nowhere else as literals. `/blog/` and `/publications/` do —
+see [Architecture](Architecture.md) — so renaming those means grepping for the
+prefix as well.
+
 ## The contact block — `src/data/contact.yml`
 
 The rows under "Get in touch" on the entry page, and the same rows in the `/cv/`
@@ -430,8 +495,8 @@ the entry page it produces still has a contact section.
 
 ## Your portrait — `src/assets/portrait.*`
 
-Drop in `portrait.jpg`, `portrait.png`, `portrait.webp`, `portrait.avif` or
-`portrait.svg` and delete the one that shipped. There is no setting: both the
+Drop in `portrait.` plus any of `avif`, `gif`, `jpeg`, `jpg`, `png`, `svg` or
+`webp`, and delete the one that shipped. There is no setting: both the
 hero and the `/cv/` lede read `src/lib/portrait.ts`, which finds the file by
 extension at build time.
 

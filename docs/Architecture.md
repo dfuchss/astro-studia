@@ -56,12 +56,19 @@ sitemap entry and feed link must name a file on disk **by its exact shape**, so 
 page or helper that gets the policy wrong fails the build rather than shipping a 404. [Deploying](Deploying.md) has the policy itself; [Verification](Verification.md)
 has the resolution rule.
 
-`paths.ts` also holds every route prefix as a constant. Nothing else builds a path
-by interpolating a slug into a string, and nothing else writes one of those
-prefixes as a literal — not a back link, not a breadcrumb, not a `NAV` row, not
-even the regex `src/content.config.ts` validates a `page = {…}` field with, which
-is _assembled_ from `PAPERS` precisely so a route rename cannot leave a validator
-behind insisting on the old prefix.
+`paths.ts` also holds every route prefix as a constant. For `PAPERS` and
+`PROJECTS` that holds absolutely: nothing else interpolates a slug into one of
+those two, and nothing else writes either as a literal — not a back link, not a
+breadcrumb, not a `NAV` row, not even the regex `src/content.config.ts` validates
+a `page = {…}` field with, which is _assembled_ from `PAPERS` precisely so a
+route rename cannot leave a validator behind insisting on the old prefix.
+
+`/blog/` and `/publications/` are not in that state. `src/lib/blog.ts:20` builds
+the permalink from a literal `/blog/`, the tag page's "← all posts" back link and
+two breadcrumbs write it out, and `src/pages/papers/index.astro` links
+`/publications/` directly. Renaming the blog is therefore more than the three
+edits in [Content](Content.md) — grep the prefix as well. The audit reports a
+stale link, but only once it is in the built output.
 
 ## The BibTeX loader
 
@@ -135,6 +142,7 @@ in this directory usually exists because two consumers had drifted apart.
 | `authors.ts`      | name folding (`Fuchß`/`Fuchss`), "is this me", and author-list truncation                                             |
 | `people.ts`       | the roster, and the surname → anchor map that links an author name to a person                                        |
 | `citations.ts`    | Scholar cluster id → count, and the h- and i10-index                                                                  |
+| `format.ts`       | number formatting in `SITE.locale` — the stats row needs it whether or not the counts are on                          |
 | `blog.ts`         | the permalink, derived from the **filename**, and the published-post list                                             |
 | `cv.ts`           | the CV's sections, their layouts and the count labels                                                                 |
 | `contact.ts`      | the contact rows, validated, with `email: true` resolved                                                              |
@@ -184,7 +192,10 @@ image path in `people.yml`, a slides link in a paper's front matter, a plain
 `![](/assets/…)` in a post. Those are strings in content, not expressions in a
 component, and no helper can be called from them.
 
-So this rewrites the output instead. Only URL-bearing attributes — `href`, `src`,
+So this rewrites the output instead — `.html`, `.xml` and `.webmanifest` — and
+serves the same rewrite from an `astro:server:setup` middleware, with a 302 from
+`/` to the based root, so dev and the build agree. They did not: dev used to 404
+on `/` and on every `public/` asset. Only URL-bearing attributes — `href`, `src`,
 `srcset`, and `content` on exactly the meta tags where it is a URL. `<script>` and
 `<style>` bodies are masked out first and restored after, because a leading slash
 means something else entirely in there. It is a no-op when no base is set, and
@@ -262,20 +273,26 @@ unit.
 
 ## `scripts/`
 
-| Script                        | Run by                       | Is                                                                                           |
-| ----------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| `features.mjs`                | —                            | the manifest: what each optional area is made of. Two consumers, no prose copy.              |
-| `init.mjs`                    | `npm run init`               | prunes the template to a feature set, then checks, builds and audits                         |
-| `gen-docs.mjs`                | `npm run docs`, `docs:check` | regenerates the feature table in [Removing features](Removing-Features.md) from the manifest |
-| `audit-site.mjs`              | `npm run audit`              | the one gate: every check over `dist/`, including the host files                             |
-| `generate-favicons.mjs`       | `npm run favicons`           | rasterizes `public/favicon.svg` into the PNGs beside it                                      |
-| `fetch-github-metadata.mjs`   | `npm run data:github`        | writes the committed `src/data/github-metadata.json`                                         |
-| `update_bib.py`               | `npm run bib:check`          | checks `papers.bib` against Crossref. Python stdlib only.                                    |
-| `update_scholar_citations.py` | the citations workflow       | writes the committed `src/data/citations.yml`. The one piece of tooling that needs pip.      |
+| Script                         | Run by                       | Is                                                                                           |
+| ------------------------------ | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| `features.mjs` _(scaffolding)_ | —                            | the manifest: what each optional area is made of. Two consumers, no prose copy.              |
+| `init.mjs` _(scaffolding)_     | `npm run init`               | prunes the template to a feature set, then checks, builds and audits                         |
+| `gen-docs.mjs` _(scaffolding)_ | `npm run docs`, `docs:check` | regenerates the feature table in [Removing features](Removing-Features.md) from the manifest |
+| `audit-site.mjs`               | `npm run audit`              | the one gate: every check over `dist/`, including the host files                             |
+| `generate-favicons.mjs`        | `npm run favicons`           | rasterizes `public/favicon.svg` into the PNGs beside it                                      |
+| `fetch-github-metadata.mjs`    | `npm run data:github`        | writes the committed `src/data/github-metadata.json`                                         |
+| `update_bib.py`                | `npm run bib:check`          | checks `papers.bib` against Crossref. Python stdlib only.                                    |
+| `update_scholar_citations.py`  | the citations workflow       | writes the committed `src/data/citations.yml`. The one piece of tooling that needs pip.      |
 
-Three of these are **scaffolding** — `init.mjs`, `features.mjs`, `gen-docs.mjs` —
-and init offers to delete them and their npm scripts when it finishes. They set the
-template up; a site owner does not need them.
+The three marked **scaffolding** are the ones init offers to delete when it
+finishes, together with the `init`, `docs` and `docs:check` npm scripts. They set
+the template up; a site owner does not need them, and a site that took the offer
+has neither the files nor those commands.
+
+The npm scripts with no file in here are Astro's own: `dev` (and `start`, the
+same command), `build`, `preview` (serves the built `dist/`), `check` and
+`format` — plus `dev:fresh`, which clears `.astro` and Vite's cache before
+starting dev.
 
 `init.mjs` follows two rules worth knowing before you edit it. **No silent no-ops:**
 every edit names a landmark in a file — `export const NAV`, `export type Section =`,
@@ -302,21 +319,24 @@ rate-limit — and makes a build from six months ago produce the same page. The 
 is that the numbers are as fresh as the last run, which for a citation count is the
 right trade.
 
-Two workflows refresh them and commit the result. Both are on demand only, both
-need a PAT rather than the built-in `GITHUB_TOKEN` — a push made with that token
-triggers no other workflow, so the data would land and the site would never rebuild
-— and both **fail loudly** when the PAT is absent rather than falling back, because
-the failure that matters here is a green job whose result silently never ships. See
+Two workflows refresh them and commit the result. `update-citations.yml` runs on
+demand only; `update-github-metadata.yml` also runs on a push touching
+`src/data/repositories.yml`, so it needs its token from the first repository you
+add there. Both need a classic PAT rather than the built-in `GITHUB_TOKEN` — a
+push made with that token triggers no other workflow, so the data would land and
+the site would never rebuild — and both **fail loudly** when the PAT is absent
+rather than falling back, because the failure that matters here is a green job
+whose result silently never ships. See
 [Deploying](Deploying.md).
 
 ## CI
 
-| Workflow                     | On                                              | Does                                                                                                           |
-| ---------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `deploy.yml`                 | push and PR to `main`                           | install, prettier, `astro check`, docs sync, build, audit, then publish `dist/` to `gh-pages` on a non-PR push |
-| `docs.yml`                   | push to `main` touching `docs/**`, or manually  | copies `docs/` into this repository's wiki                                                                     |
-| `update-github-metadata.yml` | manually, or a push touching `repositories.yml` | refreshes and commits `github-metadata.json`                                                                   |
-| `update-citations.yml`       | manually                                        | refreshes and commits `citations.yml`                                                                          |
+| Workflow                     | On                                                                    | Does                                                                                                                                           |
+| ---------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deploy.yml`                 | push and PR to `main`, or on demand                                   | install, prettier, `astro check`, `docs:check` (while the generator exists), build, audit, then publish `dist/` to `gh-pages` on a non-PR push |
+| `docs.yml`                   | push to `main` touching `docs/**` or the workflow itself, or manually | copies `docs/` into this repository's wiki                                                                                                     |
+| `update-github-metadata.yml` | manually, or a push touching `repositories.yml`                       | refreshes and commits `github-metadata.json`                                                                                                   |
+| `update-citations.yml`       | manually                                                              | refreshes and commits `citations.yml`                                                                                                          |
 
 ## `docs/` and the wiki
 

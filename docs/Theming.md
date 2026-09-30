@@ -7,7 +7,7 @@ There is no utility framework and no class soup in the markup.
 
 ## Changing the palette
 
-Five hex values. Nothing else in the codebase names a colour.
+One base hex per accent family:
 
 ```css
 --cyan: #5cc8e8;
@@ -16,6 +16,17 @@ Five hex values. Nothing else in the codebase names a colour.
 --rose: #f18fa2;
 --amber: #e0b364;
 ```
+
+Those are the accents, not every colour there is. `tokens.css` also names the
+surfaces (`--bg*`), the text greys (`--text*`) and `--warn` as bare hex, and
+`src/data/venues.yml` and `src/data/language_colors.yml` carry colours of their
+own — a venue's brand colour, GitHub's language dots. The contrast check reads
+every bare-hex token except the surfaces, which is the count its `✓` line
+prints. A family read by exactly one `[data-section]` block is fenced to that
+feature, so a prune takes it with the block — `--green` with the publications,
+`--rose` with the blog. The other three are read from elsewhere as well:
+`--cyan` and `--amber` by section blocks that survive any one feature, and
+`--violet-glow` by the second background gradient in `base.css`, on every page.
 
 Each family has five roles, and the other four are mixed from the base with
 `color-mix()`:
@@ -56,8 +67,15 @@ Forget the second and the build fails: `audit-site.mjs` collects every
 `data-section` value out of the built HTML and every selector out of the built
 CSS, and reports any value with no block.
 
-Sections may share a family. Eight areas over five hues reads as a palette;
-eight distinct hues reads as a swatch chart.
+The union is one member shorter than the list of values. `src/pages/index.astro`
+sets `data-section="contact"` on its contact section and `tokens.css` has a block
+for it, but it is not a `Section`: the union types what `<body data-section>`
+takes, and no page is _the_ contact page. That is why the audit counts one
+section more than the union has members — it reads the built HTML, where the two
+are the same attribute.
+
+Sections may share a family. Several areas over one family reads as a palette; a
+distinct hue per area reads as a swatch chart.
 
 ## Width
 

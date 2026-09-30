@@ -30,8 +30,10 @@ Eight areas of a site, all of them optional:
 | People       | `/people/`       | `src/data/people.yml`                                     |
 | CV           | `/cv/`           | `src/data/cv.yml`                                         |
 
-And four smaller ones that come with them: `/feed.xml`, `/pgp-key/`,
-`/imprint/`, `/404.html`.
+And the smaller ones that come with them: `/feed.xml`, `/pgp-key/`, `/imprint/`,
+`/404.html`, `/robots.txt`, `/sitemap-index.xml` and the `/sitemap-0.xml` it
+points at, and `/demo/project/` — the second entry-page shape, which
+`npm run init` removes along with the switcher.
 
 ## The three things worth knowing before you start
 

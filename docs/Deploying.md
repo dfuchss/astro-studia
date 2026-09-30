@@ -1,9 +1,11 @@
 # Deploying
 
-`.github/workflows/deploy.yml` runs on every push and pull request to `main`:
+`.github/workflows/deploy.yml` runs on every push and pull request to `main`, and on demand:
 install, `prettier --check`, `astro check`, `docs:check`, `build`, `audit`, then
 publish `dist/` to the `gh-pages` branch — the last step only on a non-PR push to
-`main`.
+`main`. The `docs:check` step is guarded on `scripts/gen-docs.mjs` still
+existing, because `npm run init` offers to delete it and a CI step demanding a
+script the documented setup path removes would be a trap.
 
 A second workflow, `docs.yml`, copies `docs/` into the repository's wiki. It
 needs one secret and one thing done by hand first — see
@@ -17,8 +19,9 @@ site.
 ## GitHub Pages
 
 1. Settings → Pages → deploy from the `gh-pages` branch.
-2. Set `SITE.url` in `src/consts.ts`. `astro.config.ts` and
-   `src/pages/robots.txt.ts` both read it, so that is the only place it is
+2. Set `SITE.url` in `src/consts.ts`. `astro.config.ts`,
+   `src/pages/robots.txt.ts` and `scripts/audit-site.mjs` all read it — including
+   the base, which comes from its path — so that is the only place the address is
    written down.
 3. For a custom domain, add `public/CNAME` containing the bare hostname.
 
@@ -33,17 +36,23 @@ domain that stops resolving, and nothing else would notice.
 
 ### A project page rather than a domain
 
-Deploying to `https://<user>.github.io/<repo>/` needs a base path. Two edits:
-
-```js
-// astro.config.ts
-base: '/my-repo',
-```
+Deploying to `https://<user>.github.io/<repo>/` needs a base path. One edit:
 
 ```ts
 // src/consts.ts
 url: 'https://<user>.github.io/my-repo',
 ```
+
+**There is no `base` to set.** `astro.config.ts` reads it off that URL's own path
+— `base: new URL(SITE.url).pathname` — so the path is not written down twice, and
+`scripts/audit-site.mjs` takes it from the same field. A hand-written `base` is
+the second copy the derivation exists to prevent.
+
+The dev server follows it. `http://localhost:4321/` answers with a 302 to
+`/my-repo/`, and `src/integrations/base-paths.ts` runs as dev middleware as well
+as over the build, so the two serve identical URLs. Typing an unprefixed
+`public/` path by hand — `/favicon.svg` — still 404s, which is exactly what the
+deployed site does.
 
 That is genuinely all, but it is worth knowing why, because Astro's own
 documentation warns that it is not:
@@ -62,18 +71,34 @@ the cases that break most often — an image path in `people.yml`, a slides link
 in a paper's front matter, a plain `![](/assets/…)` in a post. Those are
 strings in content, not expressions in a component.
 
-Instead `src/integrations/base-paths.ts` rewrites the built output once, at
-the end of the build. You write `/cv/` everywhere, and it is correct at the
-root and in a subdirectory alike. (Starlight's ecosystem arrived at the same
-answer for the same reason.) It is a no-op when no base is set.
+Instead `src/integrations/base-paths.ts` rewrites the bytes: once over the build
+output, and again on the way out of `astro dev`. You write `/cv/` everywhere, and
+it is correct at the root, in a subdirectory and locally, because dev and the
+build now serve identical URLs. (Starlight's ecosystem arrived at the same answer
+for the same reason.) It is a no-op when no base is set.
 
-`npm run audit` then proves it worked: with a base configured, any internal
-link or subresource that does not carry it fails the build. So this cannot
-regress quietly into a site whose every link is broken.
+Dev used to be the exception — every hand-written link unprefixed and `/` a 404 —
+which is both the version of the site most of the work is looked at in and the
+first thing a forwarded port hands a Codespaces user.
 
-**The one case it cannot reach** is a client-side script that builds a path at
-runtime. There is one, in `src/pages/blog/index.astro`; it reads
-`import.meta.env.BASE_URL` directly. Do the same if you add another.
+`npm run audit` then proves it worked: with a base configured, any internal link
+or subresource on a page, and any URL in the web app manifest, that does not
+carry it fails the build. So this cannot regress quietly into a site whose every
+link is broken.
+
+What gets rewritten is what gets audited: `.html`, `.xml` and `.webmanifest`.
+**Any other file under `public/` carrying URLs of its own is neither rewritten
+nor checked**, so prefix those yourself. `site.webmanifest` was that bug — its
+three icon URLs shipped unprefixed and all three 404ed on a project page, and no
+page links to them, so nothing noticed.
+
+**Two cases the rewrite cannot reach**, both because the URL is not an attribute:
+
+- a client-side script building a path at runtime. `src/pages/blog/index.astro`
+  has one, and reads `import.meta.env.BASE_URL` directly. Do the same if you add
+  another.
+- `src/pages/feed.xml.ts`: an RSS `<link>` is an element body, so the endpoint
+  puts the base on each item link itself.
 
 **A note on `robots.txt`.** Crawlers only read `/robots.txt` at the origin
 root, so on a project page yours is at a path nothing will fetch. That is a
@@ -221,18 +246,27 @@ For a per-page image, take an optional `image` prop through `BaseHead` the way
 
 `update-github-metadata.yml` and `update-citations.yml` refresh
 `src/data/github-metadata.json` and `src/data/citations.yml` and commit the
-result. Both ship **on demand only**; uncomment the `schedule:` block to
-enable.
+result. Neither ships on a schedule; uncomment the `schedule:` block to give one
+a cadence. `update-citations.yml` is otherwise on demand only, but
+`update-github-metadata.yml` **also runs on a push to `main` touching
+`src/data/repositories.yml`** — so it needs its token from the first time you add
+a repository there, not only when somebody clicks it.
 
-Both need `secrets.PAT`, a fine-grained token with `contents: write` on the
-repository. The built-in `GITHUB_TOKEN` will not do: a push made with it
-triggers no other workflow, so the data would land and the site would never
-rebuild. Both workflows fail loudly rather than falling back, because the
-failure that matters here is a green job whose result silently never ships.
+Both need `secrets.PAT`, and it has to be the **classic** token described under
+[Publishing the docs to the wiki](#publishing-the-docs-to-the-wiki) below: these
+two want no more than `contents: write`, but the third workflow sharing the
+secret pushes to a wiki, which no fine-grained token can do. The built-in
+`GITHUB_TOKEN` will not do either: a push made with it triggers no other
+workflow, so the data would land and the site would never rebuild. Both
+workflows fail loudly rather than falling back, because the failure that matters
+here is a green job whose result silently never ships.
 
 The Scholar one additionally tolerates its own timeout. Scholar rate-limits
 hard and has no API, so a run that cannot finish is routine — the counts stay
-as they are until next time.
+as they are until next time. It is also the one piece of tooling that needs pip:
+the workflow pins `python-version: '3.13'` and installs `requirements.txt`, and
+`scholar_userid` must be set in `src/data/socials.yml` or the script exits saying
+so.
 
 Neither is needed to build. Both output files are committed, which is what lets
 a fresh clone build with no network, no token and nothing to rate-limit.
@@ -241,7 +275,8 @@ a fresh clone build with no network, no token and nothing to rate-limit.
 
 `docs/` in this repository is the source of these pages, and
 `.github/workflows/docs.yml` copies it into the repository's GitHub wiki on every
-push to `main` that touches `docs/**` — plus on demand from the Actions tab.
+push to `main` that touches `docs/**` or the workflow file itself — plus on
+demand from the Actions tab.
 
 Four steps, once:
 
