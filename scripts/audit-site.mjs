@@ -392,6 +392,97 @@ const ownPath = (url) => {
   }
 }
 
+// ---- 4c. the web app manifest's URLs carry the base and name real files ----
+{
+  /*
+   * `htmlFiles` never handed this file over and check 4 reads attributes, so
+   * dist/site.webmanifest shipped "src": "/favicon-32.png" and all three of
+   * its icons 404ed. Every root-absolute string in the parsed JSON counts as a
+   * URL, not just the keys base-paths.ts knows, so a key it has not been
+   * taught fails here rather than shipping.
+   */
+  const manifests = files.filter((f) => f.endsWith('.webmanifest'));
+  const linked = new Set();
+  for (const p of pages) {
+    for (const m of p.html.matchAll(/<link\b[^>]*\brel="manifest"[^>]*\bhref="([^"]+)"/g)) {
+      if (!/^https?:/.test(m[1])) linked.add(m[1]);
+    }
+  }
+
+  // Only expected when you still have one: removing the manifest and its
+  // <link> is a supported subtraction.
+  if (manifests.length || linked.size) {
+    let urls = 0;
+    let bad = 0;
+
+    // The manifest is whichever file the pages name, as with robots.txt and
+    // the sitemap.
+    for (const raw of linked) {
+      const { file, expected, other } = resolve(decodeURIComponent(raw));
+      if (!file) {
+        fail(
+          `manifest: <link rel="manifest"> ${raw} does not resolve — expected ${expected}${other}`,
+        );
+        bad += 1;
+      }
+    }
+
+    for (const f of manifests) {
+      const where = relative(DIST, f);
+      let data;
+      try {
+        data = JSON.parse(readFileSync(f, 'utf8'));
+      } catch {
+        fail(`${where} is not valid JSON`);
+        bad += 1;
+        continue;
+      }
+      /** Every root-absolute string value, with the key path that holds it. */
+      const found = [];
+      const collect = (node, at) => {
+        if (typeof node === 'string') {
+          if (node.startsWith('/') && !node.startsWith('//')) found.push([at, node]);
+        } else if (Array.isArray(node)) {
+          node.forEach((item, i) => collect(item, `${at}[${i}]`));
+        } else if (node && typeof node === 'object') {
+          for (const [k, v] of Object.entries(node)) collect(v, at ? `${at}.${k}` : k);
+        }
+      };
+      collect(data, '');
+
+      for (const [at, url] of found) {
+        urls += 1;
+        if (BASE && url !== BASE && !url.startsWith(`${BASE}/`)) {
+          fail(
+            `${where}: ${at} ${url} is missing the base ${BASE} — ` +
+              'the base-paths integration did not reach it',
+          );
+          bad += 1;
+          continue;
+        }
+        const { file: target, expected, other } = resolve(decodeURIComponent(url));
+        if (!target) {
+          fail(`${where}: ${at} ${url} does not resolve — expected ${expected}${other}`);
+          bad += 1;
+        }
+      }
+    }
+
+    // The floor: a manifest has icons, so no URLs at all means the JSON walk
+    // has stopped walking.
+    if (urls < 1)
+      fail(
+        `manifest: ${manifests.length} .webmanifest, no URLs in any of them — is this check stale?`,
+      );
+    else if (!bad) {
+      ok(
+        `manifest: ${urls} URLs across ${manifests.length} .webmanifest name a file on disk` +
+          (BASE ? `, all carrying the base ${BASE}/` : ''),
+      );
+    }
+  }
+}
+
 // ---- 5. per-page document basics -------------------------------------------
 {
   let bad = 0;
