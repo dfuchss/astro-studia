@@ -5,41 +5,29 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/**
- * One BibTeX field that carries a link, checked at build time. Declaring it
- * validates the value against disk, exposes it on the entry under `as`, and
- * keeps it out of the BibTeX block a reader copies.
- */
+/** One BibTeX field that carries a link. Declaring it validates the value
+    against disk, exposes it on the entry under `as`, and keeps it out of the
+    BibTeX block a reader copies. */
 export type BibLink = {
   /** The BibTeX field to read, e.g. 'pdf' or 'page'. */
   field: string;
-  /**
-   * The key this lands under on the collection entry. Declare it in
-   * `src/content.config.ts` too, or Zod will strip it back out again.
-   */
+  /** The key this lands under on the entry. Declare it in
+      `src/content.config.ts` too, or Zod strips it back out. */
   as: string;
   /** Let an http(s) value through untouched, instead of looking for a file. */
   allowAbsolute?: boolean;
-  /**
-   * Turn the raw field value into the value the entry carries, plus — when
-   * there is one — a repo-relative path that must exist on disk.
-   *
-   * Throw for a value you cannot parse. Put the entry key in the message: a
-   * .bib file is one long list of near-identical records, and the key is the
-   * only thing that says which one.
-   */
+  /** The raw value → what the entry carries, plus a repo-relative path that
+      must exist on disk. Throw for a value you cannot parse, and name the entry
+      key: nothing else says which near-identical .bib record is meant. */
   resolve: (raw: string, ctx: { key: string }) => { value: string; file?: string };
 };
 
 export type BibtexLoaderOptions = {
   /** Repo-relative path to the .bib file. */
   file: string;
-  /**
-   * Fields dropped from the copyable BibTeX block, because they are yours and
-   * not the bibliography's. Every `links[].field` is added automatically — an
-   * internal path has no business in a citation someone pastes into their own
-   * .bib, and making you remember that separately is a trap.
-   */
+  /** Fields dropped from the copyable BibTeX block. Every `links[].field` is
+      added automatically: an internal path has no business in a citation
+      someone pastes into their own .bib. */
   privateFields?: string[];
   links?: BibLink[];
 };
@@ -52,6 +40,11 @@ const str = (v: unknown): string | undefined => {
   const t = s.trim();
   return t === '' ? undefined : t;
 };
+
+/** The parse only decodes escapes standing for a Unicode character, so escaped
+    ASCII punctuation survives and a DOI keeps its `\_` and resolves to nothing.
+    URL-bound values only; the copyable BibTeX keeps its escapes. */
+const unLatex = (v: string | undefined): string | undefined => v?.replace(/\\([_&%$#{}])/g, '$1');
 
 const num = (v: unknown): number | undefined => {
   const s = str(v);
@@ -66,11 +59,9 @@ type BibName = { lastName?: string; firstName?: string; prefix?: string; suffix?
 const isNameList = (v: unknown): v is BibName[] =>
   Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null;
 
-/**
- * `author` and `editor` come back as name objects, never as a string — so
- * stringifying them naively yields "[object Object]". Rebuild the BibTeX form:
- * "Last, First" joined by " and ", with the LaTeX escapes left untouched.
- */
+/** `author` and `editor` come back as name objects, never strings — naive
+    stringifying yields "[object Object]". Rebuild "Last, First" joined by
+    " and ", LaTeX escapes untouched. */
 const names = (list: BibName[]): string =>
   list
     .map((n) => {
@@ -82,13 +73,9 @@ const names = (list: BibName[]): string =>
     .filter(Boolean)
     .join(' and ');
 
-/**
- * Re-serialize one entry as public BibTeX, dropping the private fields.
- *
- * Built from the RAW parse so LaTeX escapes and brace protection survive
- * verbatim — a reader pasting this into their own .bib gets what the source
- * file says, not a Unicode-normalized approximation of it.
- */
+/** One entry re-serialized as public BibTeX, private fields dropped. From the
+    RAW parse, so LaTeX escapes and brace protection survive verbatim into
+    whatever a reader pastes into their own .bib. */
 function serialize(
   type: string,
   key: string,
@@ -116,18 +103,16 @@ export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
       // repo-relative in both `astro dev` and `astro build`.
       const bibPath = resolve(process.cwd(), opts.file);
       watcher?.add(bibPath);
-      // Watch this loader too. Entries are cached in `.astro/` keyed off the
+      // Watch this loader too: entries are cached in `.astro/` keyed off the
       // source file, so editing the parsing logic alone leaves the dev server
-      // serving the previous parse indefinitely — a fix looks like it did
-      // nothing at all.
+      // serving the previous parse for ever.
       watcher?.add(fileURLToPath(import.meta.url));
 
       const source = await readFile(bibPath, 'utf8');
 
       // Two passes: `cooked` decodes LaTeX to Unicode for display, `raw` keeps
-      // the original escapes for the copyable block. sentenceCase:false
-      // preserves brace-protected casing — {LiSSA} stays LiSSA rather than
-      // becoming Lissa.
+      // the escapes for the copyable block. sentenceCase:false preserves
+      // brace-protected casing — {LiSSA} stays LiSSA, not Lissa.
       const cooked = parse(source, { sentenceCase: false });
       const raw = parse(source, { sentenceCase: false, raw: true });
 
@@ -149,7 +134,8 @@ export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
         // the build here rather than rendering a live-looking link that 404s.
         const linkValues: Record<string, string> = {};
         for (const link of links) {
-          const value = str(f[link.field]);
+          // Unescaped like doi/url: this becomes a URL or a path on disk.
+          const value = unLatex(str(f[link.field]));
           if (value === undefined) continue;
 
           if (link.allowAbsolute && /^https?:\/\//i.test(value)) {
@@ -189,10 +175,8 @@ export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
           authors: people,
           year: num(f.year) ?? 0,
           month: num(f.month),
-          // Optional on purpose. An entry with no `abbr` renders without a
-          // venue badge, which is what you want for a preprint or a report —
-          // the alternative is inventing a "misc" row in venues.yml so that a
-          // required reference() has something to point at.
+          // Optional on purpose: no `abbr` means no venue badge, which is right
+          // for a preprint. Requiring it would mean a "misc" row in venues.yml.
           abbr: str(f.abbr),
           booktitle: str(f.booktitle),
           journal: str(f.journal),
@@ -203,11 +187,11 @@ export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
           volume: str(f.volume),
           number: str(f.number),
           pages: str(f.pages),
-          // biblatex entries sometimes carry `venue` or `address` where the
-          // rest use `location`; fall back so those still render a place.
+          // biblatex sometimes carries `venue` or `address` where the rest use
+          // `location`.
           location: str(f.location) ?? str(f.venue) ?? str(f.address),
-          doi: str(f.doi),
-          url: str(f.url),
+          doi: unLatex(str(f.doi)),
+          url: unLatex(str(f.url)),
           keywords: (str(f.keywords) ?? '')
             .split(',')
             .map((k) => k.trim())
