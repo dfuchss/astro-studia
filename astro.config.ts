@@ -12,16 +12,14 @@ import sitemapShape from './src/integrations/sitemap-shape.ts';
 export default defineConfig({
   site: SITE.url,
 
-  // Both derived from URL_POLICY (src/lib/paths.ts): one decision, not two.
-  // Set by hand, the link helpers, the feed and the canonicals stop agreeing
-  // with the files on disk, which the audit reports.
+  // Both derived from URL_POLICY (src/lib/paths.ts): one decision, not two. Set
+  // by hand, the helpers, feed and canonicals drift from disk, as the audit says.
   trailingSlash: URL_POLICY === 'preserve' ? 'ignore' : 'always',
   build: { format: URL_POLICY },
 
   // Order matters: sitemapShape must run after the sitemap exists.
   integrations: [
-    // customPages carries the PDFs: the integration lists pages Astro builds,
-    // and a file in public/ is not one.
+    // customPages carries the PDFs: a file in public/ is not a page Astro builds.
     sitemap({ customPages: publicPdfs() }),
     // @astrojs/sitemap keys its trailing slash on build.format === 'directory'
     // and gets 'preserve' wrong; this reshapes each entry to the file emitted.
@@ -34,11 +32,9 @@ export default defineConfig({
     shikiConfig: { theme: 'github-dark-default', wrap: true },
   },
 
-  // Derived from SITE.url rather than written again: a site at
-  // https://user.github.io/repo/ would otherwise state "/repo" here and in
-  // consts.ts, and two copies of one fact drift. A site at the domain root
-  // gives '/', which is Astro's default and changes nothing.
-  // docs/Deploying.md.
+  // Derived from SITE.url, never set by hand: https://user.github.io/repo/ would
+  // otherwise state "/repo" here and in consts.ts, and two copies of one fact
+  // drift. A domain root gives '/', Astro's default. See docs/Deploying.md.
   base: new URL(SITE.url).pathname,
 
   // Redirects for URLs you have already published elsewhere and cannot move:
@@ -54,9 +50,8 @@ function publicPdfs(dir: string = 'public/assets/pdf', out: string[] = []): stri
     const rel = posix.join(dir, name.name);
     if (name.isDirectory()) publicPdfs(rel, out);
     else if (name.name.toLowerCase().endsWith('.pdf')) {
-      // Concatenated, not new URL(path, SITE.url): with a base configured
-      // SITE.url is "https://host/repo", and resolving a root-absolute path
-      // against it drops the last segment. robots.txt.ts does the same.
+      // Concatenated, not new URL(): with a base, SITE.url ends "/repo" and a
+      // root-absolute path resolved against it drops it. robots.txt.ts does the same.
       out.push(`${SITE.url.replace(/\/$/, '')}${rel.replace(/^public/, '')}`);
     }
   }

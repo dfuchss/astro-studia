@@ -4,21 +4,14 @@ import type { CollectionEntry } from 'astro:content';
 type Paper = CollectionEntry<'papers'>;
 type Pub = CollectionEntry<'publications'>;
 
-/**
- * What every consumer of a paper page — the page, /papers/, a project's
- * related papers, the entry pages' block, the feed — has to know, answered
- * once. A paper is either a publication with a BibTeX entry behind it or a
- * talk at a venue that publishes nothing; see the `papers` schema in
- * src/content.config.ts.
- */
+/* Everything a paper page's consumers need, answered once. A paper is either a
+   publication with a BibTeX entry behind it or a talk at a venue that publishes
+   nothing — the `papers` schema in src/content.config.ts. */
 
 /**
- * The publication a paper points at, if it points at one.
- *
- * Absent and dangling are different failures. No `publication` is a legitimate
- * page (a non-archival talk). A `publication` that does not resolve is a typo
- * in a BibTeX key, and the page it produces looks almost right — a venue line
- * with no year, an empty Cite section — so it throws.
+ * The publication a paper points at, if it points at one. No `publication` is a
+ * legitimate page (a non-archival talk); one that does not resolve is a typo in
+ * a BibTeX key and throws, because the page it makes looks almost right.
  */
 export async function paperPublication(paper: Paper): Promise<Pub | undefined> {
   const ref = paper.data.publication;
@@ -28,21 +21,17 @@ export async function paperPublication(paper: Paper): Promise<Pub | undefined> {
   return pub;
 }
 
-/**
- * The year to date, sort and group a paper by: the entry's, or the page's own.
- * Undefined only if the schema's refinements were removed; callers still
- * survive it, because sorting on `?? 0` silently parks a paper last.
- */
+/** The year to date, sort and group a paper by: the entry's, or the page's own.
+    Undefined only if the schema's refinements were removed; sorting on `?? 0`
+    then parks the paper last rather than failing. */
 export function paperYear(paper: Paper, pub: Pub | undefined): number | undefined {
   return pub?.data.year ?? paper.data.year;
 }
 
 /**
- * Where a paper appeared, as one shape whichever source it came from.
- * Undefined when there is nothing to say: an entry with no `conferenceName`
- * has its venue in the badge and the imprint already. The sentence comes from
- * the page's own front matter in both cases, which is why this takes no
- * publication.
+ * Where a paper appeared, in one shape whichever source it came from. The
+ * sentence comes from the page's own front matter either way, which is why
+ * paperVenue() takes no publication.
  */
 export type PaperVenue = {
   /** True when the page states this itself: no "Published at" in front of the
@@ -81,11 +70,9 @@ export function paperVenue(paper: Paper): PaperVenue | undefined {
 }
 
 /**
- * The byline's words. A DERIVED page gets the serial "A, B, and C" with no
- * connector. A page that STATES its venue states it in its own language, so
- * the connector comes from the front matter and the names are joined with
- * plain commas, which nothing has to translate. Shared with the entry pages'
- * paper block so the two cannot disagree.
+ * The byline's words. A DERIVED page gets the serial "A, B, and C"; a page that
+ * STATES its venue states it in its own language, so the connector comes from
+ * the front matter and the names are joined with commas nothing must translate.
  */
 export function paperByline(venue: PaperVenue | undefined, count: number) {
   return {
@@ -94,21 +81,16 @@ export function paperByline(venue: PaperVenue | undefined, count: number) {
   };
 }
 
-/**
- * What a BibTeX entry says the work appeared IN, or undefined for an entry
- * that names no container. One chain for both fallbacks below.
- */
+/** What a BibTeX entry says the work appeared IN — one chain, two callers. */
 export function paperContainer(pub: Pub | undefined): string | undefined {
   const d = pub?.data;
   return d?.booktitle ?? d?.journal ?? d?.series ?? d?.school ?? d?.institution ?? d?.publisher;
 }
 
 /**
- * The shortest TRUE name for where a paper appeared: `venue.short`, the badge
- * abbreviation, or what the entry says it appeared in. Undefined when the
- * entry names no container, and callers then render nothing. Never a word the
- * template invents: a "preprint" fallback here once mislabelled published
- * workshop papers. A short label for a paper that has none is an `abbr`.
+ * The shortest TRUE name for where a paper appeared, or undefined when the
+ * entry names no container. Never a word the template invents: a "preprint"
+ * fallback here once mislabelled published workshop papers.
  */
 export function paperVenueShort(paper: Paper, pub: Pub | undefined): string | undefined {
   return (
@@ -116,20 +98,16 @@ export function paperVenueShort(paper: Paper, pub: Pub | undefined): string | un
   );
 }
 
-/**
- * The one-line summary for a link preview and a feed reader: `description`,
- * or failing that the paper's own venue. Never the site's blurb. Undefined
- * only when neither exists, and BaseHead then falls back to SITE.description.
- */
+/** The one-line summary for a link preview and a feed reader. Never the site's
+    blurb; when there is nothing, BaseHead falls back to SITE.description. */
 export function paperDescription(paper: Paper, pub: Pub | undefined): string | undefined {
   return paper.data.description ?? paperVenue(paper)?.label ?? paperContainer(pub);
 }
 
 /**
- * The label for a key in a paper's `links` maps: the caller's table first,
- * then `<venue>_<kind>` where `<kind>` is itself a labelled key (`icsa23_pdf`
- * is "PDF (ICSA23)"), then the key as typed. The venue part is open-ended so
- * that filing one more deck needs no edit anywhere.
+ * The label for a key in a paper's `links` map: the caller's table, then
+ * `<venue>_<kind>` with `<kind>` itself a labelled key (`icsa23_pdf` is
+ * "PDF (ICSA23)"), then the key as typed — so one more deck needs no edit.
  */
 export function linkLabel(key: string, labels: Record<string, string>): string {
   if (labels[key]) return labels[key];
@@ -140,9 +118,8 @@ export function linkLabel(key: string, labels: Record<string, string>): string {
 
 /**
  * The paper pages an entry page's block lists: `featured`, newest first, then
- * `order`, each with its entry resolved. From `papers`, not from
- * `publications.filter(pageSlug)`: a page whose venue is stated rather than
- * cited has no row in `publications` and would never appear.
+ * `order`. From `papers`, not from `publications`: a page whose venue is stated
+ * rather than cited has no row there and would never appear.
  */
 export async function featuredPapers(): Promise<{ paper: Paper; pub: Pub | undefined }[]> {
   const papers = await getCollection('papers', (p) => p.data.featured);

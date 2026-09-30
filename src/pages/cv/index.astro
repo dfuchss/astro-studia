@@ -43,9 +43,7 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
         <p class="who mono">{SELF.first} {SELF.last}</p>
         {
           /* The same rows as the entry page's contact block, from
-            src/data/contact.yml — so a handle added there shows up here too,
-            which is exactly what it did not do when this was one hand-written
-            <Email> line. */
+            src/data/contact.yml, so a handle added there shows up here too. */
         }
         <Contact layout="inline" />
         {/* ▼ FEATURE:socials ▼ */}
@@ -267,12 +265,10 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
 </Base>
 
 <style>
-  /* No box: the lede reads as prose, closed off by the same hairline the rest
-     of the site uses to separate sections. */
+  /* No box: the lede reads as prose, closed off by the usual hairline. */
   .profile {
     display: grid;
-    /* Same as the home page hero: cap the text at its reading measure so the
-       portrait sits beside it rather than across a void at the far edge. */
+    /* Same as the home page hero: cap the text so the portrait sits beside it. */
     grid-template-columns: minmax(0, 64ch) auto;
     justify-content: start;
     gap: 2.5rem;
@@ -290,11 +286,8 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     border: 1px solid var(--sec-line);
     box-shadow: 0 0 0 6px var(--sec-dim);
   }
-  /* No cap of its own. `.profile`'s text column is already capped (64ch), and
-     a second, tighter cap inside it only pulls the summary's right edge in
-     from the interests chips and the contact line it shares that column with.
-     A `--measure` (46rem) cap would be inert here anyway — the column is
-     narrower than the token. */
+  /* No cap of its own: `.profile`'s column is already 64ch, and a tighter one
+     would pull the summary's right edge in from the chips beside it. */
   .summary {
     color: var(--text-muted);
   }
@@ -334,9 +327,8 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     padding: 0;
   }
 
-  /* Timeline: a date rail on the left, content on the right. One custom
-     property positions both the dot and the line, so they cannot end up a
-     couple of pixels apart. */
+  /* A date rail on the left, content on the right. One custom property
+     positions both the dot and the line, so they cannot drift apart. */
   .timeline > li {
     --rail: 10.25rem;
     display: grid;
@@ -371,8 +363,7 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     padding-bottom: 1rem;
   }
 
-  /* Rows: for a section whose entries have no dates, where a rail would be a
-     line of dots against nothing. */
+  /* Rows: for entries with no dates, where a rail would be dots against nothing. */
   .rows > li {
     display: grid;
     grid-template-columns: 10.5rem 1fr;
@@ -433,9 +424,7 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     color: var(--text-faint);
   }
 
-  /* The disclosure toggle for a collapsed tail (mechanism 1) and for the
-     past-semester run in `courses` (mechanism 2). One style for both, since
-     both are "here is more of the same, folded away". */
+  /* One disclosure style for both the collapsed tail and the past-semester run. */
   .more {
     margin-top: 0.5rem;
   }
@@ -454,9 +443,8 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     background: color-mix(in srgb, var(--sec-dim) 160%, transparent);
   }
 
-  /* Courses: a semester column, the course name, and its kind — a row shape
-     of its own because none of `timeline`, `rows` or `cards` has a natural
-     place for a term that is not a date. */
+  /* A semester column, the course name and its kind: none of `timeline`,
+     `rows` or `cards` has a place for a term that is not a date. */
   .course {
     display: grid;
     grid-template-columns: 6.5rem 1fr auto;
@@ -477,11 +465,8 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     font-size: 0.6875rem;
   }
 
-  /* Cards: the one place on this site that reaches for a grid of tiles
-     instead of a hairline list — a project needs room for a name, a "since"
-     date and a row of highlight chips together, which a rail-and-row shape
-     has nowhere to put. Still no filled box: the border is the same hairline
-     the rest of the page uses, just on top instead of on the side. */
+  /* The one grid of tiles on the site: a name, a "since" date and a row of
+     chips need more room than a rail-and-row shape has. Still no filled box. */
   .cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
@@ -524,8 +509,7 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
       width: 7rem;
       height: 7rem;
     }
-    /* The rail has nowhere to live once the date is above the entry rather
-       than beside it. */
+    /* The rail has nowhere to live once the date is above the entry. */
     .timeline > li,
     .rows > li {
       grid-template-columns: 1fr;
@@ -543,9 +527,8 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
     }
   }
 
-  /* The CV is the one page people print, and a collapsed disclosure prints
-     as collapsed — so force every one open and hide the toggle that would
-     otherwise sit uselessly on paper. */
+  /* The CV is the one page people print, and a collapsed disclosure prints as
+     collapsed: force every one open and hide the toggle. */
   @media print {
     .more[open] summary,
     .more summary {

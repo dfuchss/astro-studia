@@ -1,57 +1,41 @@
 # Profile links for SocialRow.astro, and the ids the data scripts need.
 #
-# Every field is optional: set one to null (or delete the line) and the chip
-# for it simply does not render. That is how you remove a profile you do not
-# have, rather than by editing the component.
+# Every field is optional: null (or a deleted line) means the chip for it does
+# not render — that is how you drop a profile, not by editing the component.
 #
-# DEMO VALUES. Two of these are real, resolvable placeholders — ORCID's own
-# fictional researcher and GitHub's own demo account — so that nothing here
-# ships a link into someone's actual profile, and nothing ships a link that
-# 404s either.
+# DEMO VALUES — replace them. The ORCID and GitHub ids are those services' own
+# demo accounts, so nothing points at a real person's profile and nothing 404s.
 
-# ORCID's deliberately fictional record, maintained for demos like this one.
 orcid_id: 0000-0002-1825-0097
 
-# Google Scholar has no equivalent placeholder account, so this stays unset
-# rather than pointing at a profile that does not exist. Yours is the `user`
-# parameter in your profile URL:
-#   https://scholar.google.com/citations?user=XXXXXXXXXXXX
-# Setting it does two things: it renders the Scholar chip, and it tells
-# scripts/update_scholar_citations.py whose citations to fetch.
+# The `user` parameter in your Scholar profile URL. Renders the Scholar chip,
+# and tells scripts/update_scholar_citations.py whose citations to fetch. Left
+# unset because Google Scholar has no placeholder account.
 scholar_userid: null
 
-# GitHub's own demo account.
 github_username: octocat
 
 dblp_url: null
 linkedin_username: null
 
-# Semantic Scholar's author id, from the number in your profile URL.
+# Semantic Scholar's author id: the number in your profile URL.
 semanticscholar_id: null
 
 # Anything the fields above do not cover. `icon` may name one of the marks in
 # components/SocialRow.astro — orcid, scholar, dblp, github, codeberg, linkedin,
-# semanticscholar — and without one the entry renders as a text chip instead, so
-# an unfamiliar platform still looks deliberate.
+# semanticscholar — and without one the entry renders as a text chip instead.
 extra:
   - label: Codeberg
     url: https://codeberg.org/
     icon: codeberg
-  # No icon for this one, so it renders as a text chip. That is the escape
-  # hatch: the set of places an academic keeps a profile is open-ended.
   - label: Perseus
     url: https://www.perseus.tufts.edu/
 
 # Your PGP key fingerprint, no spaces. When set, /pgp-key/ renders it and
-# SocialRow links there; when null, both quietly stand down.
-#
-# Put the exported public key at public/assets/pgp-key/<FINGERPRINT>.asc and
-# /pgp-key/ inlines it in a <pre> with a copy button as well. That file is the
-# only other thing there is to set up — there is no second setting for it, and
-# no setting at all if you would rather only publish the fingerprint: the page
-# drops the block and keeps the download link when the file is not there.
-#
-# DEMO KEY. Generated for this template and thrown away: nobody holds the
-# secret half, so it can encrypt nothing and signs nothing. Its user id says
-# so. Replace it with yours, and delete the .asc that came with it.
+# SocialRow links there; when null, both quietly stand down. The exported public
+# key goes at public/assets/pgp-key/<FINGERPRINT>.asc, which the page inlines
+# too; with no such file it keeps the fingerprint and the download link, because
+# publishing only a fingerprint is a supported choice. The key shipped here is a
+# throwaway: nobody holds its secret half, so do not trust or encrypt to it.
+# Replace it with yours and delete the .asc that came with it.
 pgp_fingerprint: AEDD211D16871331224CEC5571C3DB09BA98F214

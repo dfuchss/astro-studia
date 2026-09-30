@@ -1,14 +1,10 @@
-# The people shown at /people/.
+# The people shown at /people/. DEMO CONTENT.
 #
 # The KEY IS THE ANCHOR: `cicero` here is /people/#cicero, and that is what an
-# author name in the publication list links to. Renaming a key changes a URL.
-#
-# `author` points at a row in authors.yml, which is where the name and the
-# ORCID live — they are not repeated here. `surnames` is how a name parsed out
-# of papers.bib is matched back to this person, so list every form they publish
-# under, including a previous name.
-#
-# DEMO CONTENT.
+# author name in the publication list links to — renaming a key changes a URL.
+# `author` points at a row in authors.yml, which holds the name and the ORCID.
+# `surnames` is how a name parsed out of papers.bib is matched back to this
+# person, so list every form they publish under, including a previous name.
 
 cicero:
   author: cicero
@@ -31,8 +27,8 @@ tiro:
   image: ../assets/people/tiro.svg
   surnames: [Tiro]
 
-# The fully-configured case: every optional field set, so each one has
-# somewhere to render. See the note beside `marek` in authors.yml.
+# The fully-configured case: every optional field set, so each has somewhere to
+# render.
 marek:
   author: marek
   order: 4

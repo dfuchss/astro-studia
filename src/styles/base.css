@@ -1,11 +1,8 @@
 /*
- * Reset-ish base, element styles, and the handful of primitives every page
- * uses. Everything else is a scoped <style> block in the component that needs
- * it — there is no utility framework here and no class soup in the markup.
- *
- * The primitives, all documented in docs/Theming.md:
+ * Reset-ish base, element styles, and the primitives every page uses:
  *   .wrap .section .card .chip .kicker .mono .jump .scroll-x
  *   .sr-only .skip-link .reveal
+ * Everything else is a scoped <style> block in the component. docs/Theming.md.
  */
 
 *,
@@ -14,9 +11,8 @@
   box-sizing: border-box;
 }
 
-/* Any author `display` rule outranks the UA sheet's `[hidden] { display: none }`,
-   which silently turns `el.hidden = true` into a no-op. Components set `display`
-   freely, so make the attribute win everywhere. */
+/* Any author `display` rule outranks the UA sheet's `[hidden]`, silently turning
+   `el.hidden = true` into a no-op. !important makes the attribute win. */
 [hidden] {
   display: none !important;
 }
@@ -26,11 +22,8 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* The nav is sticky, so a fragment target scrolled flush to the viewport top
-   lands underneath it — the heading you jumped to is the one thing you cannot
-   see. Offset every anchorable element by the nav height plus a little air.
-   Global rather than per-page: an id is the only thing a `#fragment` can land
-   on, so anything carrying one needs this. */
+/* The nav is sticky, so a fragment target flush to the viewport top lands
+   underneath it. Global, because any id is a possible `#fragment` target. */
 [id] {
   scroll-margin-top: 5rem;
 }
@@ -46,11 +39,9 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* A faint wash behind the whole page — glow rather than shadow, at page scale.
-   Fixed, so it does not scroll away. The first gradient follows the section
-   accent and so changes as you move around the site; the second is a constant
-   second hue, which keeps the corner from going flat on pages whose accent is
-   the same as the default. */
+/* A faint fixed wash behind the page. The first gradient follows the section
+   accent; the second is a constant hue, so the corner does not go flat on a
+   page whose accent is already the default. */
 body::before {
   content: '';
   position: fixed;
@@ -235,7 +226,6 @@ th {
   font-size: var(--fs-mono);
 }
 
-/* chip / pill */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -260,9 +250,7 @@ a.chip:hover {
   background: var(--sec-dim);
 }
 
-/* jump row: wrapping pills that link to ids further down the same page.
-   /projects/ and /cv/ both have one. The pills are plain `.chip`s, so the site
-   keeps one pill style rather than a near-copy per page. */
+/* jump row: wrapping `.chip` pills linking to ids further down the same page. */
 .jump {
   display: flex;
   flex-wrap: wrap;
@@ -273,7 +261,6 @@ a.chip:hover {
   color: var(--sec);
 }
 
-/* card surface */
 .card {
   position: relative;
   background: var(--bg-1);
@@ -282,7 +269,6 @@ a.chip:hover {
   padding: 1.25rem 1.35rem;
 }
 
-/* section rhythm */
 .section {
   padding-block: clamp(3rem, 8vw, 6rem);
 }

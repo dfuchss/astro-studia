@@ -7,8 +7,7 @@ const projects = (await getCollection('projects')).sort(
   (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),
 );
 
-/** The buckets, in order. On this page rather than in consts.ts: one
-    consumer, and the `category` enum already stops a typo. */
+/** The buckets, in order. Here, not consts.ts: one consumer, and the enum stops typos. */
 const GROUPS: {
   id: NonNullable<(typeof projects)[number]['data']['category']>;
   label: string;
@@ -43,8 +42,7 @@ const flat = grouped.length === 0;
     </p>
 
     {
-      /* One flat grid when nothing is categorised; otherwise the jump row and a
-         section per group. See the note on `grouped` above. */
+      /* One flat grid when nothing is categorised, otherwise a section per group. */
       flat ? (
         <ul class="grid flat">
           {projects.map((project) => (

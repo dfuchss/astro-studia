@@ -72,14 +72,12 @@ const featured = posts.filter((p) => p.data.featured);
 </Base>
 
 <script>
-  /* Imported rather than written out, so the URL this pushes into the history
-     cannot drift from the one the pills link to. Astro bundles this script, so
-     the import resolves the same way the frontmatter's does. */
+  /* Imported, not written out, so the URL this pushes into the history cannot
+     drift from the one the pills link to. */
   import { BLOG, tagPath } from '../../lib/paths.ts';
 
   // The pills stay real links to /blog/tag/<slug>/, so they work with JS off
-  // and stay shareable. With JS they filter in place instead — the same
-  // behaviour as the filter on /publications/, rather than a page load per tag.
+  // and stay shareable; with JS they filter in place instead.
   const pills = Array.from(document.querySelectorAll<HTMLAnchorElement>('.tag-pill'));
   const posts = Array.from(document.querySelectorAll<HTMLElement>('.posts > li'));
   const empty = document.querySelector<HTMLElement>('.no-posts');
@@ -91,9 +89,8 @@ const featured = posts.filter((p) => p.data.featured);
       li.hidden = !hit;
       if (hit) {
         visible++;
-        // A post far down the list may never have been scrolled into view, so
-        // the scroll-reveal still has it at opacity 0. Filtering pulls it up
-        // the page, so reveal it.
+        // A post never scrolled into view is still at opacity 0, and filtering
+        // pulls it up the page — so reveal it.
         if (tag) li.classList.add('is-in');
       }
     }
@@ -103,10 +100,8 @@ const featured = posts.filter((p) => p.data.featured);
       pill.setAttribute('aria-pressed', String(on));
     }
     if (empty) empty.hidden = visible !== 0;
-    // The base, added by hand: this is the one URL on the site built at
-    // runtime, so src/integrations/base-paths.ts — which rewrites the built
-    // bytes — cannot reach it. Without the prefix a site at /repo/ would push
-    // /blog/tag/x/ into the address bar, which is the domain root's URL.
+    // The base, by hand: this is the one URL built at runtime, out of reach of
+    // src/integrations/base-paths.ts, which rewrites the built bytes.
     const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     const url = base + (tag ? tagPath(tag) : BLOG);
     history.replaceState({ tag }, '', url);
@@ -139,7 +134,6 @@ const featured = posts.filter((p) => p.data.featured);
   .tags span {
     color: var(--sec);
   }
-  /* Selected state for the filter pills. */
   .tag-pill.is-on {
     border-color: var(--sec-line);
     background: var(--sec-dim);

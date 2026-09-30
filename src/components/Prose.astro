@@ -1,10 +1,8 @@
 ---
 /**
- * Wrapper for rendered markdown.
- *
- * The only place in this codebase with `is:global` styles, and necessarily so:
- * these target remark's output, which Astro's scoped-style attributes never
- * reach. Everything is under `.prose`, so nothing here leaks into a component.
+ * Wrapper for rendered markdown, and the only `is:global` styles here: they
+ * target remark's output, which Astro's scoped-style attributes never reach.
+ * Everything is under `.prose`, so nothing leaks into a component.
  */
 ---
 
@@ -23,9 +21,8 @@
     padding-bottom: 0.35rem;
     border-bottom: 1px solid var(--border);
   }
-  /* h3 and h4 take the section accent and the muted ink respectively, so a
-     long post has three visibly distinct heading levels without needing three
-     distinct sizes. */
+  /* h3 takes the accent and h4 the muted ink, so a long post has three distinct
+     heading levels without three distinct sizes. */
   .prose h3 {
     margin-top: 1.75rem;
     color: var(--sec-strong);
@@ -49,8 +46,7 @@
     color: var(--sec);
   }
 
-  /* A ruled quote, not a filled callout. A tinted panel reads as an admonition
-     — "note the following" — which is a different thing from quoting someone. */
+  /* A ruled quote, not a filled callout: a tinted panel reads as an admonition. */
   .prose blockquote {
     margin: 1.5rem 0;
     padding: 0.25rem 0 0.25rem 1.1rem;
@@ -61,11 +57,8 @@
     margin-bottom: 0;
   }
 
-  /*
-   * Screenshots get the "screen in a frame" treatment: a layered surface, a
-   * soft hue halo and a hairline highlight, so a light-UI screenshot does not
-   * float unanchored on a near-black page.
-   */
+  /* Screenshots get a frame — surface, halo, hairline — so a light-UI
+     screenshot does not float unanchored on a near-black page. */
   .prose :is(p, figure) > img {
     display: block;
     width: 100%;
@@ -79,10 +72,8 @@
       0 18px 40px -24px var(--sec-glow),
       0 2px 10px rgb(0 0 0 / 35%);
   }
-  /* An SVG in body copy is usually dark-on-transparent line art, invisible
-     here unplated, so plating is the default. `class="no-plate"` opts out;
-     markdown's ![](…) cannot express that (nor width/height), so write the
-     <img> tag — see docs/Content.md, "Images in a post". */
+  /* Dark-on-transparent line art is invisible here, so SVGs are plated by
+     default; `class="no-plate"` opts out. docs/Content.md. */
   .prose :is(p, figure) > img[src$='.svg']:not(.no-plate) {
     background: #fff;
     padding: 1rem;
@@ -97,11 +88,9 @@
     text-align: center;
   }
 
-  /* A before/after pair (markup in docs/Content.md). Each image links to its
-     own file, because two screenshots at half the measure are only useful
-     opened. Deliberately outside the plate-and-halo rules above, which match
-     only an <img> that is a direct child of a <p> or <figure>: two glowing
-     panels side by side read as two figures rather than one comparison. */
+  /* A before/after pair (markup in docs/Content.md). Deliberately outside the
+     plate-and-halo rules above, which match only an <img> directly inside a <p>
+     or <figure>: two glowing panels read as two figures, not one comparison. */
   .prose .compare {
     margin: 1.75rem 0;
   }
@@ -123,9 +112,8 @@
     border-radius: var(--radius-s);
     transition: border-color var(--dur) var(--ease);
   }
-  /* The only affordance saying these are clickable, so it is on the border
-     rather than on the image — a hover that dims or scales a screenshot makes
-     the thing you are trying to look at harder to see. */
+  /* On the border, not the image: a hover that dims or scales a screenshot
+     makes the thing you are trying to look at harder to see. */
   .prose .compare a:hover img {
     border-color: var(--sec-line);
   }
@@ -138,10 +126,9 @@
     }
   }
 
-  /* An inline icon: a 24x24 SVG with `class="ti"` (markup in docs/Content.md),
-     tinted per icon through `--ti` and otherwise the muted ink. Keep
-     width/height on the tag too: a browser with CSS still loading otherwise
-     lays the icon out at 300x150. */
+  /* An inline icon: a 24x24 SVG with `class="ti"`, tinted through `--ti`
+     (docs/Content.md). Keep width/height on the tag, or a browser with CSS
+     still loading lays it out at 300x150. */
   .prose .ti {
     width: 1.05em;
     height: 1.05em;
@@ -150,8 +137,7 @@
     flex: none;
   }
 
-  /* An icon-led list (markup in docs/Content.md). The leading icon replaces
-     the bullet, and the links row is indented to the text's left edge. */
+  /* An icon-led list: the leading icon replaces the bullet (docs/Content.md). */
   .prose ul.tool-landscape {
     padding-left: 0;
     list-style: none;
@@ -177,9 +163,8 @@
     overscroll-behavior-x: contain;
   }
 
-  /* For an embedded video: <div class="video"><iframe …></iframe></div>.
-     Note that an embed is a third-party origin, so its host has to be listed
-     in ALLOWED_THIRD_PARTY in src/consts.ts or the audit fails the build. */
+  /* For an embedded video: <div class="video"><iframe …></iframe></div>. The
+     host must be in ALLOWED_THIRD_PARTY in src/consts.ts or the audit fails. */
   .prose .video {
     aspect-ratio: 16 / 9;
     margin: 1.5rem 0;

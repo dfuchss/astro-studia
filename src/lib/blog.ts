@@ -3,11 +3,9 @@ import { SITE } from '../consts.ts';
 
 export type Post = CollectionEntry<'posts'>;
 
-/**
- * The permalink comes from the FILENAME, never from the parsed date: local
- * getters shift the day backwards west of UTC, so CI and a laptop would
- * publish the same post at two URLs. publishedPosts() checks the two agree.
- */
+/** The permalink comes from the FILENAME, never the parsed date: local getters
+    shift the day backwards west of UTC, so CI and a laptop would publish one
+    post at two URLs. publishedPosts() checks the two agree. */
 export function permalinkParts(id: string) {
   const m = /^(\d{4})-(\d{2})-(\d{2})-(.+)$/.exec(id);
   if (!m) throw new Error(`post id "${id}" is not YYYY-MM-DD-slug`);

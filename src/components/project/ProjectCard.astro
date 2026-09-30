@@ -29,8 +29,7 @@ const initials = d.title
     <div class="head">
       {
         d.logo ? (
-          /* densities 1x and 2x: the logo is small and rendered at a fixed
-             size, so the retina variant is cheap and the difference obvious. */
+          /* 1x and 2x: the logo is small at a fixed size, so retina is cheap. */
           <Image class="logo" src={d.logo} alt="" width={44} height={44} densities={[1, 2]} />
         ) : (
           <span class="logo fallback mono" aria-hidden="true">
@@ -40,10 +39,9 @@ const initials = d.title
       }
       <h3>{d.title}</h3>
       {
-        /* A sibling of the heading, not a child of it: `.head` is the flex
-           container, so margin-left:auto here floats the arrow to the right
-           edge of the card. Inside the <h3> it is an inline span and the auto
-           margin computes to zero, which silently parks it against the title. */
+        /* A sibling of the heading, not a child: `.head` is the flex container,
+           so margin-left:auto floats the arrow to the card's right edge. Inside
+           the <h3> the auto margin computes to zero. */
         external && (
           <span class="out" aria-label="(external link)">
             ↗
@@ -60,9 +58,8 @@ const initials = d.title
     list-style: none;
   }
 
-  /* Flat, like the rest of the site: a hairline rule instead of a filled tile.
-     The whole card is the link, so there is no small target inside a large
-     clickable-looking box. */
+  /* Flat, like the rest of the site: a hairline rule, not a filled tile. The
+     whole card is the link, so there is no small target in a big clickable box. */
   .hit {
     display: grid;
     gap: 0.6rem;

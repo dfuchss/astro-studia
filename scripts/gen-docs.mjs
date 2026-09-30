@@ -21,19 +21,14 @@ const DOC_REL = 'docs/Removing-Features.md';
 const BEGIN = '<!-- BEGIN GENERATED: features -->';
 const END = '<!-- END GENERATED: features -->';
 
-/** Marker line that tells a reader not to hand-edit the block below. */
 const NOTE = '<!-- Generated from scripts/features.mjs by `npm run docs`. Do not edit by hand. -->';
 
 const check = process.argv.includes('--check');
 
 // ---- the table -------------------------------------------------------------
 
-/**
- * Markdown table cells are hostile to two characters: `|` ends the cell, and a
- * `<…>` is parsed as HTML and vanishes from the rendered page. The manifest is
- * prose written for humans and contains both — `<PubEntry>`, `<link
- * rel="alternate">` — so escape rather than ask the manifest to avoid them.
- */
+/** `|` ends a Markdown cell, and a `<…>` is parsed as HTML and vanishes from the
+    page. The manifest is prose written for humans and contains both. */
 const cell = (s) =>
   String(s).replace(/\|/g, '\\|').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, ' ');
 
@@ -68,15 +63,13 @@ function table() {
   return lines.join('\n');
 }
 
-/** The generated region, markers included. */
 function block() {
   return [BEGIN, NOTE, '', table(), '', END].join('\n');
 }
 
 // ---- splice it into the document -------------------------------------------
 
-/** Without markers (a first run), the region replaces the table under
-    "## What goes with what". */
+/** First run, no markers yet: the region replaces the table under the heading. */
 function insertMarkers(src) {
   const heading = src.indexOf('## What goes with what');
   if (heading === -1) {
@@ -174,11 +167,8 @@ function diff(a, b) {
 
 // ---- prettier --------------------------------------------------------------
 
-/**
- * Formatted through prettier because `npm run check` runs `prettier --check`
- * over the repo: an unformatted table would turn a docs regeneration into a
- * failing check, and `--check` here would disagree with the formatter forever.
- */
+/** Formatted through prettier because `npm run check` runs `prettier --check`
+    over the repo: an unformatted table would fail that check forever. */
 async function format(text) {
   try {
     const prettier = await import('prettier');

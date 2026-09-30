@@ -1,13 +1,11 @@
 # Refresh src/data/github-metadata.json from the GitHub API and commit it.
 #
-# OPT-IN, and on demand only. Uncomment the schedule below to run it weekly.
-#
-# It needs a PAT rather than the built-in GITHUB_TOKEN: a push made with
-# GITHUB_TOKEN does not trigger other workflows, so the commit would land and
-# the site would never rebuild. This job needs no more than write access to the
-# repository's contents — but the PAT secret is shared with docs.yml, which
-# pushes to the wiki and so requires a CLASSIC token with the `repo` scope. Make
-# it that one and all three workflows are covered; see docs/Deploying.md.
+# Runs on demand and on a push to repositories.yml; uncomment the schedule below
+# to add a weekly run. Needs secrets.PAT, not the built-in GITHUB_TOKEN, whose
+# pushes trigger no other workflow — the commit would land and the site would
+# never rebuild. Contents write is all this job wants, but the secret is shared
+# with docs.yml, which needs a CLASSIC token with the `repo` scope.
+# docs/Deploying.md, "The two opt-in workflows".
 name: Update GitHub metadata
 
 on:
@@ -25,14 +23,10 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      # The whole point of the PAT is that its pushes trigger deploy.yml, which
-      # a GITHUB_TOKEN push deliberately does not. Falling back to GITHUB_TOKEN
-      # would leave this job green while the refreshed data silently stopped
-      # reaching the live site, so an absent or expired PAT is a hard failure.
-      #
-      # Checked through env rather than `if: ${{ !secrets.PAT }}`: the secrets
-      # context is not available in a step-level if, so that form would never
-      # fire and the guard would not exist.
+      # Checked through env: the secrets context is not available in a step-level
+      # `if`, so `if: ${{ !secrets.PAT }}` would never fire. Hard failure rather
+      # than a GITHUB_TOKEN fallback, which would leave this job green while the
+      # refreshed data silently stopped reaching the site.
       - name: Require a PAT
         env:
           PAT: ${{ secrets.PAT }}

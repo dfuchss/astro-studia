@@ -8,9 +8,8 @@ interface Props {
 
 const { section } = Astro.props;
 
-/* The brand mark, if there is one — see SITE.brandLogo. The height is decided
-   here; the width follows from the file's aspect ratio, read off disk, so
-   both attributes the audit requires are always present. */
+/* The height is set here; the width follows from the file's aspect ratio, read
+   off disk, so both attributes the audit requires are always present. */
 const LOGO_HEIGHT = 24;
 const logo = SITE.brandLogo;
 const natural = logo ? intrinsic(logo.src) : undefined;
@@ -21,9 +20,8 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
   <div class="wrap inner">
     <a class="brand mono" href="/">
       {
-        /* alt is derived, not configured: beside the wordmark the mark is
-           decoration and a screen reader should not read the site's name
-           twice, and in place of the wordmark the mark IS the name. */
+        /* alt is derived: beside the wordmark the mark is decoration, and in
+           place of it the mark IS the name. */
         logo && (
           <img
             class="brand-logo"
@@ -35,8 +33,8 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
         )
       }
       {
-        /* One span, so that the flex gap below separates the mark from the
-           wordmark and not the `~/` prompt from the name it is a prompt for. */
+        /* One span, so the flex gap separates mark from wordmark, not `~/` from
+           the name it is a prompt for. */
         !logo?.replacesWordmark && (
           <span>
             {SITE.brandPrompt && <span class="brand-prompt">{SITE.brandPrompt}</span>}
@@ -85,9 +83,8 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
     min-height: 3.5rem;
   }
 
-  /* A wordmark, optionally with a mark beside it — set SITE.brandLogo and the
-     <img> above renders. inline-flex unconditionally, because a one-item flex
-     row lays out exactly like the inline text it replaces. */
+  /* inline-flex unconditionally: a one-item flex row lays out exactly like the
+     inline text it replaces. */
   .brand {
     display: inline-flex;
     align-items: center;
@@ -98,8 +95,7 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
     white-space: nowrap;
   }
   .brand-logo {
-    /* A logo with square corners against a square-cornered bar looks pasted
-       on; the radius is the same token every other plate on the site uses. */
+    /* Square corners against a square-cornered bar look pasted on. */
     border-radius: var(--radius-s);
   }
   .brand-prompt {
@@ -109,13 +105,8 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
     color: var(--sec-strong);
   }
 
-  /* No hamburger: short items wrap onto a second line on narrow screens, which
-     is less machinery and one fewer thing that can trap focus. */
-  /* Pushed to the right edge, and kept there once it wraps. space-between on
-     .inner already does this while the two sit on one line; margin-left:auto
-     plus flex-end is what holds the alignment when the items drop onto a line
-     of their own, which they do as soon as the nav is long or the window is
-     narrow. */
+  /* No hamburger: short items simply wrap onto a second line. margin-left:auto
+     plus flex-end is what keeps them at the right edge once they do. */
   nav {
     margin-left: auto;
   }
@@ -139,13 +130,8 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
     border-bottom: 1px solid transparent;
   }
 
-  /* Each item previews the accent of the section it leads to, so arriving is a
-     continuation rather than a surprise.
-     
-     One rule covers every section, and adding one costs nothing here: the
-     link's own `data-section` attribute is matched by the [data-section='…']
-     blocks in tokens.css, which have already re-pointed --sec *inside this
-     element* before this rule reads it. */
+  /* Each item previews its destination's accent: the link's own `data-section`
+     has already re-pointed --sec inside this element, so one rule covers all. */
   ul a:hover,
   ul a[aria-current='page'] {
     color: var(--sec);

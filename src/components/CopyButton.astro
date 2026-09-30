@@ -1,10 +1,9 @@
 ---
 /**
  * Copy-to-clipboard button for a `<pre>` elsewhere on the page. Not under
- * components/pub/, because /pgp-key/ uses it too and that directory goes
- * with the publications feature. The handler binds to every
- * `button[data-copy]`. Ships `hidden` and is revealed by the script, so
- * without JS there is no dead control.
+ * components/pub/, because /pgp-key/ uses it too and that directory goes with
+ * the publications feature. Ships `hidden`, so with JS off there is no dead
+ * control.
  */
 interface Props {
   /** id of the `<pre>` whose text is copied. */
@@ -28,16 +27,14 @@ const { target, label = 'Copy BibTeX' } = Astro.props;
 <script>
   for (const btn of document.querySelectorAll<HTMLButtonElement>('button[data-copy]')) {
     btn.hidden = false;
-    // Read once, at bind time: a second click inside the confirmation window
-    // would otherwise capture "Copied" as the name to restore.
+    // Read once, at bind time: a second click would capture "Copied" as the name.
     const label = btn.getAttribute('aria-label') ?? 'Copy';
     let restore: ReturnType<typeof setTimeout>;
     btn.addEventListener('click', async () => {
       const pre = document.getElementById(btn.dataset.copy!);
       if (!pre?.textContent) return;
       await navigator.clipboard.writeText(pre.textContent);
-      // Icon-only, so the confirmation is a swapped icon plus the accessible
-      // name. There is no text node to replace.
+      // Icon-only: the confirmation is a swapped icon plus the accessible name.
       btn.classList.add('is-copied');
       btn.setAttribute('aria-label', 'Copied');
       clearTimeout(restore);

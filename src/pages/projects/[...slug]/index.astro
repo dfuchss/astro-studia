@@ -16,9 +16,8 @@ export const getStaticPaths = (async () => {
   const projects = await getCollection('projects');
   return (
     projects
-      // An entry with `redirect` lives somewhere else; generating a page here
-      // would be a second, worse copy of it that search engines then have to
-      // choose between.
+      // An entry with `redirect` lives somewhere else; a page here would be a
+      // second, worse copy for search engines to choose between.
       .filter((p) => !p.data.redirect)
       .map((project) => ({ params: { slug: project.id }, props: { project } }))
   );
@@ -29,9 +28,8 @@ const { Content } = await render(project);
 const d = project.data;
 
 /* ▼ FEATURE:papers ▼ */
-/* The reverse index: every paper whose front matter names this project. By
-   collection id, not title: a title match silently empties the list the first
-   time somebody edits one. */
+/* Every paper whose front matter names this project. By collection id, not
+   title: a title match silently empties the list the first time one is edited. */
 const papers = await getCollection('papers', (p) =>
   p.data.projects.some((ref) => ref.id === project.id),
 );
@@ -42,8 +40,8 @@ const related = (
       return {
         paper,
         pub,
-        // Not `pub.data.year`: a page with no entry carries its own year, and
-        // reading the entry alone would park it at the bottom of the list.
+        // Not `pub.data.year`: a page with no entry carries its own, and would
+        // otherwise be parked at the bottom of the list.
         year: paperYear(paper, pub),
         // Only used when there is no badge; see /papers/ for the same rule.
         tag: pub?.data.abbr ? undefined : paperVenueShort(paper, pub),
@@ -51,8 +49,8 @@ const related = (
     }),
   )
 )
-  // Newest edition first, then the order the paper list uses, so two works
-  // from the same year keep the sequence a reader saw on /papers/.
+  // Newest edition first, then the order /papers/ uses, so two works from the
+  // same year keep the sequence a reader has already seen.
   .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.paper.data.order - b.paper.data.order);
 /* ▲ FEATURE:papers ▲ */
 ---
@@ -73,8 +71,7 @@ const related = (
 
     {
       /* The overview diagram, when the front matter names one. Above the prose
-         because it is the thing a reader wants first on an approach page: what
-         is this, in one picture. Nothing renders when `figure` is unset. */
+         because "what is this, in one picture" is what a reader wants first. */
       d.figure && (
         <Figure
           src={d.figure.src}
@@ -90,8 +87,7 @@ const related = (
     </Prose>
 
     {
-      /* This project's own repositories — not the site-wide /repositories/
-         page, which is every repo the organisation has. */
+      /* This project's own repositories, not the site-wide /repositories/ page. */
       d.repositories.length > 0 && (
         <section class="block" aria-labelledby="code-h">
           <h2 class="mono" id="code-h">
@@ -148,8 +144,7 @@ const related = (
 </Base>
 
 <style>
-  /* Header, prose and every block below them share one measure, so their left
-     and right edges line up the whole way down the page. */
+  /* Header, prose and every block share one measure, so their edges line up. */
   .head,
   .block {
     max-width: var(--measure);
@@ -197,8 +192,7 @@ const related = (
     gap: 0.45rem;
   }
 
-  /* The same two-column rail as the publication list: badge, then the entry.
-     A reader who has seen /publications/ already knows how to read this. */
+  /* The same two-column rail as /publications/: badge, then the entry. */
   .papers li {
     display: grid;
     grid-template-columns: 5.5rem minmax(0, 1fr);

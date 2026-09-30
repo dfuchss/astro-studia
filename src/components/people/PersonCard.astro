@@ -13,15 +13,12 @@ const { member } = Astro.props;
 const { entry, author } = member;
 const d = entry.data;
 
-/* The side of the box the CSS below renders it in. Only the width is passed:
-   a portrait that is not square keeps its aspect ratio and is cropped by
-   `object-fit: cover`, rather than being squashed into a square by sharp. */
+/* Width only: a non-square portrait keeps its ratio and is cropped by
+   `object-fit: cover`, rather than squashed into a square by sharp. */
 const PORTRAIT = 72;
 
-// Each of these is optional in people.yml, so a person with none of them
-// renders as a name and a portrait and nothing looks broken. The words on
-// the chips are PEOPLE_CHIPS in src/consts.ts: ardoco.de's homepage chip says
-// "Website at KIT", and its ORCID chip shows the identifier itself.
+// Each is optional in people.yml, so a person with none renders as a name and
+// a portrait. The words on the chips are PEOPLE_CHIPS in src/consts.ts.
 const profiles = [
   d.url && { label: PEOPLE_CHIPS.homepage, href: d.url },
   author.data.orcid && {
@@ -62,8 +59,7 @@ const profiles = [
 </li>
 
 <style>
-  /* Flat, like the rest of the site: a hairline rule rather than a filled
-     tile. The portrait is the only solid shape in the row. */
+  /* Flat, like the rest of the site: a hairline rule, not a filled tile. */
   .person {
     list-style: none;
     display: flex;
@@ -77,8 +73,7 @@ const profiles = [
   .person:hover {
     border-top-color: var(--sec-line);
   }
-  /* Arriving from an author link in the publication list should say which of
-     these you were sent to. */
+  /* Arriving from an author link should say which person you were sent to. */
   .person:target {
     border-top-color: var(--sec-line);
     background: var(--sec-dim);

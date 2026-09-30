@@ -3,9 +3,8 @@
  * are committed so the build needs no image processing; rerun after editing
  * the SVG (its colours are copies of --bg and the accent, not the tokens).
  *
- * An SVG comment may not contain a double hyphen: it is illegal XML, and
- * sharp refuses the file where a browser would quietly cope. If this reports
- * a corrupt header, that is usually why.
+ * A double hyphen in an SVG comment is illegal XML: sharp refuses the file
+ * where a browser copes, and reports it as a corrupt header.
  */
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';

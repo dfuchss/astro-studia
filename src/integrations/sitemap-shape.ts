@@ -5,14 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 /**
  * Make every sitemap entry name the file that was actually emitted.
- *
- * @astrojs/sitemap appends a trailing slash only when `build.format` is
- * 'directory', so under URL_POLICY 'preserve' it publishes /people for a page
- * that is people/index.html. There is no option for this, and its `serialize`
- * hook cannot tell a directory route from a flat one by the URL alone — but
- * after the build one of `<path>/index.html` or `<path>.html` exists, so this
- * asks the disk. A path that is itself a file (a PDF from customPages) or
- * nothing on disk is left alone. Under the default policy nothing changes.
+ * @astrojs/sitemap takes the trailing slash from `build.format`, which under
+ * URL_POLICY 'preserve' is wrong for most of the site. Only the output can tell
+ * a directory route from a flat one, so this asks the disk after the build.
  * docs/Architecture.md, "The two integrations".
  */
 export default function sitemapShape(): AstroIntegration {
@@ -57,10 +52,8 @@ export default function sitemapShape(): AstroIntegration {
   };
 }
 
-/**
- * The URL an entry should have, given what is on disk. Exported so the rule can
- * be exercised without a build.
- */
+/** The URL an entry should have, given what is on disk. Exported so the rule
+    can be exercised without a build. */
 export function shape(loc: string, origin: string, root: string): string {
   if (!loc.startsWith(origin)) return loc;
   const path = loc.slice(origin.length).replace(/\/+$/, '');

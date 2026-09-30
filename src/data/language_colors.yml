@@ -1,8 +1,6 @@
-# GitHub's language colours, for the dot beside a repository's language.
-#
-# A language with no entry here falls back to var(--text-faint), so this list
-# only needs the languages you actually use. The canonical source is
-# github-linguist's languages.yml.
+# GitHub's language colours, for the dot beside a repository's language. A
+# language with no entry here falls back to var(--text-faint), so this needs
+# only the languages you use. Canonical source: github-linguist's languages.yml.
 Astro: '#ff5a03'
 C: '#555555'
 C++: '#f34b7d'

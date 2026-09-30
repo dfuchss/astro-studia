@@ -1,51 +1,35 @@
-# The CV. /cv/ renders this file and nothing else.
+# The CV. /cv/ renders this file and nothing else. DEMO CONTENT.
 #
-# Every section has the same shape — a title, a heading, and a list of entries —
-# so adding "Service" or "Grants" is a new block here and no code at all. Order
-# on this page is the order in this file.
+# A section is a title, a heading and a list of entries, so adding "Service" or
+# "Grants" is a new block here and no code. Page order is file order.
 #
-# A section renders as a `timeline` (a date rail) if any entry carries a date,
-# or `rows` (no rail) otherwise — unless `layout:` names one of the two other
-# shapes explicitly:
+# Section fields:
+#   layout  timeline | rows | cards | courses. Default: `timeline` (a date rail)
+#           if any entry carries a date, else `rows`. `cards` is a grid of name,
+#           "since" date and highlight chips (Projects); `courses` groups by
+#           each entry's `semester`, earlier terms behind a disclosure.
+#   count   a noun beside the heading — "Rhetorical instruction 24 courses".
+#           Opt-in; "course|courses" for a section that may hold one.
 #
-#   layout   timeline | rows | cards | courses   (optional; see above)
-#   count    a noun — "courses" renders "Rhetorical instruction 24 courses"
-#            beside the heading. Opt-in, and only worth it where the number is
-#            itself the point: a bare count on every heading ("Education 2")
-#            is noise the reader can see for themselves. Write it as it reads
-#            for several, or "course|courses" for a section that may hold one.
-#
-#   cards    a grid for entries with a name, an optional "since" date and a
-#            row of highlight chips — built for Projects.
-#   courses  a semester-grouped grid — the current semester's entries stay
-#            visible, everything from an earlier one collapses behind a
-#            disclosure. Built for Teaching; needs each entry's `semester`.
-#
-# Every field of an entry except `title` is optional:
-#
-#   title     what it was                             (required)
+# Entry fields, all optional but `title`:
+#   title     what it was (required)
 #   org       who it was with
-#   url       link on the org (or, for `cards`, on the title)
-#   start     "2020-03", "2020", or anything else — a value that looks like a
-#   end       date is formatted, anything else is printed verbatim. A start
-#             with no end is a single date, not an open range.
-#   current   true renders "– present" and a `now` badge, and the entry page's
-#             "where" row reads the first entry that says so. Explicit, because
-#             a degree or a prize also has a start and no end.
+#   url       link on the org, or on the title for `cards`
+#   start     "2020-03", "2020", or anything else: a value that looks like a
+#   end       date is formatted, anything else printed verbatim. A start with no
+#             end is a single date, not an open range.
+#   current   true renders "– present" and a `now` badge, and the contact
+#             block's "where" row reads the first entry that says so. Explicit,
+#             because a degree or a prize also has a start and no end.
 #   location  city, country
 #   note      one short line, e.g. a thesis title (or a `cards` summary)
-#   details   bullets. A bullet is plain text unless it embeds a markdown
-#             link — "Reviewer for [ACM TOSEM](https://…)" — which renders as
-#             a real hyperlink without needing `set:html` for the whole field.
-#   minor     true sends this entry to a collapsed "N more" disclosure at the
-#             end of the section instead of its main list — for a long run of
-#             repeated low-value entries (teaching assistantships, retired
-#             course editions) that would otherwise bury the ones that do.
+#   details   bullets; plain text unless one embeds a markdown link,
+#             "Reviewer for [ACM TOSEM](https://…)", which renders as one.
+#   minor     true sends the entry to a collapsed "N more" disclosure at the end
+#             of the section, for a long run of repeated low-value entries.
 #   highlights  chips under a `cards` entry.
 #   semester    a `courses` entry's term, e.g. "WS 26/27" or "SS 2026".
 #   type        a `courses` entry's kind, e.g. "Lecture / Practice".
-#
-# DEMO CONTENT.
 
 summary: >-
   Advocate, magistrate and translator. Brought Greek philosophy into Latin, and
@@ -65,10 +49,6 @@ sections:
       - title: Writing and private study
         org: Tusculum
         start: '46 BC'
-        # `current` is explicit rather than inferred from a missing `end`,
-        # because a degree or a prize also has one date and no end — and
-        # inferring would label those "now" too. This is the entry /cv/ badges
-        # and the home page reads for its "where" line.
         current: true
         details:
           - Composed the philosophical works in under two years.
@@ -104,8 +84,8 @@ sections:
         end: '75 BC'
         location: Lilybaeum, Sicily
 
-      # Five recurring courtroom appearances, none of which needs to sit
-      # beside a consulship to be worth keeping on the page.
+      # The `minor` case: five recurring courtroom appearances, kept on the page
+      # but not beside a consulship.
       - title: Advocate
         org: Roman law courts
         start: '80 BC'
@@ -158,9 +138,8 @@ sections:
   - id: teaching
     heading: Rhetorical instruction
     layout: courses
-    # The one section here that names a `count`: a teaching record is partly a
-    # claim about volume, so "6 courses" earns its place beside the heading.
-    # Every other section leaves it off and renders a bare heading.
+    # The one section that names a `count`: a teaching record is partly a claim
+    # about volume, so "6 courses" earns its place beside the heading.
     count: course|courses
     entries:
       - title: Rhetorica ad discipulos

@@ -3,15 +3,12 @@ import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 
 interface Props {
-  /** An image from src/assets/, as `image()` in the collection schema yields
-      it — so the width, height and format below come from the build. */
+  /** An image from src/assets/; its width, height and format come from the build. */
   src: ImageMetadata;
   alt: string;
-  /** A white plate behind the image: dark line art on transparency is close
-      to invisible here. False for an image with its own background. */
+  /** A white plate: dark line art on transparency is near-invisible here. */
   plate?: boolean;
-  /** A window frame with this titlebar label, for a diagram or a screenshot.
-      Off by default: framing a photo or a plot claims something untrue. */
+  /** A window frame with this titlebar label; framing a photo claims something untrue. */
   frame?: string;
   caption?: string;
 }
@@ -29,9 +26,8 @@ const maxWidth = isVector ? 'var(--measure)' : `${src.width}px`;
   style={`--fig-max: ${maxWidth}`}
 >
   {
-    /* The wrapper is here whether or not the figure is framed, so that there is
-       one <img> in this file rather than one per branch. Unstyled it is an inert
-       block div and the unframed figure renders exactly as it did before. */
+    /* Here whether or not the figure is framed: unstyled it is an inert block
+       div, and this file keeps one <img> rather than one per branch. */
   }
   <div class="frame">
     {
@@ -87,8 +83,7 @@ const maxWidth = isVector ? 'var(--measure)' : `${src.width}px`;
     border-radius: 0;
   }
   .framed.has-plate img {
-    /* A hair more than the unframed plate, because here the white runs to the
-       frame's inside edge and needs the margin to read as a page. */
+    /* More than the unframed plate: here the white runs to the frame's inside edge. */
     padding: 1rem;
   }
   .frame-bar {
@@ -99,9 +94,7 @@ const maxWidth = isVector ? 'var(--measure)' : `${src.width}px`;
     background: var(--bg-3);
     border-bottom: 1px solid var(--border);
   }
-  /* Decoration, and aria-hidden on the bar for that reason: three dots and a
-     window title say nothing a screen reader needs, and the alt text already
-     says what the image is. */
+  /* Decoration — hence aria-hidden on the bar; the alt text says what the image is. */
   .dot {
     width: 0.6rem;
     height: 0.6rem;

@@ -3,10 +3,8 @@ import { socials } from '../lib/data.ts';
 
 /**
  * Profile links, icon-only: the platform name is in `aria-label` and `title`.
- * The marks are Simple Icons paths (CC0, https://simpleicons.org), inlined as
- * one 24x24 path each in `currentColor`. A profile not in this list goes under
- * `extra:` in socials.yml, not in here; without an `icon` it renders as a
- * text chip.
+ * The marks are Simple Icons paths (CC0, https://simpleicons.org). A profile
+ * not listed here goes under `extra:` in socials.yml and renders as a text chip.
  */
 const ICONS = {
   orcid:
@@ -102,9 +100,8 @@ const links: Link[] = [
     padding: 0;
   }
 
-  /* Square-in-a-circle: `.chip` already supplies the pill border and the hover
-     accent, so this only drops the text padding and fixes the tap target.
-     2.25rem keeps it above the 24px minimum a touch target wants. */
+  /* `.chip` already supplies the border and the hover accent; this only drops
+     the text padding and holds the tap target above the 24px minimum. */
   .social {
     width: 2.25rem;
     height: 2.25rem;

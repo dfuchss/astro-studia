@@ -1,17 +1,12 @@
 # Refresh src/data/citations.yml from Google Scholar and commit it.
 #
-# OPT-IN, and on demand only. Uncomment the schedule to run it nightly.
-#
-# Two things to know before enabling it. It needs a PAT, for the same reason as
-# update-github-metadata.yml: a push made with GITHUB_TOKEN triggers no other
-# workflow, so the site would never rebuild. (That secret is shared with
-# docs.yml, which pushes to the wiki and so needs a CLASSIC token with the `repo`
-# scope — see docs/Deploying.md.) And Scholar rate-limits hard and has no API, so
-# a run that cannot finish is routine rather than a failure — the timeout below
-# is treated as success and the counts simply stay as they are until the next
-# run.
-#
-# Set scholar_userid in src/data/socials.yml first, or the script exits saying so.
+# OPT-IN, and on demand only: uncomment the schedule below to run it nightly.
+# Needs scholar_userid in src/data/socials.yml, or the script exits saying so,
+# and secrets.PAT — a push made with GITHUB_TOKEN triggers no other workflow, so
+# the site would never rebuild. That secret is shared with docs.yml, which needs
+# it to be a CLASSIC token with the `repo` scope. Scholar rate-limits hard and
+# has no API, so the timeout below is treated as success and the counts simply
+# stay as they are. docs/Deploying.md, "The two opt-in workflows".
 name: Update Scholar citations
 
 on:
@@ -26,14 +21,10 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      # The whole point of the PAT is that its pushes trigger deploy.yml, which
-      # a GITHUB_TOKEN push deliberately does not. Falling back to GITHUB_TOKEN
-      # would leave this job green while the refreshed data silently stopped
-      # reaching the live site, so an absent or expired PAT is a hard failure.
-      #
-      # Checked through env rather than `if: ${{ !secrets.PAT }}`: the secrets
-      # context is not available in a step-level if, so that form would never
-      # fire and the guard would not exist.
+      # Checked through env: the secrets context is not available in a step-level
+      # `if`, so `if: ${{ !secrets.PAT }}` would never fire. Hard failure rather
+      # than a GITHUB_TOKEN fallback, which would leave this job green while the
+      # refreshed data silently stopped reaching the site.
       - name: Require a PAT
         env:
           PAT: ${{ secrets.PAT }}

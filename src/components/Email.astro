@@ -1,9 +1,8 @@
 ---
 /**
- * An email address that is not in the served HTML: split and rot13'd into
- * data attributes, reassembled on load. The audit fails the build on anything
- * address-shaped in the output. Without JS it renders "name (at) example
- * (dot) org".
+ * An address that is not in the served HTML: split and rot13'd into data
+ * attributes, reassembled on load. The audit fails the build on anything
+ * address-shaped in the output; with JS off this reads "name (at) example (dot) org".
  */
 interface Props {
   /** The real address. It never reaches the HTML. */
@@ -58,8 +57,7 @@ const readable = `${user} (at) ${domain.replace(/\./g, ' (dot) ')}`;
 
 <style>
   .email {
-    /* The no-JS form is longer than the label that replaces it; keep it from
-       breaking mid-address. */
+    /* Keeps the longer no-JS form from breaking mid-address. */
     white-space: nowrap;
   }
 </style>

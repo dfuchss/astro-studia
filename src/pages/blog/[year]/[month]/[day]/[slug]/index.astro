@@ -13,13 +13,11 @@ import {
 import { tagPath } from '../../../../../../lib/paths.ts';
 
 export const getStaticPaths = (async () => {
-  // publishedPosts() drops drafts, so a draft has no route at all — it is not
-  // merely hidden from the list.
+  // publishedPosts() drops drafts, so a draft has no route at all.
   const all = await publishedPosts();
   return all.map((post, i) => ({
     params: permalinkParts(post.id),
-    // Neighbours are resolved here, where the sorted list already exists,
-    // rather than re-fetching the collection inside every page.
+    // Neighbours are resolved here, where the sorted list already exists.
     props: { post, newer: all[i - 1], older: all[i + 1] },
   }));
 }) satisfies GetStaticPaths;

@@ -23,8 +23,7 @@ try:
     import yaml
     from scholarly import scholarly
 except ImportError as exc:  # pragma: no cover - first-run guidance
-    # A bare traceback here is the first thing most people will see of this
-    # script, and it does not tell them the one thing they need to know.
+    # A bare traceback would not name the one thing the reader has to do.
     sys.exit(
         f"{exc.name} is not installed.\n\n"
         "This script is the one opt-in piece of tooling in this template and "
@@ -39,9 +38,8 @@ class ScholarUnavailable(Exception):
     """Google Scholar did not answer in time. Expected, not a failure."""
 
 
-# Scholar rate-limits aggressively, so a run that cannot finish is routine: the
-# citation counts simply stay as they are until the next scheduled run. Keep this
-# below the workflow's own `timeout` so the script, not SIGKILL, ends the run.
+# Keep this below the workflow's own `timeout` so the script, not SIGKILL, ends
+# the run: Scholar rate-limits hard, and a run that cannot finish is routine.
 TIME_BUDGET_SECONDS: int = int(os.environ.get("SCHOLAR_TIME_BUDGET", "270"))
 
 
@@ -79,11 +77,10 @@ def get_scholar_citations() -> None:
     print(f"Fetching citations for Google Scholar ID: {SCHOLAR_USER_ID}")
     today = datetime.now().strftime("%Y-%m-%d")
 
-    # Bound before the read below: the comparison near the end of this function
-    # reads it even when the file is missing or unreadable.
+    # Bound here because the comparison at the end of this function reads it
+    # even when the file is missing or unreadable.
     existing_data = None
 
-    # Check if the output file was already updated today
     if os.path.exists(OUTPUT_FILE):
         try:
             with open(OUTPUT_FILE, "r") as f:
@@ -158,7 +155,6 @@ def get_scholar_citations() -> None:
                 f"Error processing publication '{pub.get('bib', {}).get('title', 'Unknown')}': {e}. This publication will be skipped."
             )
 
-    # Compare new data with existing data
     if existing_data and existing_data.get("papers") == citation_data["papers"]:
         print("No changes in citation data. Skipping file update.")
         return

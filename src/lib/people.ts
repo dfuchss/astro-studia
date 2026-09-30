@@ -22,13 +22,9 @@ export async function members(): Promise<Member[]> {
   );
 }
 
-/**
- * Surname → the anchor of that person's entry on /people/, built once per
- * page and passed down rather than looked up per author. Matching is on the
- * folded surname alone (the same fold as surnameKey() in authors.ts, which
- * PubEntry reads the map with): deliberately loose, because one name spelled
- * two ways is commoner than two people sharing a surname.
- */
+/** Surname → that person's anchor on /people/, built once per page. Matching is
+    on the folded surname alone (the same fold as surnameKey() in authors.ts) —
+    loose on purpose: one name spelled two ways beats two people sharing one. */
 export async function peopleLinks(): Promise<Map<string, string>> {
   const fold = (s: string) =>
     s

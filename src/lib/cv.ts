@@ -2,11 +2,9 @@ import { parse } from 'yaml';
 import cvRaw from '../data/cv.yml?raw';
 import { SITE } from '../consts.ts';
 
-/**
- * How a section renders. `timeline` (a date rail) and `rows` (none) are
- * chosen by layoutOf() when a section names nothing; `cards` (a grid with
- * highlight chips) and `courses` (a semester-grouped grid) are always explicit.
- */
+/** How a section renders. `timeline` (a date rail) and `rows` (none) are chosen
+    by layoutOf() when a section names nothing; `cards` and `courses` are always
+    explicit. */
 export type CvLayout = 'timeline' | 'rows' | 'cards' | 'courses';
 
 export type CvEntry = {
@@ -20,11 +18,8 @@ export type CvEntry = {
   location?: string;
   note?: string;
   details?: string[];
-  /**
-   * Sends this entry to the section's collapsed tail. A per-entry flag rather
-   * than "keep the first N", because the line between main and tail is about
-   * what kind of entry it is, not where it falls once sorted.
-   */
+  /** Sends this entry to the section's collapsed tail — per-entry rather than
+      "keep the first N", because it is about the kind of entry, not its rank. */
   minor?: boolean;
   /** Chips under a `cards` entry, e.g. the areas a project touches. */
   highlights?: string[];
@@ -38,12 +33,9 @@ export type CvSection = {
   id: string;
   heading: string;
   layout?: CvLayout;
-  /**
-   * A noun for an entry count beside the heading: `courses` renders
-   * "Teaching 24 courses". Opt-in, because a bare number on every heading is
-   * noise; the noun is the switch. `singular|plural` for a section that may
-   * hold one entry.
-   */
+  /** A noun for an entry count beside the heading: `courses` renders "Teaching
+      6 courses". Opt-in; the noun is the switch. `singular|plural` for a
+      section that may hold one entry. */
   count?: string;
   entries: CvEntry[];
 };
@@ -57,11 +49,9 @@ export type Cv = {
 
 export const cv = parse(cvRaw) as Cv;
 
-/**
- * Format one end of a date range. "2020-03" is formatted for the site's
- * locale, in UTC so the month cannot shift with the build machine's zone;
- * anything else ("Winter 2024/25", "63 BC") passes through untouched.
- */
+/** Format one end of a date range. "2020-03" is formatted for the site's locale,
+    in UTC so the month cannot shift with the build machine's zone; anything else
+    ("Winter 2024/25", "63 BC") passes through untouched. */
 export function formatDate(value: string): string {
   const ym = /^(\d{4})-(\d{2})$/.exec(value);
   if (ym) {
@@ -84,16 +74,12 @@ export function dateRange(entry: CvEntry): string {
   return from === to ? from : `${from} – ${to}`;
 }
 
-/**
- * Explicit, not inferred: "a start and no end" also describes a degree, a
- * prize and a certificate, and inferring would label every one of them "now".
- */
+/** Explicit, not inferred: "a start and no end" also describes a degree or a
+    prize, and inferring would label every one of them "now". */
 export const isCurrent = (entry: CvEntry) => entry.current === true;
 
-/**
- * The first current entry anywhere in the CV. The home page uses it for the
- * "where to find me" line, so that it cannot disagree with this page.
- */
+/** The first current entry anywhere in the CV. The home page's "where to find
+    me" line reads it, so the two cannot disagree. */
 export function currentPosition(): CvEntry | undefined {
   for (const section of cv.sections) {
     const hit = section.entries.find(isCurrent);
@@ -108,10 +94,7 @@ export function layoutOf(section: CvSection): CvLayout {
   return section.layout ?? (section.entries.some((e) => e.start || e.end) ? 'timeline' : 'rows');
 }
 
-/**
- * "24 courses" for a section that named a `count` noun, or nothing for one
- * that did not. See `CvSection.count` for why this is opt-in.
- */
+/** "6 courses" for a section that named a `count` noun, nothing otherwise. */
 export function countLabel(section: CvSection): string | undefined {
   if (!section.count) return undefined;
   const n = section.entries.length;
@@ -124,11 +107,9 @@ export function splitMinor(entries: CvEntry[]): { main: CvEntry[]; minor: CvEntr
   return { main: entries.filter((e) => !e.minor), minor: entries.filter((e) => e.minor) };
 }
 
-/**
- * A semester string → a sortable number, newest largest. `WS 26/27` has no
- * four-digit year, so both spellings are keyed on the two- or four-digit year
- * the semester starts in, which puts `WS 26/27` above `SS 2026`.
- */
+/** A semester string → a sortable number, newest largest. Keyed on the year the
+    semester STARTS in, so the two spellings mix: `WS 26/27` sorts above
+    `SS 2026`. */
 export function semesterKey(semester: string): number {
   const m = /(\d{4}|\d{2})/.exec(semester);
   if (!m) return 0;
@@ -149,12 +130,9 @@ export function groupCourses(entries: CvEntry[]): { current: CvEntry[]; past: Cv
   };
 }
 
-/**
- * A `details` bullet is plain text unless it embeds a markdown link:
- * "Reviewer for [ACM TOSEM](https://…)". Only that construct is parsed, so a
- * bullet reads the same in cv.yml as in any markdown file and may carry more
- * than one link.
- */
+/** A `details` bullet is plain text unless it embeds a markdown link ("Reviewer
+    for [ACM TOSEM](https://…)"). Only that construct is parsed; a bullet may
+    carry more than one. */
 export type DetailPart = { text: string; url?: string };
 export function parseDetail(detail: string): DetailPart[] {
   const parts: DetailPart[] = [];

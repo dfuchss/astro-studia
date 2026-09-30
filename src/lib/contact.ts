@@ -2,11 +2,8 @@ import { parse } from 'yaml';
 import contactRaw from '../data/contact.yml?raw';
 import { SITE } from '../consts.ts';
 
-/**
- * The contact rows from `src/data/contact.yml` (its header has the shape):
- * the parse, the validation and the one derivation, `email: true` ->
- * SITE.email. The markup is Contact.astro.
- */
+/* The contact rows from `src/data/contact.yml` (its header has the shape): the
+   parse, the validation, and `email: true` -> SITE.email. Markup: Contact.astro. */
 export type ContactRow = {
   label: string;
   /** The row's text. Exactly one of `value` and `email` is set. */
@@ -30,22 +27,17 @@ export type ResolvedRow = {
   note?: string;
 };
 
-/*
- * Anchored (the audit's version is not: it hunts inside a page, this asks
- * whether a whole field IS an address), and the domain allows dots — without
- * that, `me@mail.uni-example.de` was neither caught in `value:` nor accepted
- * in `email:`.
- */
+/* Anchored, unlike the audit's version: that hunts inside a page, this asks
+   whether a whole field IS an address. The domain allows dots — without them
+   `me@mail.uni-example.de` was neither caught in `value:` nor accepted in
+   `email:`. */
 const ADDRESS_SHAPED = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 const raw = parse(contactRaw) as unknown;
 
-/**
- * Validated here because `?raw` + `yaml.parse` has no schema: a mis-keyed row
- * would otherwise render as a label with nothing after it. The address check
- * pre-empts the audit, which would fail the build later with "an address is
- * in the bytes" and no file name; this says it with the row's label.
- */
+/** Validated because `?raw` + `yaml.parse` has no schema: a mis-keyed row would
+    render as a label with nothing after it. The address check pre-empts the
+    audit, which fails later with no file name; this names the row. */
 function validate(input: unknown): ResolvedRow[] {
   if (input === null || input === undefined) return [];
   if (!Array.isArray(input)) {

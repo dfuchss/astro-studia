@@ -1,17 +1,11 @@
-# Venue badges, keyed by the `abbr` field in papers.bib.
+# Venue badges, keyed by the `abbr` field in papers.bib. DEMO CONTENT — edition
+# series, because the demo bibliography is classical. An abbr with no row here
+# FAILS THE BUILD: content.config.ts declares it as reference('venues'), so a
+# typo is a build error naming the BibTeX key. A paper with no abbr renders
+# without a badge, which is fine.
 #
-# An abbr with no row here FAILS THE BUILD — content.config.ts declares it as
-# reference('venues'), so a typo is a build error naming the offending BibTeX
-# key, rather than a blank badge you find months later. A paper with no abbr at
-# all is fine and renders without one.
-#
-# `color` is the venue's own brand colour, used as-is. VenueBadge.astro mixes
-# it toward white for the label and toward the page for the fill, so a colour
-# chosen for a white conference site still reads on a near-black page. Paste
-# the real hex; do not pre-lighten it.
-#
-# DEMO CONTENT: edition series rather than conferences, because the demo
-# bibliography is classical. Yours will more likely be ICSE, TOSEM, CHI.
+# `color` is the venue's own brand hex, pasted as-is: VenueBadge.astro mixes it
+# toward white for the label and toward the page for the fill. Do not pre-lighten.
 
 LCL:
   name: Loeb Classical Library
@@ -21,8 +15,7 @@ LCL:
 OCT:
   name: Oxford Classical Texts
   url: https://global.oup.com/academic/content/series/o/oxford-classical-texts-oct/
-  # Oxford blue, and genuinely too dark to read as text on this page. Left
-  # unaltered on purpose: it is the proof that you need not adjust these.
+  # Oxford blue: too dark to read as text here, left unaltered to prove the point.
   color: '#002147'
 
 CUP:

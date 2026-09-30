@@ -4,9 +4,8 @@ import { NAV } from '../consts.ts';
 ---
 
 {
-  /* noindex: this page is served for every URL that does not exist, so it has
-     no address a canonical could truthfully name. Without the flag it claimed
-     "/404/" — a URL that was itself a 404. */
+  /* noindex: served for every URL that does not exist, so no canonical could
+     name it truthfully — without the flag it claimed "/404/". */
 }
 <Base title="Page not found" description="That page does not exist." noindex>
   <section class="wrap section center">
@@ -18,8 +17,7 @@ import { NAV } from '../consts.ts';
     </p>
     <ul class="options">
       {
-        /* Built from NAV, so deleting a section cannot leave a dead link on
-           the one page a visitor reaches by following one. */
+        /* Built from NAV, so deleting a section cannot leave a dead link here. */
         NAV.map((item) => (
           <li>
             <a class="chip" href={item.href} data-section={item.section}>

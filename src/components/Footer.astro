@@ -4,11 +4,9 @@ import DemoNotice from './DemoNotice.astro';
 import Email from './Email.astro';
 
 /*
- * The footer: a copyright line, an optional affiliation after it, the thin
- * link row, an optional email, and an optional credit. What differs between
- * sites is all in FOOTER and FOOTER_LINKS in src/consts.ts; anything those
- * cannot express goes through the default slot, which Base.astro forwards as
- * its `footer` slot.
+ * Everything that differs between sites is FOOTER and FOOTER_LINKS in
+ * src/consts.ts; the rest goes through the default slot, which Base.astro
+ * forwards as its `footer` slot.
  */
 const year = new Date().getFullYear();
 ---
@@ -17,14 +15,13 @@ const year = new Date().getFullYear();
   <div class="wrap inner">
     <p class="mono">
       {
-        /* One string: two expressions on separate lines lose the space between
-          them when Astro strips the newline, and render "2026Cicero". */
+        /* One string: two expressions on separate lines render "2026Cicero", because
+          Astro strips the newline between them. */
       }
       {`© ${year} ${SITE.copyright}`}
       {
-        /* Joined without whitespace between the parts, so " and " and ", " are
-           exactly what the config wrote; the `{' '}` before the run is the one
-           space after the copyright holder's name. */
+        /* No whitespace between the parts, so " and " and ", " are exactly what the
+           config wrote; the leading `{' '}` is the space after the name. */
         FOOTER.affiliation.length > 0 && (
           <span class="affiliation">
             {' '}
@@ -71,9 +68,8 @@ const year = new Date().getFullYear();
     <slot />
 
     {
-      /* The {' '} is load-bearing: Astro strips the newline between a word and
-        a following <a>, so without it this renders "Astro andStudia Theme".
-        scripts/audit-site.mjs fails the build on exactly this. */
+      /* The {' '} is load-bearing: Astro strips the newline before the <a>, so
+        this renders "Astro andStudia Theme" and the audit fails the build. */
       FOOTER.credit && (
         <p class="mono built">
           Built with <a href="https://astro.build/">Astro</a> and{' '}

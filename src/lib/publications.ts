@@ -2,11 +2,8 @@ import type { CollectionEntry } from 'astro:content';
 
 type Pub = CollectionEntry<'publications'>;
 
-/**
- * Newest first, and fully deterministic: venue and title break the ties year
- * and month leave, so the order cannot change between builds with the loader's
- * emission order. `abbr` is optional, hence the `?? ''`.
- */
+/** Newest first, and deterministic: venue and title break the ties year and
+    month leave, so the order cannot follow the loader's emission order. */
 export function byNewest(a: Pub, b: Pub) {
   return (
     b.data.year - a.data.year ||
@@ -30,14 +27,11 @@ export function byYear(pubs: Pub[]): { year: number; items: Pub[] }[] {
 }
 
 /**
- * A Date for a publication: the first of its month, in UTC. Three traps, all
- * of which have shipped:
- *
- *   Date.UTC takes a ZERO-BASED month; the schema stores 1-12.
- *   UTC, not local: a zone west of UTC shifts the day backwards, so the same
- *   commit dates differently depending on where it was built.
- *   Date.UTC maps a year of 0-99 onto 1900-1999, so `year: 44` becomes 1944;
- *   setUTCFullYear is the only way to say a two-digit year and mean it.
+ * A Date for a publication: the first of its month, in UTC. Three traps, all of
+ * which have shipped: Date.UTC takes a ZERO-BASED month while the schema stores
+ * 1-12; a zone west of UTC shifts the day backwards, so the same commit dates
+ * differently depending on where it was built; and Date.UTC maps a year of 0-99
+ * onto 1900-1999, which only setUTCFullYear undoes.
  */
 export function publicationDate(d: { year: number; month?: number }): Date {
   const date = new Date(Date.UTC(d.year, (d.month ?? 1) - 1, 1));

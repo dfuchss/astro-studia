@@ -17,7 +17,6 @@ const SELF_SURNAMES = SELF.surnames.map(fold);
     builds it with a local copy of the same fold, so keep the two identical. */
 export const surnameKey = fold;
 
-/** Is this author the person (or one of the people) the site is about? */
 export const isSelf = (p: Person) => SELF_SURNAMES.includes(fold(p.last));
 
 /** "Edsger W. Dijkstra" */

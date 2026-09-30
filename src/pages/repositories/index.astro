@@ -6,13 +6,11 @@ import { repositories, languageColors, github, socials } from '../../lib/data.ts
 /*
  * Everything here comes from the committed github-metadata.json; no API call
  * happens during the build. A repo in repositories.yml but not yet in the
- * metadata still renders by name, so a half-finished edit does not stop a
- * preview.
+ * metadata still renders by name.
  */
 const repos = (repositories.github_repos ?? [])
   .map((full) => ({ full, meta: github.repos[full] }))
-  // Most-starred first. Any ordering beats the order they happen to sit in the
-  // YAML, which nobody maintains deliberately.
+  // Most-starred first: the YAML order is nobody's deliberate choice.
   .sort((a, b) => (b.meta?.stars ?? 0) - (a.meta?.stars ?? 0));
 
 const zenodo = repositories.zenodo_repos ?? [];
@@ -41,14 +39,9 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
 
     {
       user && (
-        /* Three figures, each saying something different: reach, breadth, and
-           research output. No total star count — the per-repo numbers below
-           already carry that.
-
-           This one IS a filled card, unlike the repo cells below it. The site is
-           mostly hairlines, but this block is a single summary panel rather than
-           one item in a list — a rule above it would read as a divider between
-           things that are not a series. */
+        /* This one IS a filled card, unlike the repo cells below: a single
+           summary panel, not one item in a list, and a rule above it would read
+           as a divider between things that are not a series. */
         <div class="ghuser card">
           <div class="ghuser-main">
             <p class="ghname mono">
@@ -249,16 +242,14 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
   .repo-name {
     margin: 0;
     font-size: 0.875rem;
-    /* A repo name has no spaces to break at, and this cell is only 18rem wide.
-       Whoever clones this has repositories whose names I cannot see. */
+    /* A repo name has no spaces to break at, and this cell is only 18rem wide. */
     overflow-wrap: anywhere;
   }
   .owner {
     color: var(--text-faint);
   }
-  /* GitHub descriptions run from four words to four lines. Clamping stops a
-     row of cells being dominated by whichever repo is wordiest; the full text
-     is in the title attribute and one click away. */
+  /* Clamped, so one wordy repo cannot dominate the row; the full text is in
+     the title attribute. */
   .repo-desc {
     margin: 0;
     font-size: var(--fs-small);
