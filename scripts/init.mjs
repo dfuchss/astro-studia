@@ -16,7 +16,7 @@
  *    only a warning: that is what a second run looks like, and it must be safe.
  *
  * 2. It reports rather than repairs: after pruning it runs check, build and
- *    audit, and stops on the first failure.
+ *    audit — all three, then exits non-zero if any failed.
  */
 import { existsSync, readFileSync, writeFileSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
@@ -152,16 +152,32 @@ function flush(dryRun) {
  * edited (a fence removed, step 4) and deleted (its directory, step 5) by one
  * prune; without this, flush() would die on an ENOENT at the very end with
  * every deletion done and nothing written. Prefix-matched, because what gets
- * deleted is usually the directory.
+ * deleted is usually the directory. Recorded for the path itself as well: the
+ * null entry is what exists() reads.
  */
 function forget(rel) {
   const prefix = rel.endsWith('/') ? rel : `${rel}/`;
-  for (const key of [...dirty]) {
-    if (key === rel || key.startsWith(prefix)) {
+  cache.set(rel, null);
+  dirty.delete(rel);
+  for (const key of [...cache.keys()]) {
+    if (key.startsWith(prefix)) {
       dirty.delete(key);
       cache.set(key, null);
     }
   }
+}
+
+/**
+ * Does `rel` still exist, as far as THIS run is concerned? A dry run deletes
+ * nothing, so existsSync() alone had applyFeed announce a second `would delete
+ * src/lib/feed/fromPosts.ts` that the real run never performs.
+ */
+function exists(rel) {
+  const parts = rel.split('/');
+  for (let i = parts.length; i > 0; i -= 1) {
+    if (cache.get(parts.slice(0, i).join('/')) === null) return false;
+  }
+  return existsSync(join(ROOT, rel));
 }
 
 // ---------------------------------------------------------------------------
@@ -324,15 +340,20 @@ function splitTopLevel(src, from, to) {
 function withComment(src, start, end) {
   let s = start;
   for (;;) {
+    // Spaces, ONE line break, the indentation under it: `[ \t]*$` stopped at the
+    // break, so every removal stranded its doc comment above the next const.
     const before = src.slice(0, s);
-    const trimmed = before.replace(/[ \t]*$/, '');
+    const trimmed = before.replace(/[ \t]*(\r?\n[ \t]*)?$/, '');
+    // A fence marker is a boundary, not a doc comment: eaten off the line above a
+    // removed const, it leaves step 4 reporting a fence with no partner.
+    if (FENCE_LINE.test(trimmed.slice(trimmed.lastIndexOf('\n') + 1))) break;
     if (trimmed.endsWith('*/')) {
       const open = trimmed.lastIndexOf('/*');
       if (open === -1) break;
       s = open;
       continue;
     }
-    const m = /(^|\n)[ \t]*\/\/[^\n]*\n[ \t]*$/.exec(trimmed);
+    const m = /(^|\n)[ \t]*\/\/[^\n]*$/.exec(trimmed);
     if (m) {
       s = trimmed.length - m[0].length + (m[1] ? 1 : 0);
       continue;
@@ -512,14 +533,21 @@ function pruneUnusedImports(src) {
  * 'cv']` share the amber family — so the selector goes and the rule only goes
  * with it when nothing is left to select.
  */
-function removeSectionBlock(src, name) {
-  const needle = `[data-section='${name}']`;
-  const at = src.indexOf(needle);
-  if (at === -1) return null;
+/** Comments blanked to spaces — same length, so indices still point into src. */
+const blankComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
 
-  const brace = src.indexOf('{', at);
+function removeSectionBlock(src, name, rel) {
+  const needle = `[data-section='${name}']`;
+  // A selector at its line start, comments blanked: a comment naming
+  // `[data-section='blog']` was read as the rule, whose list then ran to the next `{`.
+  const code = blankComments(src);
+  const m = new RegExp(`^[ \\t]*\\[data-section='${name}'\\]`, 'm').exec(code);
+  if (!m) return null;
+  const at = m.index + m[0].length - needle.length;
+
+  const brace = code.indexOf('{', at);
   if (brace === -1) return null;
-  const close = src.indexOf('}', brace);
+  const close = code.indexOf('}', brace);
   if (close === -1) return null;
 
   // The selector list starts after whatever ended the previous construct.
@@ -535,6 +563,17 @@ function removeSectionBlock(src, name) {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+  // A landmark in the wrong place is worse than a missing one: the needle must be
+  // in the list, with no comment inside it and no comma before it (a clipped tail).
+  if (
+    !selectors.includes(needle) ||
+    code.slice(selStart, brace) !== src.slice(selStart, brace) ||
+    /,\s*$/.test(code.slice(0, selStart))
+  ) {
+    hard(
+      `${rel}: \`${needle}\` is not one selector of a rule — this script cannot edit it safely.`,
+    );
+  }
   const kept = selectors.filter((s) => s !== needle);
 
   if (kept.length === 0) {
@@ -544,11 +583,12 @@ function removeSectionBlock(src, name) {
     const lineStart = src.lastIndexOf('\n', start - 1) + 1;
     if (src.slice(lineStart, start).trim() === '') start = lineStart;
     while (start > 0 && src[start - 1] === '\n' && src[start - 2] === '\n') start -= 1;
-    return { next: src.slice(0, start) + src.slice(end), whole: true };
+    return { next: src.slice(0, start) + src.slice(end), whole: true, kept };
   }
   return {
     next: src.slice(0, selStart) + kept.join(',\n') + ' ' + src.slice(brace),
     whole: false,
+    kept,
   };
 }
 
@@ -566,8 +606,13 @@ function removeSectionBlock(src, name) {
  * differ only in what happens to the pair that survives: a kept feature keeps
  * its markers, a chosen preset does not.
  */
-const fence = (kind, id, arrow) =>
-  new RegExp(`[ \\t]*\\{?/\\*\\s*${arrow}\\s*${kind}:${id}\\s*${arrow}\\s*\\*/\\}?[ \\t]*`, 'g');
+const fencePattern = (kind, id, arrow) =>
+  `[ \\t]*\\{?/\\*\\s*${arrow}\\s*${kind}:${id}\\s*${arrow}\\s*\\*/\\}?[ \\t]*`;
+
+const fence = (kind, id, arrow) => new RegExp(fencePattern(kind, id, arrow), 'g');
+
+/** A marker of either family, whatever it names, alone on its line. */
+const FENCE_LINE = new RegExp(`^${fencePattern('\\w+', '[\\w-]+', '[▼▲]')}$`);
 
 /** The whole line a match sits on: [start, end-after-newline). */
 function lineAround(src, m) {
@@ -648,10 +693,9 @@ function unwrapFences(src, kind, id) {
 // ---------------------------------------------------------------------------
 
 function heroComponents() {
-  const abs = join(ROOT, HERO_DIR);
-  if (!existsSync(abs)) return [];
-  return readdirSync(abs)
-    .filter((f) => f.endsWith('.astro'))
+  if (!exists(HERO_DIR)) return [];
+  return readdirSync(join(ROOT, HERO_DIR))
+    .filter((f) => f.endsWith('.astro') && exists(`${HERO_DIR}/${f}`))
     .map((f) => f.replace(/\.astro$/, ''));
 }
 
@@ -744,22 +788,30 @@ function pruneUnusedHeroes(dryRun) {
  * that keeps neither hero nor CV. Derived from whether anything still imports
  * them, like the heroes above.
  */
-const ORPHANS = [{ module: 'src/lib/portrait.ts', assets: ['src/assets/portrait'] }];
+const ORPHANS = [
+  { module: 'src/lib/portrait.ts', assets: ['src/assets/portrait'] },
+  // `citations` reads socials.yml, so the `project` preset now keeps it — and
+  // nothing in that preset renders the chips, so the component would ship unused.
+  { module: 'src/components/SocialRow.astro', assets: [] },
+];
 
 function pruneOrphanedModules(dryRun) {
   for (const { module, assets } of ORPHANS) {
-    if (!existsSync(join(ROOT, module))) continue;
-    const spec = module.replace(/^src\//, '').replace(/\.ts$/, '');
-    const re = new RegExp(`from\\s+'[^']*${spec.replace(/\//g, '/')}\\.ts'`);
+    if (!exists(module)) continue;
+    // The filename, any extension: a sibling imports '../SocialRow.astro', so
+    // matching the path below src/ would delete a file that is still imported.
+    const spec = module.slice(module.lastIndexOf('/') + 1).replace(/\./g, '\\.');
+    const re = new RegExp(`from\\s+'[^']*/${spec}'`);
     const used = sourceFiles().some((f) => f !== module && re.test(read(f) ?? ''));
     if (used) continue;
     deletePath(module, dryRun);
     for (const prefix of assets) {
       const dir = prefix.slice(0, prefix.lastIndexOf('/'));
       const base = prefix.slice(prefix.lastIndexOf('/') + 1);
-      if (!existsSync(join(ROOT, dir))) continue;
+      if (!exists(dir)) continue;
       for (const name of readdirSync(join(ROOT, dir))) {
-        if (name === base || name.startsWith(`${base}.`)) deletePath(`${dir}/${name}`, dryRun);
+        if (name !== base && !name.startsWith(`${base}.`)) continue;
+        if (exists(`${dir}/${name}`)) deletePath(`${dir}/${name}`, dryRun);
       }
     }
   }
@@ -767,7 +819,7 @@ function pruneOrphanedModules(dryRun) {
 
 /**
  * Every source file a fence could live in. Fences are comments, so only files
- * Astro compiles are worth scanning.
+ * Astro compiles are worth scanning — CSS included, a fence being valid CSS.
  */
 function sourceFiles(dir = 'src', out = []) {
   const abs = join(ROOT, dir);
@@ -775,7 +827,7 @@ function sourceFiles(dir = 'src', out = []) {
   for (const name of readdirSync(abs)) {
     const rel = `${dir}/${name}`;
     if (statSync(join(ROOT, rel)).isDirectory()) sourceFiles(rel, out);
-    else if (/\.(astro|ts|mjs)$/.test(name)) out.push(rel);
+    else if (/\.(astro|ts|mjs|css)$/.test(name)) out.push(rel);
   }
   return out;
 }
@@ -790,10 +842,9 @@ function sourceFiles(dir = 'src', out = []) {
 // ---------------------------------------------------------------------------
 
 function feedSources() {
-  const abs = join(ROOT, FEED_DIR);
-  if (!existsSync(abs)) return [];
-  return readdirSync(abs)
-    .filter((f) => /^from[A-Za-z]+\.ts$/.test(f))
+  if (!exists(FEED_DIR)) return [];
+  return readdirSync(join(ROOT, FEED_DIR))
+    .filter((f) => /^from[A-Za-z]+\.ts$/.test(f) && exists(`${FEED_DIR}/${f}`))
     .map((f) => f.replace(/\.ts$/, ''));
 }
 
@@ -904,7 +955,7 @@ function prune(drop, dryRun) {
     else {
       let out = css;
       for (const name of sections) {
-        const result = removeSectionBlock(out, name);
+        const result = removeSectionBlock(out, name, TOKENS);
         if (result === null)
           warn(`${TOKENS}: no \`[data-section='${name}']\` block (already gone?)`);
         else {
@@ -912,7 +963,7 @@ function prune(drop, dryRun) {
           step(
             result.whole
               ? `removed the \`[data-section='${name}']\` block from ${TOKENS}`
-              : `removed the \`[data-section='${name}']\` selector from a shared block in ${TOKENS}`,
+              : `removed the \`[data-section='${name}']\` selector from ${TOKENS}, leaving \`${result.kept.join(', ')}\``,
           );
         }
       }
@@ -986,7 +1037,7 @@ async function formatFiles(rels) {
   if (targets.length === 0) return;
   const r = spawnSync('npm', ['run', '--silent', 'format'], { cwd: ROOT, stdio: 'pipe' });
   if (r.status === 0) {
-    step(`formatted ${targets.length} edited file${targets.length === 1 ? '' : 's'}`);
+    step('ran `npm run format` — prettier over the whole repository');
   } else {
     warn('`npm run format` failed — run it by hand before `npm run check`');
   }
@@ -1124,7 +1175,10 @@ async function main() {
       return 1;
     }
 
-    const { keep, added } = resolve(selected);
+    const { keep, added, unmet } = resolve(selected);
+    for (const { id, options } of unmet) {
+      hard(`\`${id}\` needs one of: ${options.join(', ')} — keep one, or drop \`${id}\`.`);
+    }
     const drop = FEATURES.filter((f) => !keep.includes(f.id));
 
     say(bold('\nPlan'));
@@ -1188,6 +1242,11 @@ async function main() {
      * fromPosts imports lib/blog.ts, so keeping it without the blog does not
      * compile.
      */
+    // Unreachable while `feed.requiresAny` holds; a warning rather than an abort
+    // because by here the deletions are done, and the build reports it anyway.
+    if (keep.includes('feed') && feedSources().length === 0) {
+      warn(`feed kept but no ${FEED_DIR}/from*.ts survived — ${FEED_ENDPOINT} imports nothing`);
+    }
     if (feedSources().length > 0) {
       say(bold('\nfeed source'));
       let feed = preset ? PRESET_FEED[preset] : undefined;
