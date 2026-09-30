@@ -10,9 +10,8 @@ const id = keyId();
 const pretty = grouped();
 const asc = keyPath();
 
-// The key block, when public/assets/pgp-key/<FINGERPRINT>.asc exists. null
-// otherwise, and the page keeps the fingerprint, key id and download link:
-// publishing only a fingerprint is a legitimate choice.
+// Both null when public/assets/pgp-key/<FINGERPRINT>.asc is absent, leaving the
+// fingerprint and key id: publishing only a fingerprint is a legitimate choice.
 const key = armoredKey();
 ---
 
@@ -35,11 +34,13 @@ const key = armoredKey();
               <dd class="mono">{id}</dd>
             </div>
           </dl>
-          <p class="actions">
-            <a class="chip" href={asc} download>
-              Download public key
-            </a>
-          </p>
+          {asc && (
+            <p class="actions">
+              <a class="chip" href={asc} download>
+                Download public key
+              </a>
+            </p>
+          )}
 
           {key && (
             <div class="keybox">
@@ -104,8 +105,7 @@ const key = armoredKey();
     margin: 1.25rem 0;
   }
 
-  /* Positioned, because CopyButton pins itself to the top right of its
-     containing block — the same arrangement the citation blocks use. */
+  /* Positioned: CopyButton pins itself to the top right of its containing block. */
   .keybox {
     position: relative;
     margin: 1.5rem 0;
