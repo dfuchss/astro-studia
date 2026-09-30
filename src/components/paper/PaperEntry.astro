@@ -2,8 +2,14 @@
 import { getEntry } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import VenueBadge from '../pub/VenueBadge.astro';
-import { citationsFor, formatCount } from '../../lib/citations.ts';
+/* Fenced with the chip below, their only caller. */
+/* ▼ FEATURE:citations ▼ */
+import { citationsFor } from '../../lib/citations.ts';
+import { formatCount } from '../../lib/format.ts';
+/* ▲ FEATURE:citations ▲ */
+/* ▼ FEATURE:authors ▼ */
 import { isSelfName } from '../../lib/authors.ts';
+/* ▲ FEATURE:authors ▲ */
 import { paperPath } from '../../lib/paths.ts';
 import { paperByline, paperVenue, paperYear } from '../../lib/papers.ts';
 
@@ -32,7 +38,9 @@ const d = pub?.data;
 
 const venue = paperVenue(paper);
 const year = paperYear(paper, pub);
+/* ▼ FEATURE:citations ▼ */
 const cites = citationsFor(d?.googleScholarId);
+/* ▲ FEATURE:citations ▲ */
 
 /*
  * The byline comes from authors.yml, not from the BibTeX author list, for the
@@ -41,8 +49,10 @@ const cites = citationsFor(d?.googleScholarId);
  * fine here — this block is a handful of pages an author picked by hand, not a
  * bibliography.
  */
+/* ▼ FEATURE:authors ▼ */
 const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
 const { connector, separator } = paperByline(venue, authors.length);
+/* ▲ FEATURE:authors ▲ */
 
 // Where the entry says it was printed. Empty for a page with no entry, which is
 // why the venue sentence above it is that page's only answer.
@@ -56,7 +66,11 @@ const inParts = [d?.booktitle ?? d?.journal ?? d?.school ?? d?.institution, d?.l
  * BibTeX entry has no pills, so the row would otherwise contribute its top
  * margin to every one of those entries.
  */
-const hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url || cites > 0);
+let hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url);
+/* Its own line, not `|| cites > 0` inline: a fence takes whole lines. */
+/* ▼ FEATURE:citations ▼ */
+hasLinks ||= cites > 0;
+/* ▲ FEATURE:citations ▲ */
 ---
 
 <li class="entry reveal">
@@ -74,6 +88,7 @@ const hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url || cites > 0);
       <a class="title-link" href={paperPath(paper.id)}>{paper.data.title}</a>
     </h3>
 
+    {/* ▼ FEATURE:authors ▼ */}
     {
       authors.length > 0 && (
         <p class="authors">
@@ -93,6 +108,7 @@ const hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url || cites > 0);
         </p>
       )
     }
+    {/* ▲ FEATURE:authors ▲ */}
 
     {
       venue && (
@@ -168,11 +184,13 @@ const hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url || cites > 0);
               </a>
             )
           )}
+          {/* ▼ FEATURE:citations ▼ */}
           {cites > 0 && (
             <span class="chip cites" title="Citations (Google Scholar)">
               {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
             </span>
           )}
+          {/* ▲ FEATURE:citations ▲ */}
         </div>
       )
     }
@@ -237,11 +255,13 @@ const hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url || cites > 0);
     margin: 0 0.4rem 0.4rem 0;
     vertical-align: middle;
   }
+  /* ▼ FEATURE:citations ▼ */
   .cites {
     border-color: var(--sec-line);
     color: var(--sec);
     background: var(--sec-dim);
   }
+  /* ▲ FEATURE:citations ▲ */
 
   @media (max-width: 34rem) {
     .entry {

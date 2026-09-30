@@ -70,12 +70,14 @@ const publications = defineCollection({
           file: `public/assets/pdf/${rel}`,
         }),
       },
+      /* ▼ FEATURE:papers ▼ */
       // This paper's own page; a slug with no markdown behind it fails the build.
+      // Assembled from PAPERS rather than typed out, so renaming the route cannot
+      // leave a validator insisting on the old prefix. A `page = {…}` left in
+      // papers.bib once this is gone stays private: see DEFAULT_PRIVATE_FIELDS.
       {
         field: 'page',
         as: 'pageSlug',
-        // Assembled from PAPERS rather than typed out, so renaming the route
-        // cannot leave a validator insisting on the old prefix.
         resolve: (raw, { key }) => {
           const re = new RegExp(`^${PAPERS}([a-z0-9._-]+)/?$`);
           const m = re.exec(raw);
@@ -83,6 +85,7 @@ const publications = defineCollection({
           return { value: m[1], file: `src/content/papers/${m[1]}.md` };
         },
       },
+      /* ▲ FEATURE:papers ▲ */
     ],
   }),
 
@@ -207,7 +210,9 @@ const papers = defineCollection({
 
         /** Authors as authors.yml entries, so each can link to an ORCID. The
           BibTeX author list is strings; this one is identities. */
+        /* ▼ FEATURE:authors ▼ */
         authors: z.array(reference('authors')).default([]),
+        /* ▲ FEATURE:authors ▲ */
 
         /** Spelled out rather than a boolean: `inPress: false` is true of a paper
           that is out and of one never submitted. */
@@ -231,8 +236,13 @@ const papers = defineCollection({
          * The projects this work came out of, stated here and nowhere else: a
          * project page derives its paper list by scanning this field. A project
          * with a `redirect` is fine; the page links out to it.
+         *
+         * Fenced because `papers` does not require `projects`: a reference() to
+         * a pruned collection breaks getEntry()'s type, and every paper page.
          */
+        /* ▼ FEATURE:projects ▼ */
         projects: z.array(reference('projects')).default([]),
+        /* ▲ FEATURE:projects ▲ */
 
         /** Sort key for /papers/. Lower comes first. */
         order: z.number().int().default(100),

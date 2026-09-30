@@ -5,12 +5,11 @@ import { Image } from 'astro:assets';
 import { SITE, SELF, STAT_LABELS } from '../../consts.ts';
 import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
 import Tagline from '../Tagline.astro';
+/* Unfenced: every stat row below is optional, the formatting is not. */
+import { formatCount } from '../../lib/format.ts';
 /* ▼ FEATURE:socials ▼ */
 import SocialRow from '../SocialRow.astro';
 /* ▲ FEATURE:socials ▲ */
-/* ▼ FEATURE:citations ▼ */
-import { formatCount } from '../../lib/citations.ts';
-/* ▲ FEATURE:citations ▲ */
 
 /*
  * The hero for a person's site: a name, a role, a pitch, and the counts that
@@ -38,9 +37,12 @@ const m = scholarMetrics();
  * Counted, never typed in: a hardcoded "35 publications" is wrong the day you
  * add the thirty-sixth. A stat of 0 is dropped. One row per line, each fenced
  * by the feature it counts, so pruning that feature takes its row and its
- * `getCollection` above with it.
+ * `getCollection` above with it. Annotated because a selection can fence every
+ * row away, and an empty literal infers as `never[]`.
  */
-const stats = [
+type Stat = { value: number; label: string; href: string };
+
+const rows: Stat[] = [
   /* ▼ FEATURE:publications ▼ */
   { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
   /* ▲ FEATURE:publications ▲ */
@@ -51,7 +53,8 @@ const stats = [
   /* ▼ FEATURE:projects ▼ */
   { value: projects.length, label: STAT_LABELS.projects, href: PROJECTS },
   /* ▲ FEATURE:projects ▲ */
-].filter((s) => s.value > 0);
+];
+const stats = rows.filter((s) => s.value > 0);
 ---
 
 <section class="wrap hero">

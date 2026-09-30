@@ -32,7 +32,10 @@ export type BibtexLoaderOptions = {
   links?: BibLink[];
 };
 
-const DEFAULT_PRIVATE_FIELDS = ['abbr', 'google_scholar_id', 'selected'];
+// `page` is listed even though the links[] entry for it adds it too: that entry
+// belongs to the paper pages, and without it `page = {…}` would surface in the
+// BibTeX a reader copies.
+const DEFAULT_PRIVATE_FIELDS = ['abbr', 'google_scholar_id', 'selected', 'page'];
 
 const str = (v: unknown): string | undefined => {
   if (v == null) return undefined;

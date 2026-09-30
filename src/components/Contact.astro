@@ -11,15 +11,13 @@ import { CV } from '../lib/paths.ts';
 /* ▲ FEATURE:cv ▲ */
 
 /**
- * How people reach you, from `src/data/contact.yml`, rendered on both entry
- * pages and in the CV lede. Two rows are DERIVED rather than listed — the PGP
- * key id from socials.yml and the current position from cv.yml — because a
- * second copy could disagree with /pgp-key/ and /cv/. Each is fenced by the
- * feature that owns it.
+ * How people reach you, from `src/data/contact.yml`. Rows the site can DERIVE
+ * are fenced below by the feature that owns the fact, because a second copy
+ * could disagree with it.
  */
 interface Props {
   /** `rows`: a <dl> on hairline rules. `inline`: one wrapping line of pairs,
-      for the CV lede. */
+      for a lede where the <dl> would be too tall. */
   layout?: 'rows' | 'inline';
 }
 const { layout = 'rows' } = Astro.props;
@@ -29,6 +27,7 @@ const { layout = 'rows' } = Astro.props;
 const rows: ResolvedRow[] = [...contactRows];
 
 /* ▼ FEATURE:pgp ▼ */
+/* From `pgp_fingerprint` in socials.yml, so it cannot disagree with /pgp-key/. */
 const pgp = keyId();
 if (pgp) {
   rows.push({

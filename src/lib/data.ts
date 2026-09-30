@@ -94,8 +94,8 @@ export const repositories = parse(repositoriesRaw) as Repositories;
 export const languageColors = parse(languageColorsRaw) as Record<string, string>;
 /* ▲ FEATURE:repositories ▲ */
 
+/* ▼ FEATURE:repositories ▼ */
 /** Written by scripts/fetch-github-metadata.mjs and committed; never fetched
     during the build. */
-/* ▼ FEATURE:repositories ▼ */
 export const github = githubMetadata as GithubMetadata;
 /* ▲ FEATURE:repositories ▲ */

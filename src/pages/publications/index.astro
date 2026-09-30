@@ -3,11 +3,17 @@ import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import PubEntry from '../../components/pub/PubEntry.astro';
 import { byYear } from '../../lib/publications.ts';
-import { scholarMetrics, formatCount, formatUpdated } from '../../lib/citations.ts';
+/* Fenced with the metrics block below, their only caller. */
+/* ▼ FEATURE:citations ▼ */
+import { scholarMetrics, formatUpdated } from '../../lib/citations.ts';
+import { formatCount } from '../../lib/format.ts';
+/* ▲ FEATURE:citations ▲ */
 
 const pubs = await getCollection('publications');
 const groups = byYear(pubs);
+/* ▼ FEATURE:citations ▼ */
 const metrics = scholarMetrics();
+/* ▲ FEATURE:citations ▲ */
 // Built once for the whole page, then handed to every entry.
 /* Declared outside the fence and assigned inside it, with a dynamic import,
    so removing the people feature leaves `links` undefined rather than an
@@ -31,6 +37,7 @@ links = await (await import('../../lib/people.ts')).peopleLinks();
       its own BibTeX; entries with a <strong>Paper page</strong> link have a page of their own.
     </p>
 
+    {/* ▼ FEATURE:citations ▼ */}
     {
       metrics.total > 0 && (
         <ul class="metrics">
@@ -50,6 +57,7 @@ links = await (await import('../../lib/people.ts')).peopleLinks();
         </ul>
       )
     }
+    {/* ▲ FEATURE:citations ▲ */}
 
     <div class="filter">
       <label class="sr-only" for="pubsearch">Filter publications</label>
@@ -130,6 +138,7 @@ links = await (await import('../../lib/people.ts')).peopleLinks();
     max-width: 60ch;
     color: var(--text-muted);
   }
+  /* ▼ FEATURE:citations ▼ */
   .metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
@@ -163,6 +172,7 @@ links = await (await import('../../lib/people.ts')).peopleLinks();
     color: var(--text-faint);
     font-size: 0.75rem;
   }
+  /* ▲ FEATURE:citations ▲ */
 
   .filter {
     margin-top: 1.5rem;

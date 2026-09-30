@@ -4,9 +4,8 @@ import { getCollection } from 'astro:content';
 import { SITE, STAT_LABELS } from '../../consts.ts';
 import { intrinsic } from '../../lib/images.ts';
 import Tagline from '../Tagline.astro';
-/* ▼ FEATURE:citations ▼ */
-import { formatCount } from '../../lib/citations.ts';
-/* ▲ FEATURE:citations ▲ */
+/* Unfenced: every stat row below is optional, the formatting is not. */
+import { formatCount } from '../../lib/format.ts';
 
 /*
  * The hero for a project or group site: a mark, a name, a tagline, and the
@@ -26,8 +25,12 @@ import { formatCount } from '../../lib/citations.ts';
 const logo = SITE.brandLogo?.src ?? '/favicon.svg';
 const { width: logoWidth, height: logoHeight } = intrinsic(logo);
 
-/* One row per line and each fenced, for the reason the stats below are. */
-const actions = [
+/* One row per line and each fenced, for the reason the stats below are. Typed
+   because `primary` is on the projects row alone: fence it away and the
+   inferred type loses the field the markup reads. */
+type Action = { label: string; href: string; primary?: boolean };
+
+const actions: Action[] = [
   /* ▼ FEATURE:projects ▼ */
   { label: 'Explore projects', href: PROJECTS, primary: true },
   /* ▲ FEATURE:projects ▲ */
@@ -54,8 +57,10 @@ const m = scholarMetrics();
 /* ▲ FEATURE:citations ▲ */
 
 /* Counted, never typed in, one row per line and each fenced by the feature it
-   counts — see PersonHero.astro. */
-const stats = [
+   counts — see PersonHero.astro, including why the literal is annotated. */
+type Stat = { value: number; label: string; href: string };
+
+const rows: Stat[] = [
   /* ▼ FEATURE:publications ▼ */
   { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
   /* ▲ FEATURE:publications ▲ */
@@ -66,7 +71,8 @@ const stats = [
   /* ▼ FEATURE:people ▼ */
   { value: people.length, label: STAT_LABELS.people, href: PEOPLE },
   /* ▲ FEATURE:people ▲ */
-].filter((s) => s.value > 0);
+];
+const stats = rows.filter((s) => s.value > 0);
 ---
 
 <section class="wrap hero">

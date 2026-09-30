@@ -12,23 +12,17 @@ import { BLOG, PEOPLE, PROJECTS, PUBLICATIONS } from '../lib/paths.ts';
 
 /*
  * The entry page. ▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲ marks code that exists
- * only because an optional area does; `npm run init` deletes what a pair
- * encloses when you drop that feature, and the markers stay on a feature you
- * keep. Leave them even when editing the code right next to them.
+ * only because an optional area does — docs/Removing-Features.md. Leave them
+ * alone, even when editing the code right beside them.
  */
 
 /* ▼ FEATURE:demo ▼ */
 /*
  * This page carries BOTH entry-page shapes until init runs, inside
  * ▼ PRESET:<name> ▼ fences (docs/Removing-Features.md, "Two kinds of fence").
- * An unfenced section, like contact at the bottom, belongs to both. Fences
- * nest but must never straddle each other.
- *
- * One shape renders per URL — the audit allows one <h1> — and
- * src/pages/demo/project/index.astro is this page with `shape="project"`.
- * The switch belongs to the `demo` feature, so this note and the guards below
- * are fenced as one: after init there is one hero, one set of sections, and
- * nothing conditional left.
+ * One shape renders per URL — the audit allows one <h1>. The switch belongs to
+ * the `demo` feature, so this note and the guards below are fenced with it:
+ * after init there is one hero and nothing conditional left.
  */
 type Shape = 'profile' | 'project';
 interface Props {
@@ -66,15 +60,13 @@ const papers = await featuredPapers();
 import PersonHero from '../components/hero/PersonHero.astro';
 
 /* ▼ FEATURE:publications ▼ */
-/* DEMO COPY. Page text with one consumer lives on the page, not in
-   src/consts.ts. Rewrite it; do not look for a setting. */
+/* DEMO COPY. Page text with one consumer lives here, not in src/consts.ts. */
 const interests = [
   'Moral philosophy',
   'Rhetoric and the theory of persuasion',
   'Translation as a technical problem',
   'Constitutional theory',
 ];
-/* ──────────────────────────── end of demo copy ─────────────────────────── */
 /* ▲ FEATURE:publications ▲ */
 
 /* ▼ FEATURE:projects ▼ */
@@ -90,8 +82,7 @@ const involvement = [
     link: { label: 'Senate', href: 'https://www.perseus.tufts.edu/' },
     tail: 'and, in 63 BC, consul',
   },
-  // External rather than /people/#atticus: this block belongs to the projects
-  // feature, and a link into people dangled the moment people was pruned.
+  // External, not /people/#atticus: that link dangled the moment people was pruned.
   {
     text: 'Correspondent of',
     link: { label: 'Atticus', href: 'https://en.wikipedia.org/wiki/Titus_Pomponius_Atticus' },
@@ -142,8 +133,7 @@ const team = await members();
   <DemoSwitch current={shape} />
   {/* ▲ FEATURE:demo ▲ */}
 
-  <!-- Each section carries its own data-section, so the accent changes as you
-       move down the page — the same mechanism the nav uses. -->
+  <!-- Each section carries its own data-section, so the accent changes down the page. -->
 
   {/* ▼ PRESET:profile ▼ */}
   {/* ▼ FEATURE:demo ▼ */}
@@ -390,6 +380,7 @@ const team = await members();
     color: var(--text-faint);
   }
 
+  /* ▼ PRESET:project ▼ */
   .grid {
     list-style: none;
     margin: 1.5rem 0 0;
@@ -398,22 +389,22 @@ const team = await members();
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
     gap: 0.9rem;
   }
-  /* PersonCard rows read better wide than square — the same minimum /people/
-     uses for the identical grid. */
+  /* ▼ FEATURE:people ▼ */
+  /* PersonCard rows read better wide than square; /people/ uses the same minimum. */
   .grid.people {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
     gap: 0.75rem 2rem;
   }
+  /* ▲ FEATURE:people ▲ */
+  /* ▲ PRESET:project ▲ */
 
   .postlist {
     list-style: none;
     margin: 1.25rem 0 0;
     padding: 0;
   }
-  /* The post list and the contact rows are the same object: a label column on
-     a hairline rule. The rows moved into components/Contact.astro, so the
-     column width is a token (--label-col) rather than a number written twice —
-     the two still cannot drift out of alignment. */
+  /* The same object as the contact rows in Contact.astro: a label column on a
+     hairline rule, sharing --label-col so the two cannot drift apart. */
   .postlist a {
     display: grid;
     grid-template-columns: var(--label-col) 1fr;

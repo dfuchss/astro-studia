@@ -48,5 +48,3 @@ export function formatUpdated(iso: string): string {
     timeZone: 'UTC',
   }).format(new Date(`${iso}T00:00:00Z`));
 }
-
-export const formatCount = (n: number) => new Intl.NumberFormat(SITE.locale).format(n);

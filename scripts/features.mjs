@@ -32,6 +32,7 @@
  * @property {string}   blurb     one line: what you lose by removing it
  * @property {Preset[]} presets   which presets include it by default
  * @property {string[]} requires  feature ids this one needs to work
+ * @property {string[]} [requiresAny]  ids of which at least ONE must survive
  * @property {string[]} paths     files and directories to delete, repo-relative
  * @property {string[]} collections  names to drop from src/content.config.ts
  * @property {string[]} sections  `Section` members and their [data-section] blocks
@@ -80,19 +81,14 @@ export const FEATURES = [
       // under public/ because a link needs a URL that does not move.
       'src/assets/papers',
       'public/assets/img/papers',
+      // Mirrors blog owning fromPosts.ts: it reads the papers collection.
+      'src/lib/feed/fromPapers.ts',
     ],
     collections: ['papers'],
     sections: ['papers'],
     nav: ['papers'],
     footer: [],
-    manual: [
-      'drop the `page = {…}` fields from src/data/papers.bib',
-      'drop the second links[] entry from the bibtexLoader options in src/content.config.ts',
-      // Only bites the combination init cannot reach on its own: the `project`
-      // preset points the feed at the paper pages, so a later removal of the
-      // paper pages takes the feed's source collection with it.
-      'if the RSS feed is on src/lib/feed/fromPapers.ts, repoint it at another source — it lists the paper pages',
-    ],
+    manual: [],
   },
 
   {
@@ -154,10 +150,9 @@ export const FEATURES = [
     nav: [],
     footer: ['Feed'],
     // Deliberately NOT owned by the blog: a project site has no blog and still
-    // wants a feed, of its paper pages.
-    manual: [
-      'drop the feed <link rel="alternate"> from src/components/BaseHead.astro — without it you advertise a 404',
-    ],
+    // wants a feed, of its paper pages — but it needs one of the two.
+    requiresAny: ['blog', 'papers'],
+    manual: [],
   },
 
   {
@@ -226,7 +221,7 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: [],
-    manual: ['drop the `authors` field from the papers schema in src/content.config.ts'],
+    manual: [],
   },
 
   {
@@ -234,7 +229,10 @@ export const FEATURES = [
     label: 'Citation counts',
     blurb: 'Google Scholar counts on each entry, plus h-index and i10 on the list.',
     presets: ['profile', 'project'],
-    requires: ['publications'],
+    // `socials` for the refresh script, not the page: update_scholar_citations.py
+    // reads `scholar_userid` from src/data/socials.yml. The `project` preset kept
+    // the script and dropped the file.
+    requires: ['publications', 'socials'],
     paths: [
       'src/lib/citations.ts',
       'src/data/citations.yml',
@@ -246,10 +244,7 @@ export const FEATURES = [
     sections: [],
     nav: [],
     footer: [],
-    manual: [
-      'drop the citation chip from src/components/pub/PubEntry.astro and src/components/paper/PaperEntry.astro, and the metrics block from src/pages/publications/index.astro',
-      'replace formatCount() usages — it lives in lib/citations.ts',
-    ],
+    manual: [],
   },
 
   {
@@ -342,6 +337,10 @@ export const featuresFor = (preset) =>
  * through Astro's reference(), so keeping papers while dropping authors fails
  * the build. Pulling the dependency in silently is friendlier than letting the
  * build explain it afterwards, so the caller is told what was added.
+ *
+ * `requiresAny` cannot be satisfied that way — picking one of `blog`/`papers`
+ * for somebody would hand them a whole area they unticked — so it is reported
+ * as `unmet` and init refuses the selection.
  */
 export function resolve(selected) {
   const keep = new Set(selected);
@@ -359,5 +358,9 @@ export function resolve(selected) {
       }
     }
   }
-  return { keep: [...keep], added };
+  const unmet = [...keep]
+    .map((id) => ({ id, options: byId(id)?.requiresAny ?? [] }))
+    .filter(({ options }) => options.length > 0 && !options.some((o) => keep.has(o)));
+
+  return { keep: [...keep], added, unmet };
 }
