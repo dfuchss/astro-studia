@@ -1,6 +1,6 @@
 ---
 // Renders nothing once SITE.demoNotice is null. Two shapes: a banner for the
-// top of the home page, and a single line for the footer.
+// top of the home page, and one word for the footer row.
 import { SITE } from '../consts.ts';
 
 interface Props {
@@ -20,9 +20,12 @@ const { variant = 'banner' } = Astro.props;
         </p>
       </aside>
     ) : (
-      <p class="line mono">
-        Demo content · <a href={SITE.repo}>Studia Theme</a>
-      </p>
+      /* Just the word, with its separator: the footer's own credit already
+         links the theme, and the copyright always precedes this. */
+      <>
+        <span aria-hidden="true">·</span>
+        <span class="line">demo content</span>
+      </>
     ))
 }
 
@@ -50,10 +53,6 @@ const { variant = 'banner' } = Astro.props;
   }
 
   .line {
-    margin: 0;
     color: var(--warn);
-  }
-  .line a {
-    color: inherit;
   }
 </style>

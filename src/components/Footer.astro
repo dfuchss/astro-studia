@@ -12,71 +12,75 @@ const year = new Date().getFullYear();
 ---
 
 <footer class="foot">
-  <div class="wrap inner">
-    <p class="mono">
+  <div class="wrap">
+    {
+      /* One wrapping row of middot-separated parts, and every {' '} in it is
+         load-bearing: Astro strips the newline before an <a>, and the audit
+         fails the build on "Astro andStudia Theme".
+
+         The copyright is the only part that is always there, so each optional
+         part can carry its own leading separator and no combination of them
+         can leave a dot dangling at either end. */
+    }
+    <p class="meta mono">
+      <span>{`© ${year} ${SITE.copyright}`}</span>
+
       {
-        /* One string: two expressions on separate lines render "2026Cicero", because
-          Astro strips the newline between them. */
-      }
-      {`© ${year} ${SITE.copyright}`}
-      {
-        /* No whitespace between the parts, so " and " and ", " are exactly what the
-           config wrote; the leading `{' '}` is the space after the name. */
+        /* No whitespace between the parts, so " and " and ", " are exactly what
+           the config wrote. */
         FOOTER.affiliation.length > 0 && (
-          <span class="affiliation">
-            {' '}
-            <span aria-hidden="true">·</span>{' '}
-            {FOOTER.affiliation.map((part) =>
-              typeof part === 'string' ? (
-                part
-              ) : (
-                <a href={part.href} rel={part.href.startsWith('http') ? 'noopener' : undefined}>
-                  {part.label}
-                </a>
-              ),
-            )}
-          </span>
+          <>
+            <span aria-hidden="true">·</span>
+            <span>
+              {FOOTER.affiliation.map((part) =>
+                typeof part === 'string' ? (
+                  part
+                ) : (
+                  <a href={part.href} rel={part.href.startsWith('http') ? 'noopener' : undefined}>
+                    {part.label}
+                  </a>
+                ),
+              )}
+            </span>
+          </>
         )
       }
+
+      {
+        FOOTER_LINKS.map((link) => (
+          <>
+            <span aria-hidden="true">·</span>
+            <a href={link.href}>{link.label}</a>
+          </>
+        ))
+      }
+
+      {
+        FOOTER.email && (
+          <>
+            <span aria-hidden="true">·</span>
+            {/* Through Email.astro, never a mailto: the audit fails the build on
+              any address-shaped string in the served bytes. */}
+            <Email address={SITE.email} label="Email" />
+          </>
+        )
+      }
+
+      {
+        FOOTER.credit && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>
+              built with <a href="https://astro.build/">Astro</a> and{' '}
+              <a href={SITE.repo}>Studia Theme</a>
+            </span>
+          </>
+        )
+      }
+
+      <DemoNotice variant="line" />
+      <slot />
     </p>
-
-    <DemoNotice variant="line" />
-
-    {
-      (FOOTER_LINKS.length > 0 || FOOTER.email) && (
-        <nav aria-label="Secondary">
-          <ul>
-            {FOOTER_LINKS.map((link) => (
-              <li>
-                <a class="mono" href={link.href}>
-                  {link.label}
-                </a>
-              </li>
-            ))}
-            {FOOTER.email && (
-              <li>
-                {/* Through Email.astro, never a mailto: the audit fails the build
-                    on any address-shaped string in the served bytes. */}
-                <Email address={SITE.email} label="Email" class="mono" />
-              </li>
-            )}
-          </ul>
-        </nav>
-      )
-    }
-
-    <slot />
-
-    {
-      /* The {' '} is load-bearing: Astro strips the newline before the <a>, so
-        this renders "Astro andStudia Theme" and the audit fails the build. */
-      FOOTER.credit && (
-        <p class="mono built">
-          Built with <a href="https://astro.build/">Astro</a> and{' '}
-          <a href={SITE.repo}>Studia Theme</a>
-        </p>
-      )
-    }
   </div>
 </footer>
 
@@ -88,29 +92,14 @@ const year = new Date().getFullYear();
     color: var(--text-faint);
   }
 
-  .inner {
+  /* Wraps rather than stacking: the parts are one sentence of metadata, not
+     four blocks that each deserved a line of their own. */
+  .meta {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.5rem 1.5rem;
-  }
-
-  p {
+    gap: 0.5ch;
     margin: 0;
-  }
-
-  /* Pushed to the far end on a wide viewport; wraps underneath on a phone. */
-  .built {
-    margin-left: auto;
-  }
-
-  ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem 1.1rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
   }
 
   a,

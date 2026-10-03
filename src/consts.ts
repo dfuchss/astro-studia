@@ -126,7 +126,6 @@ export const FOOTER: {
   credit: boolean;
 } = {
   affiliation: [
-    'Written at ',
     { label: 'Tusculum', href: 'https://en.wikipedia.org/wiki/Tusculum' },
     ' and ',
     { label: 'Arpinum', href: 'https://en.wikipedia.org/wiki/Arpino' },
