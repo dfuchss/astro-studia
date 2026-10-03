@@ -1,3 +1,4 @@
+import { FEATURES, type FeatureId } from './features.ts';
 import {
   BLOG,
   CV,
@@ -85,28 +86,35 @@ export const SELF = {
  * The areas of the site; `<body data-section>` picks the accent family. ADDING
  * ONE IS TWO EDITS: this union and a `[data-section='…']` block in tokens.css,
  * and the audit compares the two.
+ *
+ * Every area stays listed whatever the flags say; an unrendered accent family
+ * costs a few bytes, and switching the feature back on needs no edit here.
  */
 export type Section =
   'home' | 'publications' | 'papers' | 'projects' | 'repositories' | 'blog' | 'people' | 'cv';
 
-/** Top-level navigation. The demo ships every area — docs/Removing-Features.md. */
-export const NAV: { label: string; href: string; section: Section }[] = [
+/** A row shown only while its feature is on; one with no `feature` always. */
+type Row<T> = T & { feature?: FeatureId };
+const shown = <T>(rows: Row<T>[]): T[] => rows.filter((r) => !r.feature || FEATURES[r.feature]);
+
+/** Top-level navigation, in order. The demo ships every area — docs/Features.md. */
+export const NAV = shown<{ label: string; href: string; section: Section }>([
   { label: 'about', href: '/', section: 'home' },
-  { label: 'publications', href: PUBLICATIONS, section: 'publications' },
-  { label: 'papers', href: PAPERS, section: 'papers' },
-  { label: 'projects', href: PROJECTS, section: 'projects' },
-  { label: 'blog', href: BLOG, section: 'blog' },
-  { label: 'repositories', href: REPOSITORIES, section: 'repositories' },
-  { label: 'people', href: PEOPLE, section: 'people' },
-  { label: 'cv', href: CV, section: 'cv' },
-];
+  { label: 'publications', href: PUBLICATIONS, section: 'publications', feature: 'publications' },
+  { label: 'papers', href: PAPERS, section: 'papers', feature: 'papers' },
+  { label: 'projects', href: PROJECTS, section: 'projects', feature: 'projects' },
+  { label: 'blog', href: BLOG, section: 'blog', feature: 'blog' },
+  { label: 'repositories', href: REPOSITORIES, section: 'repositories', feature: 'repositories' },
+  { label: 'people', href: PEOPLE, section: 'people', feature: 'people' },
+  { label: 'cv', href: CV, section: 'cv', feature: 'cv' },
+]);
 
 /** The thin link row in the footer. Add or drop freely. */
-export const FOOTER_LINKS: { label: string; href: string }[] = [
-  { label: 'Feed', href: '/feed.xml' },
-  { label: 'PGP', href: PGP_KEY },
-  { label: 'Imprint', href: IMPRINT },
-];
+export const FOOTER_LINKS = shown<{ label: string; href: string }>([
+  { label: 'Feed', href: '/feed.xml', feature: 'feed' },
+  { label: 'PGP', href: PGP_KEY, feature: 'pgp' },
+  { label: 'Imprint', href: IMPRINT, feature: 'imprint' },
+]);
 
 /**
  * The rest of the footer. `affiliation` joins with no added spaces; anything
@@ -130,25 +138,16 @@ export const FOOTER: {
 /** Author names shown before "and N more authors". `null` lists everyone. */
 export const AUTHOR_LIMIT: number | null = 4;
 
-/** The words under the counted numbers in the hero. Fenced per key: a label
-    left behind by a prune would offer a stat with no number under it. */
+/** The words under the counted numbers in the hero. Which rows appear is
+    decided where they are counted, in the two heroes. */
 export const STAT_LABELS = {
-  /* ▼ FEATURE:publications ▼ */
   publications: 'publications',
-  /* ▲ FEATURE:publications ▲ */
-  /* ▼ FEATURE:citations ▼ */
   citations: 'citations',
   hIndex: 'h-index',
-  /* ▲ FEATURE:citations ▲ */
-  /* ▼ FEATURE:projects ▼ */
   projects: 'projects',
-  /* ▲ FEATURE:projects ▲ */
-  /* ▼ FEATURE:people ▼ */
   people: 'collaborators',
-  /* ▲ FEATURE:people ▲ */
 };
 
-/* ▼ FEATURE:people ▼ */
 /** The chips on a person's card at /people/; `orcid` shows the word or the id itself. */
 export const PEOPLE_CHIPS: {
   homepage: string;
@@ -161,7 +160,6 @@ export const PEOPLE_CHIPS: {
   github: 'GitHub',
   email: 'Email',
 };
-/* ▲ FEATURE:people ▲ */
 
 /** Extra origins the audit tolerates for subresources — an embedded talk's host. */
 export const ALLOWED_THIRD_PARTY: string[] = [];

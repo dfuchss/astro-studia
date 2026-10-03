@@ -27,8 +27,9 @@
   /* ── PALETTE ───────────────────────────────────────────────────────────
      One base hex per accent family, mixed into the -strong, -line, -dim and
      -glow roles. The audit fails naming the token unless each base clears 3:1
-     against --bg and each --text* 4.5:1. A family read by exactly one section
-     block is fenced to that feature; the rest are read from elsewhere too. */
+     against --bg and each --text* 4.5:1. Every family stays defined whatever
+     src/features.ts says: an accent nothing renders costs a few bytes, and the
+     audit compares what the HTML uses against what the CSS defines. */
 
   --cyan: #5cc8e8;
   --cyan-strong: color-mix(in srgb, var(--cyan) 55%, white);
@@ -36,13 +37,11 @@
   --cyan-dim: color-mix(in srgb, var(--cyan) 12%, transparent);
   --cyan-glow: color-mix(in srgb, var(--cyan) 15%, transparent);
 
-  /* ▼ FEATURE:publications ▼ */
   --green: #55d39a;
   --green-strong: color-mix(in srgb, var(--green) 55%, white);
   --green-line: color-mix(in srgb, var(--green) 42%, transparent);
   --green-dim: color-mix(in srgb, var(--green) 12%, transparent);
   --green-glow: color-mix(in srgb, var(--green) 15%, transparent);
-  /* ▲ FEATURE:publications ▲ */
 
   /* Not fenced with the paper pages: base.css reads --violet-glow for the
      second background gradient on every page. */
@@ -52,13 +51,11 @@
   --violet-dim: color-mix(in srgb, var(--violet) 13%, transparent);
   --violet-glow: color-mix(in srgb, var(--violet) 15%, transparent);
 
-  /* ▼ FEATURE:blog ▼ */
   --rose: #f18fa2;
   --rose-strong: color-mix(in srgb, var(--rose) 55%, white);
   --rose-line: color-mix(in srgb, var(--rose) 42%, transparent);
   --rose-dim: color-mix(in srgb, var(--rose) 13%, transparent);
   --rose-glow: color-mix(in srgb, var(--rose) 14%, transparent);
-  /* ▲ FEATURE:blog ▲ */
 
   --amber: #e0b364;
   --amber-strong: color-mix(in srgb, var(--amber) 55%, white);

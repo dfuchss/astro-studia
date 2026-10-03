@@ -1,5 +1,8 @@
 ---
+import { FEATURES, disabled } from '../../../features.ts';
 import Home from '../../index.astro';
+
+if (!FEATURES.demo) return disabled();
 
 /*
  * The project-shaped entry page: src/pages/index.astro rendered with its other

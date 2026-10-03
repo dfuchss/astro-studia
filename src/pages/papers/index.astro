@@ -1,9 +1,12 @@
 ---
+import { FEATURES, disabled } from '../../features.ts';
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import VenueBadge from '../../components/pub/VenueBadge.astro';
 import { paperPath } from '../../lib/paths.ts';
 import { paperPublication, paperVenue, paperVenueShort, paperYear } from '../../lib/papers.ts';
+
+if (!FEATURES.papers) return disabled();
 
 const papers = (await getCollection('papers')).sort(
   (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),

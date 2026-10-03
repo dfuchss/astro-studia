@@ -1,4 +1,5 @@
 ---
+import { FEATURES } from '../../../../../../features.ts';
 import { render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import Base from '../../../../../../layouts/Base.astro';
@@ -13,6 +14,9 @@ import {
 import { tagPath } from '../../../../../../lib/paths.ts';
 
 export const getStaticPaths = (async () => {
+  /* getStaticPaths runs whatever the page's own guard says, and getCollection()
+     on an emptied collection warns on every build. */
+  if (!FEATURES.blog) return [];
   // publishedPosts() drops drafts, so a draft has no route at all.
   const all = await publishedPosts();
   return all.map((post, i) => ({

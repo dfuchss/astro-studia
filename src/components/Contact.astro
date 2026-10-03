@@ -1,19 +1,14 @@
 ---
 import Email from './Email.astro';
 import { contactRows, type ResolvedRow } from '../lib/contact.ts';
-/* ▼ FEATURE:pgp ▼ */
+import { FEATURES } from '../features.ts';
 import { keyId } from '../lib/pgp.ts';
-import { PGP_KEY } from '../lib/paths.ts';
-/* ▲ FEATURE:pgp ▲ */
-/* ▼ FEATURE:cv ▼ */
 import { currentPosition, dateRange } from '../lib/cv.ts';
-import { CV } from '../lib/paths.ts';
-/* ▲ FEATURE:cv ▲ */
+import { CV, PGP_KEY } from '../lib/paths.ts';
 
 /**
  * How people reach you, from `src/data/contact.yml`. Rows the site can DERIVE
- * are fenced below by the feature that owns the fact, because a second copy
- * could disagree with it.
+ * sit behind the feature that owns the fact, so no second copy can disagree.
  */
 interface Props {
   /** `rows`: a <dl> on hairline rules. `inline`: one wrapping line of pairs,
@@ -26,9 +21,8 @@ const { layout = 'rows' } = Astro.props;
 // the template overruling a choice.
 const rows: ResolvedRow[] = [...contactRows];
 
-/* ▼ FEATURE:pgp ▼ */
 /* From `pgp_fingerprint` in socials.yml, so it cannot disagree with /pgp-key/. */
-const pgp = keyId();
+const pgp = FEATURES.pgp ? keyId() : null;
 if (pgp) {
   rows.push({
     label: 'pgp',
@@ -38,12 +32,10 @@ if (pgp) {
     note: 'for anything sensitive',
   });
 }
-/* ▲ FEATURE:pgp ▲ */
 
-/* ▼ FEATURE:cv ▼ */
 /* Read from cv.yml rather than written twice, so this cannot disagree with
    /cv/'s own Experience section. */
-const position = currentPosition();
+const position = FEATURES.cv ? currentPosition() : undefined;
 if (position) {
   rows.push({
     label: 'where',
@@ -53,7 +45,6 @@ if (position) {
     note: dateRange(position),
   });
 }
-/* ▲ FEATURE:cv ▲ */
 
 /*
  * A row's value is the same object in both layouts — an address through
@@ -106,15 +97,13 @@ const external = (href?: string) => (href?.startsWith('http') ? 'noopener' : und
   )
 }
 
-{/* ▼ FEATURE:cv ▼ */}
 {
-  layout === 'rows' && (
+  FEATURES.cv && layout === 'rows' && (
     <p class="more mono">
       <a href={CV}>full cv →</a>
     </p>
   )
 }
-{/* ▲ FEATURE:cv ▲ */}
 
 <style>
   .contact {

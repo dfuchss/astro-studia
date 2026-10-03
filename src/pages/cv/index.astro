@@ -1,10 +1,9 @@
 ---
+import { FEATURES, disabled } from '../../features.ts';
 import { Image } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import Contact from '../../components/Contact.astro';
-/* ▼ FEATURE:socials ▼ */
 import SocialRow from '../../components/SocialRow.astro';
-/* ▲ FEATURE:socials ▲ */
 import { SELF } from '../../consts.ts';
 import {
   cv,
@@ -18,6 +17,8 @@ import {
   parseDetail,
 } from '../../lib/cv.ts';
 import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
+
+if (!FEATURES.cv) return disabled();
 
 /* Each section picks its shape from its data unless `layout:` says otherwise
    (see layoutOf()), so adding a section to cv.yml needs no code here. */
@@ -46,9 +47,7 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
             src/data/contact.yml, so a handle added there shows up here too. */
         }
         <Contact layout="inline" />
-        {/* ▼ FEATURE:socials ▼ */}
-        <SocialRow />
-        {/* ▲ FEATURE:socials ▲ */}
+        {FEATURES.socials && <SocialRow />}
       </div>
       <Image class="portrait" src={portrait} alt="" width={PORTRAIT_SIZE} height={PORTRAIT_SIZE} />
     </div>

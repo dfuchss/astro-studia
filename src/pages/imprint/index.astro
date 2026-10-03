@@ -1,7 +1,10 @@
 ---
+import { FEATURES, disabled } from '../../features.ts';
 import Base from '../../layouts/Base.astro';
 import Email from '../../components/Email.astro';
 import { SITE } from '../../consts.ts';
+
+if (!FEATURES.imprint) return disabled();
 ---
 
 <Base title="imprint" description="Site notice." section="home">

@@ -1,13 +1,17 @@
 import rss from '@astrojs/rss';
 import type { APIRoute } from 'astro';
 import { SITE } from '../consts.ts';
+import { FEATURES, FEED_SOURCE, disabled } from '../features.ts';
+import { feedItems as fromPosts } from '../lib/feed/fromPosts.ts';
+import { feedItems as fromPapers } from '../lib/feed/fromPapers.ts';
 
-// THE ONE LINE A PRESET SWAPS: `fromPapers` is the blog-free twin of `fromPosts`.
-import { feedItems } from '../lib/feed/fromPosts.ts';
-
-/** The feed, at /feed.xml. Deliberately not tied to the blog. */
+/** The feed, at /feed.xml. Deliberately not tied to the blog: FEED_SOURCE
+    says which collection it lists, and a project site with no blog feeds its
+    paper pages instead. */
 export const GET: APIRoute = async (context) => {
-  const items = await feedItems();
+  if (!FEATURES.feed) return disabled();
+
+  const items = await (FEED_SOURCE === 'posts' ? fromPosts : fromPapers)();
 
   // Newest first, undated last: the source collection's order is not chronological.
   items.sort((a, b) => (b.pubDate?.getTime() ?? -Infinity) - (a.pubDate?.getTime() ?? -Infinity));

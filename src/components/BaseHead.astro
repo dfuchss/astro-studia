@@ -1,4 +1,5 @@
 ---
+import { FEATURES } from '../features.ts';
 import { SITE } from '../consts.ts';
 import { routePath } from '../lib/paths.ts';
 
@@ -37,9 +38,11 @@ const canonical = noindex ? undefined : new URL(routePath(Astro.url.pathname), S
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
 <link rel="manifest" href="/site.webmanifest" />
 
-{/* ▼ FEATURE:feed ▼ */}
-<link rel="alternate" type="application/rss+xml" title={SITE.title} href="/feed.xml" />
-{/* ▲ FEATURE:feed ▲ */}
+{
+  FEATURES.feed && (
+    <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/feed.xml" />
+  )
+}
 
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content={SITE.title} />

@@ -2,8 +2,8 @@
 /**
  * Links between the two entry-page shapes of src/pages/index.astro (the
  * second URL renders it with shape="project"), so a visitor can compare the
- * two ▼ PRESET:… ▼ regions `npm run init` chooses between. Plain links, so it
- * works with JS off. Belongs to the `demo` feature, which no preset includes.
+ * two before setting HOME_SHAPE. Plain links, so it works with JS off.
+ * Belongs to the `demo` feature, which no preset includes.
  */
 interface Props {
   /** Which shape src/pages/index.astro is rendering. */
@@ -12,7 +12,7 @@ interface Props {
 
 const { current } = Astro.props;
 
-/* The ids are the PRESET fence names, not free text. */
+/* The ids are the HOME_SHAPE values, not free text. */
 const sides = [
   { id: 'profile', label: 'Personal Academic Page', href: '/' },
   { id: 'project', label: 'Academic Project Page', href: '/demo/project/' },

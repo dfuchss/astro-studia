@@ -1,16 +1,12 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import { FEATURES } from '../../features.ts';
 import VenueBadge from './VenueBadge.astro';
 import CopyButton from '../CopyButton.astro';
-/* Fenced with the chip below, their only caller. */
-/* ▼ FEATURE:citations ▼ */
 import { citationsFor } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
-/* ▲ FEATURE:citations ▲ */
 import { truncateAuthors, fullName, isSelf, surnameKey } from '../../lib/authors.ts';
-/* ▼ FEATURE:papers ▼ */
 import { paperPath } from '../../lib/paths.ts';
-/* ▲ FEATURE:papers ▲ */
 
 interface Props {
   pub: CollectionEntry<'publications'>;
@@ -29,17 +25,13 @@ const { pub, compact = false, links } = Astro.props;
 const d = pub.data;
 
 const { shown, hidden } = truncateAuthors(d.authors);
-/* ▼ FEATURE:citations ▼ */
-const cites = citationsFor(d.googleScholarId);
-/* ▲ FEATURE:citations ▲ */
+/* 0, not undefined: a count of zero already means "no chip" below. */
+const cites = FEATURES.citations ? citationsFor(d.googleScholarId) : 0;
 
-/* Resolved here rather than in the two places it is rendered: paperPath() is
-   fenced in lib/paths.ts, and a site with no paper pages has nothing to link
-   to — `undefined` then renders the title as text. */
-let pagePath: string | undefined;
-/* ▼ FEATURE:papers ▼ */
-pagePath = d.pageSlug ? paperPath(d.pageSlug) : undefined;
-/* ▲ FEATURE:papers ▲ */
+/* Resolved here rather than in the two places it is rendered: a site with no
+   paper pages has nothing to link to — `undefined` then renders the title as
+   text. */
+const pagePath = FEATURES.papers && d.pageSlug ? paperPath(d.pageSlug) : undefined;
 
 // Where it appeared: proceedings, journal, or the awarding institution.
 const inParts = [d.booktitle ?? d.journal ?? d.school ?? d.institution, d.location].filter(Boolean);
@@ -123,7 +115,6 @@ const bibId = `bib-${pub.id}`;
           )
         )
       }
-      {/* ▼ FEATURE:citations ▼ */}
       {
         cites > 0 && (
           <span class="chip cites" title="Citations (Google Scholar)">
@@ -131,8 +122,6 @@ const bibId = `bib-${pub.id}`;
           </span>
         )
       }
-      {/* ▲ FEATURE:citations ▲ */}
-      {/* ▼ FEATURE:papers ▼ */}
       {
         pagePath && !compact && (
           <a class="chip paper-page" href={pagePath}>
@@ -140,7 +129,6 @@ const bibId = `bib-${pub.id}`;
           </a>
         )
       }
-      {/* ▲ FEATURE:papers ▲ */}
       {
         !compact && (
           <details class="bib">
@@ -231,13 +219,11 @@ const bibId = `bib-${pub.id}`;
     margin: 0 0.4rem 0.4rem 0;
     vertical-align: middle;
   }
-  /* ▼ FEATURE:citations ▼ */
   .cites {
     border-color: var(--sec-line);
     color: var(--sec);
     background: var(--sec-dim);
   }
-  /* ▲ FEATURE:citations ▲ */
   /* The links here that lead to a page of ours rather than off-site. */
   .title-link {
     color: inherit;
@@ -248,12 +234,10 @@ const bibId = `bib-${pub.id}`;
     text-decoration: underline;
     text-underline-offset: 3px;
   }
-  /* ▼ FEATURE:papers ▼ */
   .paper-page {
     border-color: var(--sec-line);
     color: var(--sec-strong);
   }
-  /* ▲ FEATURE:papers ▲ */
 
   /* `display: contents` promotes the summary and the body to children of the
      pill row, so the chip keeps its place in the row and does not move when you

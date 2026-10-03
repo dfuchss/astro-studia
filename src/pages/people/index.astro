@@ -1,7 +1,10 @@
 ---
+import { FEATURES, disabled } from '../../features.ts';
 import Base from '../../layouts/Base.astro';
 import PersonCard from '../../components/people/PersonCard.astro';
 import { members } from '../../lib/people.ts';
+
+if (!FEATURES.people) return disabled();
 
 const list = await members();
 ---

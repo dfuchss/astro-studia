@@ -4,9 +4,9 @@ import { paperDescription, paperPublication, paperYear } from '../papers.ts';
 import { paperPath } from '../paths.ts';
 import type { FeedItem } from './types.ts';
 
-/** Feed items from the paper pages, for a site with no blog: swap the import in
-    src/pages/feed.xml.ts. A page with no BibTeX entry is dated by its own year;
-    undated, a reader files it at the bottom for ever. */
+/** Feed items from the paper pages, for a site with no blog: set FEED_SOURCE
+    to 'papers' in src/features.ts. A page with no BibTeX entry is dated by its
+    own year; undated, a reader files it at the bottom for ever. */
 export async function feedItems(): Promise<FeedItem[]> {
   const papers = await getCollection('papers');
 

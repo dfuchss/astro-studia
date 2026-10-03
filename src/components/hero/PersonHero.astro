@@ -2,57 +2,39 @@
 import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 
+import { FEATURES } from '../../features.ts';
 import { SITE, SELF, STAT_LABELS } from '../../consts.ts';
 import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
-import Tagline from '../Tagline.astro';
-/* Unfenced: every stat row below is optional, the formatting is not. */
+import { PROJECTS, PUBLICATIONS } from '../../lib/paths.ts';
+import { scholarMetrics } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
-/* ▼ FEATURE:socials ▼ */
+import Tagline from '../Tagline.astro';
 import SocialRow from '../SocialRow.astro';
-/* ▲ FEATURE:socials ▲ */
 
 /*
  * The hero for a person's site: a name, a role, a pitch, and the counts that
- * back them up.
+ * back them up. See ProjectHero.astro for the other shape; HOME_SHAPE picks
+ * between them.
  */
-/* ▼ FEATURE:demo ▼ */
-/* See ProjectHero.astro for the other shape. src/pages/index.astro carries
-   both inside ▼ PRESET:… ▼ fences, and init keeps one — this note is fenced
-   so it goes with the choice. */
-/* ▲ FEATURE:demo ▲ */
-/* ▼ FEATURE:publications ▼ */
-import { PUBLICATIONS } from '../../lib/paths.ts';
-const pubs = await getCollection('publications');
-/* ▲ FEATURE:publications ▲ */
-/* ▼ FEATURE:projects ▼ */
-import { PROJECTS } from '../../lib/paths.ts';
-const projects = await getCollection('projects');
-/* ▲ FEATURE:projects ▲ */
-/* ▼ FEATURE:citations ▼ */
-import { scholarMetrics } from '../../lib/citations.ts';
-const m = scholarMetrics();
-/* ▲ FEATURE:citations ▲ */
+
+/* Empty when switched off; the flags are stated so each row's source shows. */
+const pubs = FEATURES.publications ? await getCollection('publications') : [];
+const projects = FEATURES.projects ? await getCollection('projects') : [];
+const m = FEATURES.citations ? scholarMetrics() : undefined;
 
 /*
  * Counted, never typed in: a hardcoded "35 publications" is wrong the day you
- * add the thirty-sixth. A stat of 0 is dropped. One row per line, each fenced
- * by the feature it counts, so pruning that feature takes its row and its
- * `getCollection` above with it. Annotated because a selection can fence every
- * row away, and an empty literal infers as `never[]`.
+ * add the thirty-sixth. A stat of 0 is dropped, which does most of the work a
+ * flag would; `citations` needs one because it counts a module, not a
+ * collection.
  */
 type Stat = { value: number; label: string; href: string };
 
 const rows: Stat[] = [
-  /* ▼ FEATURE:publications ▼ */
   { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
-  /* ▲ FEATURE:publications ▲ */
-  /* ▼ FEATURE:citations ▼ */
-  { value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS },
-  { value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS },
-  /* ▲ FEATURE:citations ▲ */
-  /* ▼ FEATURE:projects ▼ */
+  ...(m ? [{ value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS }] : []),
+  ...(m ? [{ value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS }] : []),
   { value: projects.length, label: STAT_LABELS.projects, href: PROJECTS },
-  /* ▲ FEATURE:projects ▲ */
 ];
 const stats = rows.filter((s) => s.value > 0);
 ---
@@ -69,9 +51,7 @@ const stats = rows.filter((s) => s.value > 0);
         and I argue that Latin is perfectly capable of the job — which is a claim you can only make by
         doing it.
       </p>
-      {/* ▼ FEATURE:socials ▼ */}
-      <SocialRow />
-      {/* ▲ FEATURE:socials ▲ */}
+      {FEATURES.socials && <SocialRow />}
     </div>
 
     <figure class="portrait">

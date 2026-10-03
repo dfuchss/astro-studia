@@ -5,14 +5,15 @@ import { Image } from 'astro:assets';
 import Base from '../../../layouts/Base.astro';
 import Prose from '../../../components/Prose.astro';
 import Figure from '../../../components/Figure.astro';
-import { PROJECTS } from '../../../lib/paths.ts';
-/* ▼ FEATURE:papers ▼ */
+import { FEATURES } from '../../../features.ts';
+import { PROJECTS, paperPath } from '../../../lib/paths.ts';
 import VenueBadge from '../../../components/pub/VenueBadge.astro';
-import { paperPath } from '../../../lib/paths.ts';
 import { paperPublication, paperVenueShort, paperYear } from '../../../lib/papers.ts';
-/* ▲ FEATURE:papers ▲ */
 
 export const getStaticPaths = (async () => {
+  /* getStaticPaths runs whatever the page's own guard says, and getCollection()
+     on an emptied collection warns on every build. */
+  if (!FEATURES.projects) return [];
   const projects = await getCollection('projects');
   return (
     projects
@@ -27,12 +28,11 @@ const { project } = Astro.props;
 const { Content } = await render(project);
 const d = project.data;
 
-/* ▼ FEATURE:papers ▼ */
 /* Every paper whose front matter names this project. By collection id, not
    title: a title match silently empties the list the first time one is edited. */
-const papers = await getCollection('papers', (p) =>
-  p.data.projects.some((ref) => ref.id === project.id),
-);
+const papers = FEATURES.papers
+  ? await getCollection('papers', (p) => p.data.projects.some((ref) => ref.id === project.id))
+  : [];
 const related = (
   await Promise.all(
     papers.map(async (paper) => {
@@ -52,7 +52,6 @@ const related = (
   // Newest edition first, then the order /papers/ uses, so two works from the
   // same year keep the sequence a reader has already seen.
   .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.paper.data.order - b.paper.data.order);
-/* ▲ FEATURE:papers ▲ */
 ---
 
 <Base title={d.title} description={d.description} section="projects">
@@ -106,7 +105,6 @@ const related = (
       )
     }
 
-    {/* ▼ FEATURE:papers ▼ */}
     {
       related.length > 0 && (
         <section class="block" aria-labelledby="papers-h">
@@ -135,7 +133,6 @@ const related = (
         </section>
       )
     }
-    {/* ▲ FEATURE:papers ▲ */}
 
     <p class="back">
       <a class="chip" href={PROJECTS}>← All projects</a>

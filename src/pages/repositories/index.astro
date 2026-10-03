@@ -1,7 +1,10 @@
 ---
+import { FEATURES, disabled } from '../../features.ts';
 import Base from '../../layouts/Base.astro';
 import { SITE } from '../../consts.ts';
 import { repositories, languageColors, github, socials } from '../../lib/data.ts';
+
+if (!FEATURES.repositories) return disabled();
 
 /*
  * Everything here comes from the committed github-metadata.json; no API call

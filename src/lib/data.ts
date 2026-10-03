@@ -1,32 +1,23 @@
 /**
  * Typed access to `src/data/`, imported with `?raw` rather than read with
- * `fs` (see images.ts). Each file's import, type and export are fenced under
- * its feature: an unused `?raw` import of a deleted file is a build error.
+ * `fs` (see images.ts). Nothing here is conditional: a switched-off feature's
+ * YAML is parsed and then read by nobody, which is cheaper than the branch.
  */
 import { parse } from 'yaml';
 
-/* ▼ FEATURE:citations ▼ */
 import citationsRaw from '../data/citations.yml?raw';
-/* ▲ FEATURE:citations ▲ */
 
-/* ▼ FEATURE:socials ▼ */
 import socialsRaw from '../data/socials.yml?raw';
-/* ▲ FEATURE:socials ▲ */
 
-/* ▼ FEATURE:repositories ▼ */
 import repositoriesRaw from '../data/repositories.yml?raw';
 import languageColorsRaw from '../data/language_colors.yml?raw';
 import githubMetadata from '../data/github-metadata.json';
-/* ▲ FEATURE:repositories ▲ */
 
-/* ▼ FEATURE:citations ▼ */
 export type CitationsFile = {
   metadata: { last_updated: string };
   papers: Record<string, { citations?: number; title?: string; year?: number }>;
 };
-/* ▲ FEATURE:citations ▲ */
 
-/* ▼ FEATURE:socials ▼ */
 export type Socials = {
   orcid_id: string | null;
   scholar_userid: string | null;
@@ -41,17 +32,13 @@ export type Socials = {
    */
   extra?: { label: string; url: string; icon?: string }[] | null;
 };
-/* ▲ FEATURE:socials ▲ */
 
-/* ▼ FEATURE:repositories ▼ */
 export type Repositories = {
   github_users?: string[];
   github_repos?: string[];
   zenodo_repos?: { name: string; doi: string }[];
 };
-/* ▲ FEATURE:repositories ▲ */
 
-/* ▼ FEATURE:repositories ▼ */
 export type GithubMetadata = {
   fetched: string;
   users: Record<
@@ -81,21 +68,12 @@ export type GithubMetadata = {
     }
   >;
 };
-/* ▲ FEATURE:repositories ▲ */
 
-/* ▼ FEATURE:citations ▼ */
 export const citations = parse(citationsRaw) as CitationsFile;
-/* ▲ FEATURE:citations ▲ */
-/* ▼ FEATURE:socials ▼ */
 export const socials = parse(socialsRaw) as Socials;
-/* ▲ FEATURE:socials ▲ */
-/* ▼ FEATURE:repositories ▼ */
 export const repositories = parse(repositoriesRaw) as Repositories;
 export const languageColors = parse(languageColorsRaw) as Record<string, string>;
-/* ▲ FEATURE:repositories ▲ */
 
-/* ▼ FEATURE:repositories ▼ */
 /** Written by scripts/fetch-github-metadata.mjs and committed; never fetched
     during the build. */
 export const github = githubMetadata as GithubMetadata;
-/* ▲ FEATURE:repositories ▲ */

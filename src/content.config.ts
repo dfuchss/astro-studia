@@ -2,19 +2,38 @@ import { defineCollection, reference, type SchemaContext } from 'astro:content';
 import { z } from 'zod';
 import { file, glob } from 'astro/loaders';
 import { bibtexLoader } from './loaders/bibtex.ts';
+import { FEATURES } from './features.ts';
 import { PAPERS } from './lib/paths.ts';
 
 /*
  * The content model. Every cross-reference goes through `reference()`, so a
  * bad slug or an unknown venue stops the build naming the offender instead of
- * rendering blank. Field by field: docs/Content.md. To remove a collection,
- * delete its block AND its name from the export at the bottom
- * (docs/Removing-Features.md has the order that matters).
+ * rendering blank. Field by field: docs/Content.md.
+ *
+ * Every collection is declared whatever the flags say, so `reference()` keeps
+ * type-checking; one whose feature is off is loaded `empty` instead, so the
+ * demo file behind it can be deleted too. docs/Features.md.
  */
+
+const empty = () => [] as { id: string }[];
+
+/**
+ * A `reference()` array, or an always-empty one when the target collection is
+ * off. A reference into an EMPTY collection is not a type error but a runtime
+ * one, and Astro logs it and then finishes the build successfully.
+ *
+ * The cast keeps one declared type across both branches; without it the union
+ * of two identical array types makes `.map()` uncallable at every consumer.
+ */
+type Ref<C extends string> = { collection: C; id: string };
+const refs = <C extends 'authors' | 'projects'>(collection: C, on: boolean) =>
+  (on
+    ? z.array(reference(collection))
+    : z.array(z.unknown()).transform(() => [])) as unknown as z.ZodType<Ref<C>[], Ref<C>[]>;
 
 /** Badge colours for the publication list, keyed by the BibTeX `abbr`. */
 const venues = defineCollection({
-  loader: file('src/data/venues.yml'),
+  loader: FEATURES.publications ? file('src/data/venues.yml') : empty,
   schema: z.object({
     name: z.string(),
     url: z.url().optional(),
@@ -24,7 +43,7 @@ const venues = defineCollection({
 
 /** Everyone who appears as an author anywhere, plus everyone in people.yml. */
 const authors = defineCollection({
-  loader: file('src/data/authors.yml'),
+  loader: FEATURES.authors ? file('src/data/authors.yml') : empty,
   schema: z.object({
     name: z.string(),
     orcid: z.string().nullable().default(null),
@@ -34,7 +53,7 @@ const authors = defineCollection({
 /** The people shown at /people/. The collection id is the page anchor, so a
     key here is a published URL. */
 const people = defineCollection({
-  loader: file('src/data/people.yml'),
+  loader: FEATURES.people ? file('src/data/people.yml') : empty,
   /* A function so it can take `image()`. It works under a file() loader as it
      does under glob(): the path is relative to the file the entry was loaded
      from, which here is src/data/people.yml — so `../assets/…`. */
@@ -55,39 +74,43 @@ const people = defineCollection({
     }),
 });
 
-const publications = defineCollection({
-  loader: bibtexLoader({
-    file: 'src/data/papers.bib',
+/**
+ * This paper's own page; a slug with no markdown behind it fails the build.
+ * Assembled from PAPERS rather than typed out, so renaming the route cannot
+ * leave a validator insisting on the old prefix. Applied only when `papers` is
+ * on, because with that collection empty every slug would be missing.
+ */
+const pageRule = {
+  field: 'page',
+  as: 'pageSlug',
+  resolve: (raw: string, { key }: { key: string }) => {
+    const re = new RegExp(`^${PAPERS}([a-z0-9._-]+)/?$`);
+    const m = re.exec(raw);
+    if (!m) throw new Error(`${key}: page = {${raw}} is not a ${PAPERS}<slug>/ path`);
+    return { value: m[1], file: `src/content/papers/${m[1]}.md` };
+  },
+};
 
-    links: [
-      // A PDF you host: an absolute URL, or a path under public/assets/pdf/.
-      {
-        field: 'pdf',
-        as: 'pdfUrl',
-        allowAbsolute: true,
-        resolve: (rel) => ({
-          value: `/assets/pdf/${rel}`,
-          file: `public/assets/pdf/${rel}`,
-        }),
-      },
-      /* ▼ FEATURE:papers ▼ */
-      // This paper's own page; a slug with no markdown behind it fails the build.
-      // Assembled from PAPERS rather than typed out, so renaming the route cannot
-      // leave a validator insisting on the old prefix. A `page = {…}` left in
-      // papers.bib once this is gone stays private: see DEFAULT_PRIVATE_FIELDS.
-      {
-        field: 'page',
-        as: 'pageSlug',
-        resolve: (raw, { key }) => {
-          const re = new RegExp(`^${PAPERS}([a-z0-9._-]+)/?$`);
-          const m = re.exec(raw);
-          if (!m) throw new Error(`${key}: page = {${raw}} is not a ${PAPERS}<slug>/ path`);
-          return { value: m[1], file: `src/content/papers/${m[1]}.md` };
-        },
-      },
-      /* ▲ FEATURE:papers ▲ */
-    ],
-  }),
+const publications = defineCollection({
+  loader: FEATURES.publications
+    ? bibtexLoader({
+        file: 'src/data/papers.bib',
+
+        links: [
+          // A PDF you host: an absolute URL, or a path under public/assets/pdf/.
+          {
+            field: 'pdf',
+            as: 'pdfUrl',
+            allowAbsolute: true,
+            resolve: (rel) => ({
+              value: `/assets/pdf/${rel}`,
+              file: `public/assets/pdf/${rel}`,
+            }),
+          },
+          ...(FEATURES.papers ? [pageRule] : []),
+        ],
+      })
+    : empty,
 
   // Every field the loader produces has to be declared here or Zod drops it.
   schema: z.object({
@@ -160,7 +183,7 @@ const linkMap = z
  * in papers.bib has to match.
  */
 const papers = defineCollection({
-  loader: glob({ base: 'src/content/papers', pattern: '**/*.md' }),
+  loader: FEATURES.papers ? glob({ base: 'src/content/papers', pattern: '**/*.md' }) : empty,
   /** A function so it can take `image()` — the figure goes through src/assets/. */
   schema: ({ image }) =>
     z
@@ -210,9 +233,7 @@ const papers = defineCollection({
 
         /** Authors as authors.yml entries, so each can link to an ORCID. The
           BibTeX author list is strings; this one is identities. */
-        /* ▼ FEATURE:authors ▼ */
-        authors: z.array(reference('authors')).default([]),
-        /* ▲ FEATURE:authors ▲ */
+        authors: refs('authors', FEATURES.authors).default([]),
 
         /** Spelled out rather than a boolean: `inPress: false` is true of a paper
           that is out and of one never submitted. */
@@ -237,12 +258,9 @@ const papers = defineCollection({
          * project page derives its paper list by scanning this field. A project
          * with a `redirect` is fine; the page links out to it.
          *
-         * Fenced because `papers` does not require `projects`: a reference() to
-         * a pruned collection breaks getEntry()'s type, and every paper page.
+         * Through refs() because `papers` does not require `projects`.
          */
-        /* ▼ FEATURE:projects ▼ */
-        projects: z.array(reference('projects')).default([]),
-        /* ▲ FEATURE:projects ▲ */
+        projects: refs('projects', FEATURES.projects).default([]),
 
         /** Sort key for /papers/. Lower comes first. */
         order: z.number().int().default(100),
@@ -275,7 +293,7 @@ const papers = defineCollection({
 /** Things you have made. An entry with `redirect` is a link out and gets no
     page of its own. */
 const projects = defineCollection({
-  loader: glob({ base: 'src/content/projects', pattern: '**/*.md' }),
+  loader: FEATURES.projects ? glob({ base: 'src/content/projects', pattern: '**/*.md' }) : empty,
   /** A function so it can take `image()`: the logo and the figure both go
       through the asset pipeline from src/assets/. */
   schema: ({ image }) =>
@@ -306,7 +324,7 @@ const toArray = (v: string | string[]) => (Array.isArray(v) ? v : [v]);
 
 /** Posts. The FILENAME sets the URL and must be YYYY-MM-DD-slug; blog.ts says why. */
 const posts = defineCollection({
-  loader: glob({ base: 'src/content/posts', pattern: '**/*.md' }),
+  loader: FEATURES.blog ? glob({ base: 'src/content/posts', pattern: '**/*.md' }) : empty,
   schema: z.object({
     title: z.string(),
     /** Must agree with the filename; publishedPosts() throws if it does not. */

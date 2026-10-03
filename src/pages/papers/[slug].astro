@@ -7,15 +7,9 @@ import Figure from '../../components/Figure.astro';
 import VenueBadge from '../../components/pub/VenueBadge.astro';
 import ScholarMeta from '../../components/pub/ScholarMeta.astro';
 import CopyButton from '../../components/CopyButton.astro';
-import { PAPERS } from '../../lib/paths.ts';
-/* Its own import line: projectPath() is fenced in lib/paths.ts too, so sharing
-   a line with PAPERS would leave this one importing a gone export. */
-/* ▼ FEATURE:projects ▼ */
-import { projectPath } from '../../lib/paths.ts';
-/* ▲ FEATURE:projects ▲ */
-/* ▼ FEATURE:authors ▼ */
+import { FEATURES } from '../../features.ts';
+import { PAPERS, projectPath } from '../../lib/paths.ts';
 import { isSelfName } from '../../lib/authors.ts';
-/* ▲ FEATURE:authors ▲ */
 import {
   linkLabel,
   paperByline,
@@ -27,6 +21,9 @@ import {
 } from '../../lib/papers.ts';
 
 export const getStaticPaths = (async () => {
+  /* getStaticPaths runs whatever the page's own guard says, and getCollection()
+     on an emptied collection warns on every build. */
+  if (!FEATURES.papers) return [];
   const papers = await getCollection('papers');
   return papers.map((paper) => ({ params: { slug: paper.id }, props: { paper } }));
 }) satisfies GetStaticPaths;
@@ -48,22 +45,22 @@ const year = paperYear(paper, pub);
 // The breadcrumb's leaf; undefined when there is nothing true to put there.
 const leaf = paperVenueShort(paper, pub);
 
-/* ▼ FEATURE:authors ▼ */
-const authors = await Promise.all(paper.data.authors.map((ref) => getEntry(ref)));
-/* ▲ FEATURE:authors ▲ */
+const authors = FEATURES.authors
+  ? await Promise.all(paper.data.authors.map((ref) => getEntry(ref)))
+  : [];
 
 /*
  * The projects this paper came out of; the reverse edge is computed on
  * /projects/<slug>/. A project with `redirect` has no page of its own, and
  * reference() proves the entry exists, not that a page was generated for it.
  */
-/* ▼ FEATURE:projects ▼ */
-const projects = (await Promise.all(paper.data.projects.map((ref) => getEntry(ref)))).map((p) => ({
-  title: p.data.title,
-  href: p.data.redirect ?? projectPath(p.id),
-  external: Boolean(p.data.redirect),
-}));
-/* ▲ FEATURE:projects ▲ */
+const projects = FEATURES.projects
+  ? (await Promise.all(paper.data.projects.map((ref) => getEntry(ref)))).map((p) => ({
+      title: p.data.title,
+      href: p.data.redirect ?? projectPath(p.id),
+      external: Boolean(p.data.redirect),
+    }))
+  : [];
 
 /** Pretty names for the link keys in front matter. A key with no row renders
     as typed, and `<venue>_<kind>` is derived — see linkLabel(). */
@@ -104,16 +101,12 @@ const hasActions = Boolean(d?.pdfUrl || d?.doi);
 const cite = pub ? { id: `bib-${pub.id}`, bibtex: pub.data.bibtex } : undefined;
 
 // Not the same in the derived and the stated case — see paperByline().
-/* ▼ FEATURE:authors ▼ */
 const { connector, separator } = paperByline(venue, authors.length);
-/* ▲ FEATURE:authors ▲ */
 
 /* Whether the Links section exists at all. One source per line, not
    `projects.length > 0 || …` inline: a fence takes whole lines. */
 let hasLinkSection = linkRows.length > 0;
-/* ▼ FEATURE:projects ▼ */
 hasLinkSection ||= projects.length > 0;
-/* ▲ FEATURE:projects ▲ */
 ---
 
 <Base title={paper.data.title} description={paperDescription(paper, pub)} section="papers">
@@ -147,7 +140,6 @@ hasLinkSection ||= projects.length > 0;
 
       <h1>{paper.data.title}</h1>
 
-      {/* ▼ FEATURE:authors ▼ */}
       {
         authors.length > 0 && (
           <p class="byline">
@@ -179,7 +171,6 @@ hasLinkSection ||= projects.length > 0;
           </p>
         )
       }
-      {/* ▲ FEATURE:authors ▲ */}
 
       {
         /* Badge, year and the venue sentence on one flex row: they are one
@@ -287,7 +278,6 @@ hasLinkSection ||= projects.length > 0;
               as an action, and this section is an index of everywhere the work
               lives. */}
           <div class="link-grid">
-            {/* ▼ FEATURE:projects ▼ */}
             {/* A column like any other: their own row of chips made the
                 section look like two sections. */}
             {projects.length > 0 && (
@@ -305,7 +295,6 @@ hasLinkSection ||= projects.length > 0;
                 </ul>
               </div>
             )}
-            {/* ▲ FEATURE:projects ▲ */}
             {linkRows.map((row) => (
               <div>
                 <h3 class="mono">{row.title}</h3>

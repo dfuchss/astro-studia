@@ -1,21 +1,19 @@
 ---
 import { getCollection } from 'astro:content';
 
+import { FEATURES } from '../../features.ts';
 import { SITE, STAT_LABELS } from '../../consts.ts';
 import { intrinsic } from '../../lib/images.ts';
-import Tagline from '../Tagline.astro';
-/* Unfenced: every stat row below is optional, the formatting is not. */
+import { PROJECTS, PUBLICATIONS, PEOPLE } from '../../lib/paths.ts';
+import { scholarMetrics } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
+import Tagline from '../Tagline.astro';
 
 /*
  * The hero for a project or group site: a mark, a name, a tagline, and the
- * actions a visitor is most likely to want.
+ * actions a visitor is most likely to want. See PersonHero.astro for the
+ * other shape; HOME_SHAPE picks between them.
  */
-/* ▼ FEATURE:demo ▼ */
-/* See PersonHero.astro for the other shape. src/pages/index.astro carries
-   both inside ▼ PRESET:… ▼ fences, and init keeps one — this note is fenced
-   so it goes with the choice. */
-/* ▲ FEATURE:demo ▲ */
 
 /*
  * The same mark as the nav, from SITE.brandLogo. The favicon is the fallback:
@@ -25,52 +23,34 @@ import { formatCount } from '../../lib/format.ts';
 const logo = SITE.brandLogo?.src ?? '/favicon.svg';
 const { width: logoWidth, height: logoHeight } = intrinsic(logo);
 
-/* One row per line and each fenced, for the reason the stats below are. Typed
-   because `primary` is on the projects row alone: fence it away and the
-   inferred type loses the field the markup reads. */
+/* A switched-off collection loads empty, so these would return [] anyway; the
+   flags are here so a reader can see which row depends on what. */
+const pubs = FEATURES.publications ? await getCollection('publications') : [];
+const people = FEATURES.people ? await getCollection('people') : [];
+const m = FEATURES.citations ? scholarMetrics() : undefined;
+
+/* Typed because `primary` is on the projects row alone: an inferred type
+   would lose the field the markup reads if that entry were spread away. */
 type Action = { label: string; href: string; primary?: boolean };
 
 const actions: Action[] = [
-  /* ▼ FEATURE:projects ▼ */
-  { label: 'Explore projects', href: PROJECTS, primary: true },
-  /* ▲ FEATURE:projects ▲ */
-  /* ▼ FEATURE:publications ▼ */
-  { label: 'Publications', href: PUBLICATIONS },
-  /* ▲ FEATURE:publications ▲ */
+  ...(FEATURES.projects ? [{ label: 'Explore projects', href: PROJECTS, primary: true }] : []),
+  ...(FEATURES.publications ? [{ label: 'Publications', href: PUBLICATIONS }] : []),
   { label: 'GitHub', href: SITE.repo },
 ];
 
-/* ▼ FEATURE:projects ▼ */
-import { PROJECTS } from '../../lib/paths.ts';
-/* ▲ FEATURE:projects ▲ */
-/* ▼ FEATURE:publications ▼ */
-import { PUBLICATIONS } from '../../lib/paths.ts';
-const pubs = await getCollection('publications');
-/* ▲ FEATURE:publications ▲ */
-/* ▼ FEATURE:people ▼ */
-import { PEOPLE } from '../../lib/paths.ts';
-const people = await getCollection('people');
-/* ▲ FEATURE:people ▲ */
-/* ▼ FEATURE:citations ▼ */
-import { scholarMetrics } from '../../lib/citations.ts';
-const m = scholarMetrics();
-/* ▲ FEATURE:citations ▲ */
-
-/* Counted, never typed in, one row per line and each fenced by the feature it
-   counts — see PersonHero.astro, including why the literal is annotated. */
+/*
+ * Counted, never typed in: a hardcoded count is wrong the day you add the
+ * next one. A stat of 0 is dropped, which is most of what the flags would do
+ * here anyway — see PersonHero.astro.
+ */
 type Stat = { value: number; label: string; href: string };
 
 const rows: Stat[] = [
-  /* ▼ FEATURE:publications ▼ */
   { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
-  /* ▲ FEATURE:publications ▲ */
-  /* ▼ FEATURE:citations ▼ */
-  { value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS },
-  { value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS },
-  /* ▲ FEATURE:citations ▲ */
-  /* ▼ FEATURE:people ▼ */
+  ...(m ? [{ value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS }] : []),
+  ...(m ? [{ value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS }] : []),
   { value: people.length, label: STAT_LABELS.people, href: PEOPLE },
-  /* ▲ FEATURE:people ▲ */
 ];
 const stats = rows.filter((s) => s.value > 0);
 ---
