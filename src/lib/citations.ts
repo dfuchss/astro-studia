@@ -48,3 +48,12 @@ export function formatUpdated(iso: string): string {
     timeZone: 'UTC',
   }).format(new Date(`${iso}T00:00:00Z`));
 }
+
+/** The same date, short enough to sit beside a stat's label. */
+export function formatUpdatedShort(iso: string): string {
+  return new Intl.DateTimeFormat(SITE.locale, {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${iso}T00:00:00Z`));
+}

@@ -5,7 +5,7 @@ import { FEATURES } from '../../features.ts';
 import { SITE, STAT_LABELS } from '../../consts.ts';
 import { intrinsic } from '../../lib/images.ts';
 import { PROJECTS, PUBLICATIONS, PEOPLE } from '../../lib/paths.ts';
-import { scholarMetrics } from '../../lib/citations.ts';
+import { formatUpdatedShort, scholarMetrics } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
 import Tagline from '../Tagline.astro';
 
@@ -28,6 +28,7 @@ const { width: logoWidth, height: logoHeight } = intrinsic(logo);
 const pubs = FEATURES.publications ? await getCollection('publications') : [];
 const people = FEATURES.people ? await getCollection('people') : [];
 const m = FEATURES.citations ? scholarMetrics() : undefined;
+const updated = m ? `(updated ${formatUpdatedShort(m.lastUpdated)})` : undefined;
 
 /* Typed because `primary` is on the projects row alone: an inferred type
    would lose the field the markup reads if that entry were spread away. */
@@ -44,12 +45,17 @@ const actions: Action[] = [
  * next one. A stat of 0 is dropped, which is most of what the flags would do
  * here anyway — see PersonHero.astro.
  */
-type Stat = { value: number; label: string; href: string };
+/** `note` dates a figure that came from somewhere else and goes stale. */
+type Stat = { value: number; label: string; href: string; note?: string };
 
 const rows: Stat[] = [
   { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
-  ...(m ? [{ value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS }] : []),
-  ...(m ? [{ value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS }] : []),
+  ...(m
+    ? [
+        { value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS, note: updated },
+        { value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS, note: updated },
+      ]
+    : []),
   { value: people.length, label: STAT_LABELS.people, href: PEOPLE },
 ];
 const stats = rows.filter((s) => s.value > 0);
@@ -81,7 +87,10 @@ const stats = rows.filter((s) => s.value > 0);
           <li>
             <a href={s.href}>
               <span class="stat-value">{formatCount(s.value)}</span>
-              <span class="stat-label mono">{s.label}</span>
+              <span class="stat-label mono">
+                {s.label}
+                {s.note && <span class="stat-note">{s.note}</span>}
+              </span>
             </a>
           </li>
         ))}
@@ -160,5 +169,11 @@ const stats = rows.filter((s) => s.value > 0);
   .stat-label {
     color: var(--text-faint);
     font-size: 0.6875rem;
+  }
+  /* Inline after the label, not a row of its own: the margin carries the gap,
+     so the markup needs no whitespace expression between the two. */
+  .stat-note {
+    margin-left: 0.35em;
+    opacity: 0.7;
   }
 </style>

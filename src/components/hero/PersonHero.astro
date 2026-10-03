@@ -6,7 +6,7 @@ import { FEATURES } from '../../features.ts';
 import { SITE, SELF, STAT_LABELS } from '../../consts.ts';
 import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
 import { PROJECTS, PUBLICATIONS } from '../../lib/paths.ts';
-import { scholarMetrics } from '../../lib/citations.ts';
+import { formatUpdatedShort, scholarMetrics } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
 import Tagline from '../Tagline.astro';
 import SocialRow from '../SocialRow.astro';
@@ -21,6 +21,7 @@ import SocialRow from '../SocialRow.astro';
 const pubs = FEATURES.publications ? await getCollection('publications') : [];
 const projects = FEATURES.projects ? await getCollection('projects') : [];
 const m = FEATURES.citations ? scholarMetrics() : undefined;
+const updated = m ? `(updated ${formatUpdatedShort(m.lastUpdated)})` : undefined;
 
 /*
  * Counted, never typed in: a hardcoded "35 publications" is wrong the day you
@@ -28,12 +29,17 @@ const m = FEATURES.citations ? scholarMetrics() : undefined;
  * flag would; `citations` needs one because it counts a module, not a
  * collection.
  */
-type Stat = { value: number; label: string; href: string };
+/** `note` dates a figure that came from somewhere else and goes stale. */
+type Stat = { value: number; label: string; href: string; note?: string };
 
 const rows: Stat[] = [
   { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
-  ...(m ? [{ value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS }] : []),
-  ...(m ? [{ value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS }] : []),
+  ...(m
+    ? [
+        { value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS, note: updated },
+        { value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS, note: updated },
+      ]
+    : []),
   { value: projects.length, label: STAT_LABELS.projects, href: PROJECTS },
 ];
 const stats = rows.filter((s) => s.value > 0);
@@ -66,7 +72,10 @@ const stats = rows.filter((s) => s.value > 0);
           <li>
             <a href={s.href}>
               <span class="stat-value">{formatCount(s.value)}</span>
-              <span class="stat-label mono">{s.label}</span>
+              <span class="stat-label mono">
+                {s.label}
+                {s.note && <span class="stat-note">{s.note}</span>}
+              </span>
             </a>
           </li>
         ))}
@@ -156,6 +165,12 @@ const stats = rows.filter((s) => s.value > 0);
   .stat-label {
     color: var(--text-faint);
     font-size: 0.6875rem;
+  }
+  /* Inline after the label, not a row of its own: the margin carries the gap,
+     so the markup needs no whitespace expression between the two. */
+  .stat-note {
+    margin-left: 0.35em;
+    opacity: 0.7;
   }
 
   @media (max-width: 44rem) {
