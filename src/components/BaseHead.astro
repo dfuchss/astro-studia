@@ -21,6 +21,11 @@ const desc = description ?? SITE.description;
 // FILE path ("/papers/sosp67.html"). The audit checks the result names this
 // page's own file.
 const canonical = noindex ? undefined : new URL(routePath(Astro.url.pathname), SITE.url);
+
+/* Concatenated, not new URL(): a root-absolute path resolved against a SITE.url
+   that ends "/astro-studia" drops it, and the card image 404s. publicPdfs() in
+   astro.config.ts says the same thing. */
+const ogImage = SITE.ogImage && `${SITE.url.replace(/\/$/, '')}${SITE.ogImage}`;
 ---
 
 <meta charset="utf-8" />
@@ -55,10 +60,10 @@ const canonical = noindex ? undefined : new URL(routePath(Astro.url.pathname), S
     SITE.ogImage: null gets the small card. */
 }
 {
-  SITE.ogImage ? (
+  ogImage ? (
     <>
-      <meta property="og:image" content={new URL(SITE.ogImage, SITE.url)} />
-      <meta name="twitter:image" content={new URL(SITE.ogImage, SITE.url)} />
+      <meta property="og:image" content={ogImage} />
+      <meta name="twitter:image" content={ogImage} />
       <meta name="twitter:card" content="summary_large_image" />
     </>
   ) : (

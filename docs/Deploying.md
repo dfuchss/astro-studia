@@ -44,9 +44,9 @@ url: 'https://<user>.github.io/my-repo',
 ```
 
 **There is no `base` to set.** `astro.config.ts` reads it off that URL's own path
-— `base: new URL(SITE.url).pathname` — so the path is not written down twice, and
-`scripts/audit-site.mjs` takes it from the same field. A hand-written `base` is
-the second copy the derivation exists to prevent.
+— `base: new URL(SITE.url).pathname` — so the path is not written down twice,
+and `scripts/audit-site.mjs` takes it from the same field. A hand-written
+`base` is the second copy the derivation exists to prevent.
 
 The dev server follows it. `http://localhost:4321/` answers with a 302 to
 `/my-repo/`, and `src/integrations/base-paths.ts` runs as dev middleware as well
@@ -234,7 +234,12 @@ for this one capability.
 shipped one says "replace this" in 76px type so you notice. It is 1200×630,
 which is what every platform crops from.
 
-`SITE.ogImage` points at it. Set that to `null` and `BaseHead.astro` falls back
+`SITE.ogImage` points at it, as a root-absolute path. `BaseHead.astro` makes it
+absolute by concatenating the origin rather than with `new URL()`, which would
+resolve `/assets/…` against `https://user.github.io/repo` and silently drop the
+`/repo` — a card image that 404s on exactly the hosts that need a base.
+
+Set `SITE.ogImage` to `null` and `BaseHead.astro` falls back
 to `twitter:card: summary` — the small text-only card — because
 `summary_large_image` with no image is a blank rectangle, which is worse than
 the card it replaced.

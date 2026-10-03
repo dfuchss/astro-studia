@@ -20,7 +20,9 @@ const date = d.month ? `${d.year}/${String(d.month).padStart(2, '0')}` : String(
 // routePath(), as in BaseHead: under URL_POLICY 'preserve' the pathname is
 // this page's FILE ("/papers/foo.html"), not its address.
 const pageUrl = new URL(routePath(Astro.url.pathname), SITE.url).href;
-const pdfUrl = d.pdfUrl ? new URL(d.pdfUrl, SITE.url).href : undefined;
+/* Concatenated, not new URL(): d.pdfUrl is root-absolute, and resolving it
+   against a SITE.url that ends "/astro-studia" drops it. */
+const pdfUrl = d.pdfUrl && `${SITE.url.replace(/\/$/, '')}${d.pdfUrl}`;
 /*
  * Page ranges reach us as "44–55": the parser has already turned the BibTeX
  * `--` into an en dash. Split on any of the three dashes it might use so a
