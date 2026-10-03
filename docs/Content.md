@@ -291,8 +291,9 @@ figure:
 It is the same sub-schema in `src/content.config.ts`, not a copy of it, so the
 two can never mean different things. Leave it out and the page renders without
 one. The path goes through `image()` like the logo, and `src/assets/projects/`
-belongs to the projects feature, so a figure filed there cannot be deleted by
-pruning something else.
+is the `projects` feature's own directory — see the `Owns` column in
+[Features](Features.md) — so nothing else's figures live there to confuse with
+it if you ever delete it by hand.
 
 ## Posts — `src/content/posts/`
 
@@ -417,8 +418,9 @@ still exist. Everything a **schema** names goes through `image()` instead — se
 Nothing here assumes one author. List every member's surname in
 `SELF.surnames` so all of their names are emphasised in author lists, fill in
 `people.yml`, and give the entry page the project shape —
-`npm run init -- --preset project`, or the `▼ PRESET:project ▼` regions of
-`src/pages/index.astro` if you have already run init.
+`npm run init -- --preset project`, or set `HOME_SHAPE: 'project'` in
+`src/features.ts` directly if you have already run init. Both shapes stay in
+`src/pages/index.astro`; the flag just picks which one renders at `/`.
 
 ## Renaming a route
 
@@ -490,8 +492,10 @@ Neither is repeated here, because a second copy is a copy that can disagree
 with `/pgp-key/` and `/cv/`.
 
 It is its own file rather than a block in `cv.yml` because the contact block
-outlives the CV: `npm run init -- --preset project` deletes `src/data/cv.yml`, and
-the entry page it produces still has a contact section.
+outlives the CV: `npm run init -- --preset project` turns `cv` off in
+`src/features.ts` — `cv.yml` stays on disk and still gets parsed, just not
+read by anything — and the entry page it produces still has a contact
+section.
 
 ## Your portrait — `src/assets/portrait.*`
 

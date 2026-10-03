@@ -33,8 +33,9 @@ not.
 
 ## What it looks like
 
-One template, two starting points. `npm run init` prunes to either, and you can
-mix the features freely afterwards — the presets only pre-tick the boxes.
+One template, two starting points. `npm run init` sets the flags for either,
+and you can mix the features freely afterwards — the presets only pre-tick the
+boxes.
 
 <table>
 <tr>
@@ -90,8 +91,9 @@ base it expects from the same value. Left as shipped, the site builds with
 `/astro-studia` on every URL **and passes every check** — the links and the audit
 agree with each other — and breaks the moment it is deployed anywhere else.
 
-Removing an area you do not want is a short, uniform recipe, and `npm run init`
-performs the mechanical part of it:
+Turning off an area you do not want is one boolean in `src/features.ts` —
+nothing is deleted, the code stays on disk, and `npm run init` sets the flags
+for you:
 
 ```bash
 npm run init                          # pick features interactively
@@ -99,23 +101,23 @@ npm run init -- --preset project      # or start from a preset
 ```
 
 See [docs/Quickstart.md](docs/Quickstart.md) for the walkthrough and
-[docs/Removing-Features.md](docs/Removing-Features.md) for the recipe by hand.
+[docs/Features.md](docs/Features.md) for the flag-by-flag detail.
 
 ## Documentation
 
 `docs/` is the whole of it, one page per file, also published to this
 repository's [wiki](https://github.com/dfuchss/astro-studia/wiki).
 
-| Page                                           | For                                                                 |
-| ---------------------------------------------- | ------------------------------------------------------------------- |
-| [Quickstart](docs/Quickstart.md)               | clone, prune, first build, first deploy                             |
-| [Configuration](docs/Configuration.md)         | every knob in `src/consts.ts`, and each file in `src/data/`         |
-| [Content](docs/Content.md)                     | the seven collections, their schemas, and what markdown can express |
-| [Theming](docs/Theming.md)                     | the palette, the section accents, the widths, the primitives        |
-| [Removing features](docs/Removing-Features.md) | the deletion recipe, and what belongs to what                       |
-| [Deploying](docs/Deploying.md)                 | Pages, base paths, the URL policy, the wiki                         |
-| [Verification](docs/Verification.md)           | what each check asserts, and why it is written that way             |
-| [Architecture](docs/Architecture.md)           | how the loader, collections, integrations and scripts fit together  |
+| Page                                   | For                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| [Quickstart](docs/Quickstart.md)       | clone, pick features, first build, first deploy                     |
+| [Configuration](docs/Configuration.md) | every knob in `src/consts.ts`, and each file in `src/data/`         |
+| [Content](docs/Content.md)             | the seven collections, their schemas, and what markdown can express |
+| [Theming](docs/Theming.md)             | the palette, the section accents, the widths, the primitives        |
+| [Features](docs/Features.md)           | the flags, their dependencies, and what belongs to what             |
+| [Deploying](docs/Deploying.md)         | Pages, base paths, the URL policy, the wiki                         |
+| [Verification](docs/Verification.md)   | what each check asserts, and why it is written that way             |
+| [Architecture](docs/Architecture.md)   | how the loader, collections, integrations and scripts fit together  |
 
 ## Layout
 
@@ -135,7 +137,7 @@ src/
 public/               copied verbatim; everything here is a permanent URL
 scripts/              the audit, the setup wizard, the data refreshers
 docs/                 the wiki, page per file: quickstart, configuration, content,
-                      theming, removing features, deploying, verification, architecture
+                      theming, features, deploying, verification, architecture
 ```
 
 ## Content model
@@ -202,28 +204,25 @@ little is too little.
 
 ## Scripts
 
-| Command               | Does                                                                          |
-| --------------------- | ----------------------------------------------------------------------------- |
-| `npm run dev`         | dev server at http://localhost:4321; `/` redirects to the based root          |
-| `npm run start`       | the same thing under the name other toolchains expect                         |
-| `npm run dev:fresh`   | clears `.astro` and Vite's cache first, for when a stale one is the suspect   |
-| `npm run build`       | → `dist/`                                                                     |
-| `npm run preview`     | serve the built `dist/` locally, to look at the bytes rather than the sources |
-| `npm run check`       | `astro check` + `prettier --check`                                            |
-| `npm run format`      | `prettier --write`                                                            |
-| `npm run audit`       | the one gate: every check over `dist/` — see below                            |
-| `npm run favicons`    | rasterize `public/favicon.svg` into PNGs                                      |
-| `npm run data:github` | refresh `src/data/github-metadata.json`                                       |
-| `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)                      |
-| `npm run init`        | prune the template to the features you want — _scaffolding_                   |
-| `npm run docs`        | regenerate the feature table in `docs/Removing-Features.md` — _scaffolding_   |
-| `npm run docs:check`  | fail if that table is out of date (run in CI) — _scaffolding_                 |
+| Command               | Does                                                                              |
+| --------------------- | --------------------------------------------------------------------------------- |
+| `npm run dev`         | dev server at http://localhost:4321; `/` redirects to the based root              |
+| `npm run start`       | the same thing under the name other toolchains expect                             |
+| `npm run dev:fresh`   | clears `.astro` and Vite's cache first, for when a stale one is the suspect       |
+| `npm run build`       | → `dist/`                                                                         |
+| `npm run preview`     | serve the built `dist/` locally, to look at the bytes rather than the sources     |
+| `npm run check`       | `astro check` + `prettier --check`                                                |
+| `npm run format`      | `prettier --write`                                                                |
+| `npm run audit`       | the one gate: every check over `dist/` — see below                                |
+| `npm run favicons`    | rasterize `public/favicon.svg` into PNGs                                          |
+| `npm run data:github` | refresh `src/data/github-metadata.json`                                           |
+| `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)                          |
+| `npm run init`        | write `src/features.ts` and `src/consts.ts` from a preset or a selection          |
+| `npm run docs`        | regenerate the flag list in `src/features.ts` and the table in `docs/Features.md` |
+| `npm run docs:check`  | fail if either is out of date, or a flag combination cannot build (run in CI)     |
 
 The based root is `/astro-studia/` as shipped, because `base` is derived from
-`SITE.url`; dev and the build serve identical URLs. The three
-_scaffolding_ commands are the ones `npm run init` offers to delete, along with
-`scripts/init.mjs`, `features.mjs` and `gen-docs.mjs` — which is why
-`deploy.yml` guards its `docs:check` step on the generator still existing.
+`SITE.url`; dev and the build serve identical URLs.
 
 Node 22 or newer (`.nvmrc`; `.devcontainer/devcontainer.json` pins the same for
 GitHub Codespaces and VS Code dev containers). The build needs no network, no

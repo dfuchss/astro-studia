@@ -32,17 +32,17 @@ Eight areas of a site, all of them optional:
 
 And the smaller ones that come with them: `/feed.xml`, `/pgp-key/`, `/imprint/`,
 `/404.html`, `/robots.txt`, `/sitemap-index.xml` and the `/sitemap-0.xml` it
-points at, and `/demo/project/` — the second entry-page shape, which
-`npm run init` removes along with the switcher.
+points at, and `/demo/project/` — the second entry-page shape, which the
+`demo` feature's flag turns off along with the switcher.
 
 ## The three things worth knowing before you start
 
 **Everything ships on.** A commented-out feature is not type-checked, not built,
 not audited, and rots within two Astro releases — so the demo content doubles as
 the test suite, and every code path in here is exercised by
-`npm run build && npm run audit`. The price is that your first half hour is
-deletion. [Removing features](Removing-Features.md) is that recipe, and
-`npm run init` performs most of it for you.
+`npm run build && npm run audit`. Turning an area off is one boolean in
+`src/features.ts`, and nothing is deleted. [Features](Features.md) says what
+a `false` does, and `npm run init` sets the booleans for you.
 
 **Mistakes are build failures, not blank spaces.** Every cross-reference between
 collections goes through Astro's `reference()`, so a bad slug, an unknown venue
@@ -59,16 +59,16 @@ once to make it exist.
 
 ## Where to go
 
-| Page                                      | For                                                                                   |
-| ----------------------------------------- | ------------------------------------------------------------------------------------- |
-| [Quickstart](Quickstart.md)               | clone, prune, first build, first deploy — in that order                               |
-| [Configuration](Configuration.md)         | every knob in `src/consts.ts`, and what each file in `src/data/` is                   |
-| [Content](Content.md)                     | the seven collections, their schemas, and what markdown can express                   |
-| [Theming](Theming.md)                     | the palette, the section accents, the widths, the primitives                          |
-| [Removing features](Removing-Features.md) | the uniform deletion recipe, and what belongs to what                                 |
-| [Deploying](Deploying.md)                 | GitHub Pages, base paths, the URL policy, what stays in `public/`                     |
-| [Verification](Verification.md)           | what each check asserts, and why it is written the way it is                          |
-| [Architecture](Architecture.md)           | how the BibTeX loader, the collections, the integrations and the scripts fit together |
+| Page                              | For                                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------------------- |
+| [Quickstart](Quickstart.md)       | clone, pick features, first build, first deploy — in that order                       |
+| [Configuration](Configuration.md) | every knob in `src/consts.ts`, and what each file in `src/data/` is                   |
+| [Content](Content.md)             | the seven collections, their schemas, and what markdown can express                   |
+| [Theming](Theming.md)             | the palette, the section accents, the widths, the primitives                          |
+| [Features](Features.md)           | what a flag in `src/features.ts` does, its dependencies, and what belongs to what     |
+| [Deploying](Deploying.md)         | GitHub Pages, base paths, the URL policy, what stays in `public/`                     |
+| [Verification](Verification.md)   | what each check asserts, and why it is written the way it is                          |
+| [Architecture](Architecture.md)   | how the BibTeX loader, the collections, the integrations and the scripts fit together |
 
 These pages are written to be read in `docs/` in the repository as well as here
 in the wiki; a workflow copies them across on every push to `main`. See

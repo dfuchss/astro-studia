@@ -112,13 +112,24 @@ does not exist stops the build with the offending id in the message. The same
 mistake in a template language is a silent lookup that renders blank.
 
 It also makes the dependency graph real rather than advisory, which is why
-[removing features](Removing-Features.md) has an order:
+[features](Features.md) has an order:
 
 ```
 venues ← publications ← papers → authors ← people
                           ↓
                        projects
 ```
+
+Every collection is declared regardless of `src/features.ts`, so `reference()`
+keeps type-checking and a feature can be switched back on without touching this
+file. One switched off gets `empty` — `() => []` — in place of its loader. Two
+fields, `papers.authors` and `papers.projects`, go one step further through a
+`refs()` helper: where the collection on the other end of the reference might be
+off, it swaps `z.array(reference(c))` for an array that is always empty, because
+a reference into an _empty_ collection is not a type error, it is a runtime
+one — Astro logs `Invalid content reference` per entry and then finishes the
+build successfully, which would otherwise ship the field silently blank instead
+of catching it at the schema.
 
 The `papers` schema carries the sharpest constraint in the codebase, as three Zod
 refinements: a paper page has **exactly one** venue source — a `publication` (the
@@ -168,10 +179,11 @@ only appears in CI. `images.ts` and `pgp.ts` both say so at the point it matters
 
 Everything in `src/data/` is likewise imported with Vite's `?raw` and parsed in
 `data.ts`, rather than read with `fs` at render time, for the same reason — plus
-hot reload on a data file for free. Each file's import, type and export is fenced
-under the feature that owns it, so `npm run init` takes all three out at once: an
-unused `?raw` import still inlines a file, and once the file is gone it is a build
-error rather than dead weight.
+hot reload on a data file for free. Every file is imported whatever
+`src/features.ts` says, because none of it is expensive: a switched-off
+feature's YAML is parsed and then read by nobody. Deleting one of the files is
+therefore a real edit to this module, not a flag — nothing here takes an unused
+import out for you.
 
 ## The two integrations
 
@@ -217,12 +229,20 @@ There is no option for this, and the integration's `serialize` hook cannot tell
 `/people` (a directory) from `/papers/foo` (a file) by looking at the URL. **The
 build output can**: after the pages are written, one of `<path>/index.html` or
 `<path>.html` exists, and that is the shape the entry must have. So this runs once
-over the sitemap as written and asks the disk. A path that is itself a file (a PDF
-from `customPages`) or nothing on disk at all is left alone — the audit reports the
-latter.
+over the sitemap as written and asks the disk, rewriting whole `<url>`/`<sitemap>`
+elements rather than bare `<loc>`s — an entry with no file behind it has to take
+its `<lastmod>` and siblings with it, and a lone `<loc>` cannot.
 
-Under the default policy every entry already ends in a slash and resolves to an
-`index.html`, so nothing changes and the output is byte-identical.
+A path that is itself a file — a PDF from `customPages`, or `sitemap-0.xml`
+inside the sitemap index's own entries — is left alone: a real file, not an HTML
+route to reshape. A path with nothing on disk at all is **dropped**: a feature
+switched off in `src/features.ts` still gets counted as a page before its route
+renders an empty response (see "Feature gating" below), so without this the
+sitemap would list a URL that 404s.
+
+Under the default policy every entry that does exist already ends in a slash and
+resolves to an `index.html`, so nothing changes there and the output is
+byte-identical.
 
 ## Components and layout
 
@@ -232,82 +252,107 @@ skip link, `Nav`, the main slot, `Footer`, and two named slots — `head` and
 
 Components are grouped by what they belong to rather than by kind:
 `components/paper/`, `components/project/`, `components/people/`,
-`components/pub/`, `components/hero/`. That grouping is what makes a feature
-deletion a directory removal.
+`components/pub/`, `components/hero/`. That grouping is what makes deleting a
+feature's components, if you ever choose to, a directory removal rather than a
+grep.
 
 There is no utility framework and no class soup. `src/styles/tokens.css` holds the
 values, `src/styles/base.css` the element styles and a dozen documented primitives
 (`.wrap`, `.section`, `.card`, `.chip`, `.kicker`, …), and everything else is a
 scoped `<style>` block in the component that needs it. See [Theming](Theming.md).
 
-`PersonHero.astro` and `ProjectHero.astro` are the two entry-page shapes. Neither is
-selected by a flag: `src/pages/index.astro` carries both inside
-`▼ PRESET:profile ▼` / `▼ PRESET:project ▼` fences, and once `npm run init` has
-resolved those, the hero a site uses is simply the one still imported. A
-`PRESET_HERO` table would be a second place the answer is written down.
+`PersonHero.astro` and `ProjectHero.astro` are the two entry-page shapes. Both are
+always in `src/pages/index.astro`: `HOME_SHAPE` in `src/features.ts` picks which
+one renders at `/`, and with `demo` on, the switcher's second URL renders the
+other by passing `shape` as a prop. A `PRESET_HERO` table would be a second
+place the answer is written down.
 
-## Feature and preset fences
+## Feature gating
 
-Two families of marker, one scanner, both scanned across all of `src/` by
-`scripts/init.mjs`:
+`src/features.ts` holds the whole model: the generated `FEATURES` flag object
+and the `REQUIRES`/`REQUIRES_ANY` dependency tables (both written by
+`scripts/gen-docs.mjs` from `scripts/features.mjs`, your values kept), a
+hand-written `FeatureId` type (`keyof typeof FEATURES`), the two shape choices
+`HOME_SHAPE` and `FEED_SOURCE`, a `disabled()` helper, and a module-scope
+`assertFeatures()` call that throws on a combination that cannot build.
+`src/consts.ts` imports it, so that assertion runs at config load — for `dev`,
+`build` and `audit` alike.
 
+Turning a feature off has to make its routes disappear, and Astro 7 gives this
+template nothing built for that: there is no route-exclusion config, and the
+`astro:routes:resolved` hook only observes the route list, too late to act on
+it. What there is instead is one deliberate behaviour worth using: a prerendered
+route whose response has **no body** is not written to disk. `generate.js` in Astro's
+own build returns early and logs `(file not created, response body was empty)`.
+So every gated page, and the feed endpoint, opens with
+
+```ts
+if (!FEATURES.x) return disabled();
 ```
-▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲     code an optional AREA owns
-▼ PRESET:<name> ▼ … ▲ PRESET:<name> ▲   sections one AUDIENCE wants
-```
 
-A **feature** fence is named after an entry in `scripts/features.mjs`. Everything a
-matching pair encloses goes when you drop that feature, wherever it is — an import,
-a const, a markup block. A feature you keep **keeps its markers**, because you can
-still drop it later.
+`disabled()` answers **410**, not 404. A 404 would make the build render
+`404.astro` _into_ that file — leaving exactly the file this is meant not to
+have. In `dev`, where nothing is written to disk either way, `disabled()`
+answers 404 instead, because there a 404 gets you the real 404 page rather than
+a blank response.
 
-A **preset** fence is named after a preset. Only `src/pages/index.astro` uses them
-today, and init keeps the chosen one, deletes the other, and then removes the
-surviving markers as well — unlike a feature, the shape of the entry page is decided
-once and there is no later choice to leave a label for.
+Dynamic routes — `papers/[slug]`, `blog/tag/[tag]`, `projects/[...slug]`, the
+dated post route — would stop existing without a guard: their `getStaticPaths`
+reads a collection that `src/content.config.ts` has already loaded empty
+(above), so it returns `[]` and generates nothing on its own. They are guarded
+all the same, with `if (!FEATURES.x) return [];` as the first line, for a
+different reason: `getStaticPaths` runs whatever the page's own guard says, and
+`getCollection()` on an empty collection logs `The collection "x" does not exist
+or is empty` on every build. The deploy workflow greps the build output for that
+string, so a legitimate build must not print it.
 
-There is no `PRESET:both`: an unfenced region is already unconditional, and
-labelling everything would make the common case the noisy one. Fences nest, in
-either order, but must never straddle each other, because each pair is removed as a
-unit.
+**The trap that shaped this.** `addPageName()` runs _before_ the render, inside
+Astro's own static-site generator, so a route that goes on to emit no file has
+already been counted as a page — and `@astrojs/sitemap` reads that count. A
+switched-off feature would therefore still get a sitemap entry pointing at a
+file that was never written, which is why `sitemap-shape.ts` (above) checks the
+disk for every entry and drops the ones with nothing behind them.
 
 ## `scripts/`
 
-| Script                         | Run by                       | Is                                                                                           |
-| ------------------------------ | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| `features.mjs` _(scaffolding)_ | —                            | the manifest: what each optional area is made of. Two consumers, no prose copy.              |
-| `init.mjs` _(scaffolding)_     | `npm run init`               | prunes the template to a feature set, then checks, builds and audits                         |
-| `gen-docs.mjs` _(scaffolding)_ | `npm run docs`, `docs:check` | regenerates the feature table in [Removing features](Removing-Features.md) from the manifest |
-| `audit-site.mjs`               | `npm run audit`              | the one gate: every check over `dist/`, including the host files                             |
-| `generate-favicons.mjs`        | `npm run favicons`           | rasterizes `public/favicon.svg` into the PNGs beside it                                      |
-| `fetch-github-metadata.mjs`    | `npm run data:github`        | writes the committed `src/data/github-metadata.json`                                         |
-| `update_bib.py`                | `npm run bib:check`          | checks `papers.bib` against Crossref. Python stdlib only.                                    |
-| `update_scholar_citations.py`  | the citations workflow       | writes the committed `src/data/citations.yml`. The one piece of tooling that needs pip.      |
+| Script                        | Run by                       | Is                                                                                                                                |
+| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `features.mjs`                | —                            | the manifest: what each optional area is made of, and the rules a selection has to satisfy                                        |
+| `init.mjs`                    | `npm run init`               | writes `src/features.ts` and `src/consts.ts` from a preset or selection, then checks, builds and audits                           |
+| `gen-docs.mjs`                | `npm run docs`, `docs:check` | regenerates the flags and dependency tables in `src/features.ts` and the table in [Features](Features.md), both from the manifest |
+| `audit-site.mjs`              | `npm run audit`              | the one gate: every check over `dist/`, including the host files                                                                  |
+| `generate-favicons.mjs`       | `npm run favicons`           | rasterizes `public/favicon.svg` into the PNGs beside it                                                                           |
+| `fetch-github-metadata.mjs`   | `npm run data:github`        | writes the committed `src/data/github-metadata.json`                                                                              |
+| `update_bib.py`               | `npm run bib:check`          | checks `papers.bib` against Crossref. Python stdlib only.                                                                         |
+| `update_scholar_citations.py` | the citations workflow       | writes the committed `src/data/citations.yml`. The one piece of tooling that needs pip.                                           |
 
-The three marked **scaffolding** are the ones init offers to delete when it
-finishes, together with the `init`, `docs` and `docs:check` npm scripts. They set
-the template up; a site owner does not need them, and a site that took the offer
-has neither the files nor those commands.
+None of these three are template setup to be stripped out once the site is
+done. `init` is re-runnable — changing your mind about a feature later is
+exactly what a boolean is for — and `gen-docs`/`docs:check` keep
+`src/features.ts` and [Features](Features.md) in step with the manifest for as
+long as the manifest exists. Nothing offers to delete any of it.
 
 The npm scripts with no file in here are Astro's own: `dev` (and `start`, the
 same command), `build`, `preview` (serves the built `dist/`), `check` and
 `format` — plus `dev:fresh`, which clears `.astro` and Vite's cache before
 starting dev.
 
-`init.mjs` follows two rules worth knowing before you edit it. **No silent no-ops:**
-every edit names a landmark in a file — `export const NAV`, `export type Section =`,
-a `▼ FEATURE:x ▼` fence — and a missing _landmark_ is a hard failure, because that
-means the file has been restructured and the script no longer understands it; a
-missing _item_ inside a present landmark is only a warning, because that is what a
-second run looks like and a second run must be safe. **It reports rather than
-repairs:** a prune that left something dangling is a thing to read and fix, and
-`git diff` has the whole story.
+`init.mjs` is small because it does one thing: write booleans into
+`src/features.ts` and six strings into `src/consts.ts`, nothing else. It still
+refuses rather than guesses — `export const FEATURES = {`, a flag line per
+feature, `export const HOME_SHAPE`, and each `SITE`/`SELF` string field are all
+landmarks it has to find before it edits around them, and a missing one is a
+hard stop, because that means the file has been restructured since the
+manifest was written and the script no longer understands it. It reports
+rather than repairs: it offers to run check, build and audit at the end and
+says which failed, and because nothing is ever deleted, `git diff
+src/features.ts src/consts.ts` is the whole story either way.
 
-`gen-docs.mjs` exists for a narrower reason. The manifest already knows which
-routes, collections, sections and hand edits belong to each feature; a second,
-hand-written copy of that list in the docs is a copy that drifts, and nothing tells
-you. So the table is generated between two markers, everything else in that file is
-left alone, and `npm run docs:check` is what keeps it honest.
+`gen-docs.mjs` exists for a narrower reason. The manifest already knows what
+each feature owns and what a human still has to edit by hand; a second,
+hand-written copy of that list in the docs is a copy that drifts, and nothing
+tells you. So the table is generated between two markers, everything else in
+that file is left alone, and `npm run docs:check` is what keeps it honest.
 
 ## Data that is fetched, committed, and never fetched at build time
 
@@ -331,18 +376,18 @@ whose result silently never ships. See
 
 ## CI
 
-| Workflow                     | On                                                                    | Does                                                                                                                                           |
-| ---------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deploy.yml`                 | push and PR to `main`, or on demand                                   | install, prettier, `astro check`, `docs:check` (while the generator exists), build, audit, then publish `dist/` to `gh-pages` on a non-PR push |
-| `docs.yml`                   | push to `main` touching `docs/**` or the workflow itself, or manually | copies `docs/` into this repository's wiki                                                                                                     |
-| `update-github-metadata.yml` | manually, or a push touching `repositories.yml`                       | refreshes and commits `github-metadata.json`                                                                                                   |
-| `update-citations.yml`       | manually                                                              | refreshes and commits `citations.yml`                                                                                                          |
+| Workflow                     | On                                                                    | Does                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `deploy.yml`                 | push and PR to `main`, or on demand                                   | install, prettier, `astro check`, `docs:check`, build, audit, then publish `dist/` to `gh-pages` on a non-PR push |
+| `docs.yml`                   | push to `main` touching `docs/**` or the workflow itself, or manually | copies `docs/` into this repository's wiki                                                                        |
+| `update-github-metadata.yml` | manually, or a push touching `repositories.yml`                       | refreshes and commits `github-metadata.json`                                                                      |
+| `update-citations.yml`       | manually                                                              | refreshes and commits `citations.yml`                                                                             |
 
 ## `docs/` and the wiki
 
 The pages you are reading are written **wiki-native**: flat, one file per page, and
-the filename _is_ the page name and the title (`Removing-Features.md` →
-"Removing Features"). No subdirectories, because a wiki has no directories.
+the filename _is_ the page name and the title (`Features.md` →
+"Features"). No subdirectories, because a wiki has no directories.
 
 Links between them are written the way the repository wants them —
 `[Deploying](Deploying.md)` — because `docs/` on GitHub is where most people will

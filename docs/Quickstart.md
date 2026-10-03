@@ -17,12 +17,12 @@ assets, the favicon and the brand mark then resolve in dev exactly as they do in
 the build.
 
 What you are looking at is demo content — the works of Cicero, cited as a
-classicist would. It is **meant to be deleted**, and it ships turned on for a
-reason: a feature that is commented out is not type-checked, not built and not
-audited, so the demo is also the test suite.
+classicist would. It is **meant to be deleted**, and every feature ships on
+for a reason: a feature that is switched off is still on disk and still
+type-checked, but a feature that is commented out is not, so the demo is also
+the test suite.
 
-Do the five steps below in order. Step 3 is much easier before you have edited
-anything.
+Do the five steps below in order.
 
 ## 1. Set `SITE.url`, and look at both entry-page shapes
 
@@ -42,10 +42,11 @@ The template carries two front pages and shows you both:
 - `/demo/project/` is the **project** shape — a centred logo, a pitch, sub-projects,
   a people roster.
 
-They are the same file, `src/pages/index.astro`, with each shape's sections
-inside `▼ PRESET:profile ▼` / `▼ PRESET:project ▼` fences. The switcher above
-the hero links the two. Decide which one you want now, because step 3 keeps one
-and deletes the other.
+Both shapes live in the same file, `src/pages/index.astro`, always — which one
+renders at `/` is `HOME_SHAPE` in `src/features.ts`. The switcher above the
+hero links the two. Decide which one you want now: step 3 sets `HOME_SHAPE`
+for you, and with the `demo` feature off there is no switcher to compare them
+with afterwards.
 
 ## 2. Set the eight things that are yours
 
@@ -62,10 +63,10 @@ Nothing here is a code change; all of it is one file each.
 | 7   | `public/favicon.svg`       | Then `npm run favicons` to rasterize the PNGs beside it.                                                                    |
 | 8   | `src/pages/index.astro`    | Your front-page copy, under the `DEMO COPY` banners.                                                                        |
 
-**Row 5 is the one ordering trap.** `--preset project` leaves nothing that
-renders a photograph, so step 3 deletes `src/lib/portrait.ts` and every
-`src/assets/portrait.*` beside it. Add yours after step 3, or watch step 3 delete
-the one you just added.
+Row 5 only matters for the **profile** shape. The project shape renders no
+portrait, but nothing deletes `src/lib/portrait.ts` or the file underneath it
+if you add one anyway — it just sits unreferenced, same as any other feature
+you leave off.
 
 [Configuration](Configuration.md) walks the whole of `src/consts.ts` and every
 file in `src/data/`. [Content](Content.md) is the collections and their front
@@ -73,16 +74,18 @@ matter; the eight rows above are what matters first, and
 [Replacing the demo content](Content.md#replacing-the-demo-content) is every
 remaining file that still holds Cicero's bytes.
 
-## 3. Prune it down
+## 3. Pick your features
 
 ```bash
 npm run init
 ```
 
-It reads the manifest in `scripts/features.mjs` — which knows each feature's
-routes, collection blocks, `Section` member, accent block, nav and footer rows
-and fenced code regions — and deletes what you did not keep. It offers two
-starting selections and then lets you tick and untick freely:
+Every feature ships on, as a boolean in `src/features.ts`. Turning one off is
+editing that boolean — nothing is deleted, the code stays on disk, and
+`astro check` still type-checks it. `npm run init` is the fast way to set them
+all at once; it writes exactly two files, `src/features.ts` and
+`src/consts.ts`, and nothing else. It offers two starting selections and then
+lets you tick and untick freely:
 
 ```
 Presets
@@ -93,7 +96,7 @@ Presets
 
 A preset is a _starting selection, not a mode_. Nothing in the built site
 branches on which one you chose, and afterwards there is no preset any longer —
-only source files.
+only booleans.
 
 Non-interactively — note the `--`, which is how `npm run` passes arguments
 through to the script rather than eating them itself:
@@ -102,46 +105,34 @@ through to the script rather than eating them itself:
 npm run init -- --help                        # or -h: the flags, and every feature id
 npm run init -- --preset profile
 npm run init -- --preset project --dry-run    # print the plan, write nothing
-npm run init -- --features cv,imprint         # keep exactly these
-npm run init -- --preset profile --yes        # or -y: skip the confirmation
+npm run init -- --features cv,imprint         # turn on exactly these, nothing else
+npm run init -- --preset profile --yes        # or -y: keep every current string, no prompts
 ```
 
-`--features` is an exact set, except that a feature which `requires` another gets
-it whether you named it or not — `papers` reference `authors`, and `citations`
-needs `socials` because the refresh script reads `scholar_userid` out of it. The
-plan prints each one it added and which feature asked for it.
+A selection that cannot build is refused, not repaired: `papers` without
+`authors` is a choice between two features, and `npm run init` will not guess
+which one you meant — it names the offender and stops, the same check
+`src/features.ts` runs at build time.
 
-What it does that is worth expecting:
+Interactively, after the feature list it also asks for `HOME_SHAPE` (which
+entry-page shape renders at `/`), `FEED_SOURCE` (what `/feed.xml` is a feed of,
+when more than one answer is still possible), and the six strings that say who
+the site is about — `SITE.url`, `SITE.title`, `SITE.brand`, `SITE.email`,
+`SELF.first`, `SELF.last` — each defaulting to the value already there. It
+then runs `prettier` on the two files it wrote, and offers to run `check`,
+`build` and `audit`, reporting which one failed if any did.
 
-- **It runs `check`, `build` and `audit` afterwards**, and exits non-zero if any
-  of them failed. All three run: what stops is the script, not the sequence, so a
-  failing `check` does not hide what `build` and `audit` would have said. A prune
-  that left something dangling is a thing to read, not to paper over; `git diff`
-  has the whole story. Nothing needs re-pinning after a prune — a pruned tree is
-  just a smaller tree.
-- **It runs `npm run format`** over the repository once it has finished editing,
-  so its own deletions cannot fail `npm run check` on formatting.
-- **It removes an import that lost its last user**, rather than leaving
-  `astro check` to report it.
-- **It deletes modules nothing imports any more, with their assets**: the
-  entry-page hero the other preset wanted, `src/components/SocialRow.astro`, and
-  `src/lib/portrait.ts` with every `src/assets/portrait.*` — step 2's trap.
-- **It repoints the feed**, swapping `src/pages/feed.xml.ts`'s import between
-  `src/lib/feed/fromPosts.ts` and `fromPapers.ts` and deleting the unused one.
-- **It asks a second question** — "Which shape should `/` have?" — when your
-  selection drops the demo switcher and no `--preset` has answered it already.
-- **It offers to delete its own scaffolding** — `scripts/init.mjs`,
-  `scripts/features.mjs`, `scripts/gen-docs.mjs` and the `init`, `docs` and
-  `docs:check` npm scripts. Say no if you want to prune again later. Being a
-  question, it is **skipped when stdin is not a terminal**, so
-  `npm run init -- --preset profile --yes` in a script prunes the features, keeps
-  the scaffolding, and says so.
+There is no confirmation gate and nothing to say no to: running it twice is a
+no-op, and running it again later to turn a feature back on is the same
+command, not an undo. [Features](Features.md) is the same choice made by
+hand, plus the full table of what each feature owns and what still needs a
+human edit when you turn it off.
 
-What it will not do is guess at prose. Edits that are genuinely judgement — "a
-group site usually calls these approaches", "repoint the feed at another source"
-— are printed as a TODO list with the feature that owns each one.
-[Removing features](Removing-Features.md) is the same recipe by hand, plus the
-full table of what belongs to what.
+One difference between `npm run dev` and `npm run build`: visiting a
+switched-off route in dev gets you a real 404, rendered from `404.astro`,
+because nothing is written for the request to hit. In a build the route is
+simply absent from `dist/` — there is no file to 404 on, because nothing
+asked for it.
 
 ## 4. Build it, then check it
 

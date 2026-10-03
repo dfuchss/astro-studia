@@ -1,15 +1,32 @@
 # Configuration
 
-Two places, and a handful of filenames.
+Three places, and a handful of filenames.
 
-`src/consts.ts` is the config file: single values, short lists, and the words the
-template prints. Lists that grow — your bibliography, your CV, the people in your
-group — live in `src/data/` instead, and prose lives in `src/content/`. Page copy
-stays on its page.
+`src/features.ts` is which parts of the template are switched on, plus the two
+shape choices below it. `src/consts.ts` is everything else: single values,
+short lists, and the words the template prints. Lists that grow — your
+bibliography, your CV, the people in your group — live in `src/data/`
+instead, and prose lives in `src/content/`. Page copy stays on its page.
 
 Everything in `src/consts.ts` is read by code somewhere. If you cannot find where
 a value goes, grep for it; there is nothing decorative in there but
 `SITE.brandPrompt`.
+
+## `src/features.ts`
+
+One boolean per feature — `publications`, `blog`, `people`, and so on — plus
+two values that are a choice rather than an on/off: `HOME_SHAPE` (`'profile'`
+or `'project'`, which entry page renders at `/`) and `FEED_SOURCE` (`'posts'`
+or `'papers'`, what `/feed.xml` is a feed of). Turning a feature off edits one
+line here; nothing is deleted, the code stays on disk, and `astro check` still
+type-checks it.
+
+An impossible combination — `papers` on with `authors` off, say, or
+`FEED_SOURCE: 'posts'` with `blog` off — is refused at config load, naming the
+offender, rather than quietly repaired. `npm run init` writes this file for
+you from a preset and is re-runnable. See [Features](Features.md) for the
+mechanism (what a `false` does and does not do), the dependencies between
+flags, and the per-feature table of what each one owns.
 
 ## `SITE`
 
@@ -131,15 +148,21 @@ of a page that is not an area of the site never joins it. The audit reads the
 built HTML, where the two are the same attribute.
 
 `NAV` is the top bar: a `label`, an `href` (from `src/lib/paths.ts`, not a
-literal) and the `section` whose accent the link carries. The demo ships every
-area the template can render, which is more than any real site wants; deleting
-most of these rows is usually the first edit. See
-[Removing features](Removing-Features.md) for what goes with each.
+literal) and the `section` whose accent the link carries. A row may carry a
+`feature` key — a `FeatureId` from `src/features.ts` — and the exported list
+is already filtered down to the rows whose feature is on, through the small
+`Row<T>`/`shown()` pair just above it; a row with no `feature` always shows.
+So turning `blog` off in `src/features.ts` is what drops the `blog` row —
+nothing to edit here for that. The demo ships every area the template can
+render, which is more than any real site wants; deleting a row outright is
+for one you will never want back, as distinct from one a flag already hides.
+See [Features](Features.md) for what goes with each.
 
 ## `FOOTER_LINKS` and `FOOTER`
 
-`FOOTER_LINKS` is the thin link row — `Feed`, `PGP`, `Imprint` as shipped. Add
-and drop freely.
+`FOOTER_LINKS` is the thin link row — `Feed`, `PGP`, `Imprint` as shipped,
+each carrying the `feature` it belongs to, filtered by the same `shown()` as
+`NAV`. Add and drop freely — a row with no `feature` always shows.
 
 `FOOTER` is the rest. Every part of the footer that differed between the two
 sites this template came from is a field here; the layout is not.
@@ -215,7 +238,9 @@ export const PEOPLE_CHIPS = { homepage: 'Website', orcid: 'id', github: 'GitHub'
 because everyone's is. `orcid` is `'label'` for the word or `'id'` for the
 identifier itself, which is what a registry-minded reader wants to see and copy.
 
-Fenced as `▼ FEATURE:people ▼`, so `npm run init` takes it with the roster.
+It stays here whatever `people` in `src/features.ts` says — unused and
+harmless while the feature is off, the same way `STAT_LABELS` keeps every key
+unconditionally.
 
 ## `ALLOWED_THIRD_PARTY`
 

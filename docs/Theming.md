@@ -22,11 +22,13 @@ surfaces (`--bg*`), the text greys (`--text*`) and `--warn` as bare hex, and
 `src/data/venues.yml` and `src/data/language_colors.yml` carry colours of their
 own — a venue's brand colour, GitHub's language dots. The contrast check reads
 every bare-hex token except the surfaces, which is the count its `✓` line
-prints. A family read by exactly one `[data-section]` block is fenced to that
-feature, so a prune takes it with the block — `--green` with the publications,
-`--rose` with the blog. The other three are read from elsewhere as well:
-`--cyan` and `--amber` by section blocks that survive any one feature, and
-`--violet-glow` by the second background gradient in `base.css`, on every page.
+prints. Every family stays defined whatever `src/features.ts` says, even one
+read by exactly one `[data-section]` block whose feature is off — `--green` for
+publications, `--rose` for the blog — because an accent nothing renders costs a
+few bytes, and switching the feature back on then needs no edit here. The other
+three are read from elsewhere as well: `--cyan` and `--amber` by section blocks
+that survive any one feature, and `--violet-glow` by the second background
+gradient in `base.css`, on every page.
 
 Each family has five roles, and the other four are mixed from the base with
 `color-mix()`:

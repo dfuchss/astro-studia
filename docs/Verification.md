@@ -334,12 +334,14 @@ floor is one entry per page that carries a canonical — fewer means a route the
 integration did not see, or a filter that ate one. (The 404 page has no canonical
 and is rightly absent.)
 
-The feed is checked only when `src/pages/feed.xml.ts` is still there. Removing the
-feed removes the endpoint, and an audit that then demanded one would be telling you
-off for following the documented removal recipe. A feed that _should_ exist and
-does not is still a failure. It must have at least one `<item>`, and every `<link>`
-in it must name a file on disk — which is why `feed.xml.ts` emits every item link
-absolute rather than letting `@astrojs/rss` re-shape a relative one.
+The feed is checked only when `FEATURES.feed` is `true` in `src/features.ts`.
+`feed.xml.ts` is on disk either way — turning the feature off does not remove
+the endpoint, it makes the endpoint answer empty — so the file's presence says
+nothing, and the flag is what the audit reads instead. A feed that _should_
+exist and does not is still a failure. It must have at least one `<item>`, and
+every `<link>` in it must name a file on disk — which is why `feed.xml.ts`
+emits every item link absolute rather than letting `@astrojs/rss` re-shape a
+relative one.
 
 ### 10. The files that make the host serve the site correctly
 

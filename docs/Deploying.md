@@ -3,9 +3,9 @@
 `.github/workflows/deploy.yml` runs on every push and pull request to `main`, and on demand:
 install, `prettier --check`, `astro check`, `docs:check`, `build`, `audit`, then
 publish `dist/` to the `gh-pages` branch — the last step only on a non-PR push to
-`main`. The `docs:check` step is guarded on `scripts/gen-docs.mjs` still
-existing, because `npm run init` offers to delete it and a CI step demanding a
-script the documented setup path removes would be a trap.
+`main`. `docs:check` runs `scripts/gen-docs.mjs --check`, which fails the build
+if the generated regions in `src/features.ts` and `docs/Features.md` have
+drifted from `scripts/features.mjs` — see [Features](Features.md).
 
 A second workflow, `docs.yml`, copies `docs/` into the repository's wiki. It
 needs one secret and one thing done by hand first — see
@@ -359,17 +359,16 @@ reason. **To publish your own wiki**, change that one line to your own
 edit.
 
 `docs/` and the workflow are both yours now, and `npm run init` does not offer to
-remove either. Six of these pages document code you now own and still have to
-operate — the URL policy, the contrast floor, the contact schema, the checks your
-CI runs — and the workflow publishes whatever is in `docs/`, so replacing the prose
-leaves you a working documentation pipeline rather than one to rebuild. Inert with
-a comment saying how to switch it on is a better default than gone: a file you did
-not ask for costs one `if` line to read, whereas a pipeline you have to rebuild
-from scratch costs an afternoon and is the thing people therefore never do.
+remove any of it. These pages document code you now own and still have to
+operate — the URL policy, the contrast floor, the contact schema, the feature
+flags, the checks your CI runs — and the workflow publishes whatever is in
+`docs/`, so replacing the prose leaves you a working documentation pipeline
+rather than one to rebuild. Inert with a comment saying how to switch it on is
+a better default than gone: a file you did not ask for costs one `if` line to
+read, whereas a pipeline you have to rebuild from scratch costs an afternoon
+and is the thing people therefore never do.
 
-The exception is [Removing features](Removing-Features.md). Its table is generated
-from `scripts/features.mjs` by `scripts/gen-docs.mjs`, and `npm run init` offers to
-delete both of those when it finishes — after which that table is a hand-maintained
-file with a "do not edit by hand" marker on it. Either keep the generator or delete
-the page; keeping the page without the generator is the one combination that is
-simply wrong.
+[Features](Features.md) is no different. Its table is generated from
+`scripts/features.mjs` by `scripts/gen-docs.mjs`, and `npm run docs:check` is
+what keeps the two from drifting apart. Nothing offers to delete either
+script, so that check stays valid for as long as the page does.
