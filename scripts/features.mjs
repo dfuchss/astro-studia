@@ -1,23 +1,18 @@
 /**
  * The feature manifest: what this template is made of, and what belongs to
- * what. Removing an area touches five or six places, and a prose copy of that
- * list drifts; written here it has two consumers that cannot disagree:
+ * what. It is prose plus structure, and it has three consumers that cannot
+ * disagree:
  *
- *   scripts/init.mjs      prunes what you do not want
- *   scripts/gen-docs.mjs  regenerates the table in docs/Removing-Features.md
+ *   src/features.ts       the flags themselves, generated from this list
+ *   scripts/gen-docs.mjs  writes that generated region, and the docs table
+ *   scripts/init.mjs      sets the flags from a preset or a selection
  *
- * If you add a feature to this template, add it here too and both follow.
+ * If you add a feature to this template, add it here and run `npm run docs`;
+ * everything else follows. Nothing here deletes anything — a feature is off
+ * when its flag is false, and its code stays on disk, type-checked.
  *
- * A feature's fenced code needs no declaration: init scans src/ for
- * `▼ FEATURE:<id> ▼ … ▲ FEATURE:<id> ▲` pairs named after the feature's id and
- * removes them wherever they are. The same scanner reads `▼ PRESET:<name> ▼`
- * fences, which src/pages/index.astro uses to carry both entry-page shapes;
- * init keeps the chosen one and removes its markers. Neither family is
- * declared below — the fences are the declaration, and the preset names are
- * the ones in `PRESETS`. docs/Architecture.md, "Feature and preset fences".
- *
- * A preset is a STARTING SELECTION, not a mode: init pre-ticks its features,
- * you tick and untick freely, and afterwards there is no preset, only source.
+ * A preset is a STARTING SELECTION, not a mode: init pre-ticks its features
+ * and you tick and untick freely, before or after.
  *
  * `profile`  one person: publications, a CV, a blog, software, a GitHub list.
  * `project`  a project or group: sub-projects, paper pages, a team.
@@ -27,17 +22,14 @@
 
 /**
  * @typedef {object} Feature
- * @property {string}   id        stable key, used on the command line
+ * @property {string}   id        stable key: the flag's name and the CLI's word for it
  * @property {string}   label     human name, used in the prompt and the docs
- * @property {string}   blurb     one line: what you lose by removing it
+ * @property {string}   blurb     one line: what you lose by turning it off
  * @property {Preset[]} presets   which presets include it by default
  * @property {string[]} requires  feature ids this one needs to work
- * @property {string[]} [requiresAny]  ids of which at least ONE must survive
- * @property {string[]} paths     files and directories to delete, repo-relative
- * @property {string[]} collections  names to drop from src/content.config.ts
- * @property {string[]} sections  `Section` members and their [data-section] blocks
- * @property {string[]} nav       NAV rows to drop, matched on `label`
- * @property {string[]} footer    FOOTER_LINKS rows to drop, matched on `label`
+ * @property {string[]} [requiresAny]  ids of which at least ONE must be on
+ * @property {string[]} paths     what the feature owns, repo-relative. NOT a
+ *   delete list: it is the "if you want the files gone too" column of the docs.
  * @property {string[]} manual    edits a human still has to make, in prose
  */
 
@@ -58,10 +50,6 @@ export const FEATURES = [
       'src/data/venues.yml',
       'scripts/update_bib.py',
     ],
-    collections: ['publications', 'venues'],
-    sections: ['publications'],
-    nav: ['publications'],
-    footer: [],
     manual: [],
   },
 
@@ -81,13 +69,9 @@ export const FEATURES = [
       // under public/ because a link needs a URL that does not move.
       'src/assets/papers',
       'public/assets/img/papers',
-      // Mirrors blog owning fromPosts.ts: it reads the papers collection.
+      // The feed variant that reads the papers collection; see FEED_SOURCE.
       'src/lib/feed/fromPapers.ts',
     ],
-    collections: ['papers'],
-    sections: ['papers'],
-    nav: ['papers'],
-    footer: [],
     manual: [],
   },
 
@@ -102,15 +86,10 @@ export const FEATURES = [
       'src/components/project',
       'src/content/projects',
       // Logos and page figures both. Its own directory rather than a shared
-      // one, for the same reason papers and posts have theirs: an image
-      // referenced by a project must not be deleted by pruning some other
-      // feature.
+      // one, for the same reason papers and posts have theirs: whose image is
+      // whose should be answerable by looking.
       'src/assets/projects',
     ],
-    collections: ['projects'],
-    sections: ['projects'],
-    nav: ['projects'],
-    footer: [],
     manual: [
       'a group site usually calls these `approaches` — rename the collection in src/content.config.ts, the directory under src/pages/, and the NAV label',
     ],
@@ -125,16 +104,12 @@ export const FEATURES = [
     paths: [
       'src/pages/blog',
       'src/lib/blog.ts',
-      // Imports lib/blog.ts, so it cannot outlive it. If you keep the feed,
-      // init repoints it at fromPapers.ts — see PRESET_FEED below.
+      // Imports lib/blog.ts. With the blog off and the feed on, FEED_SOURCE
+      // is 'papers' instead — see PRESET_FEED below.
       'src/lib/feed/fromPosts.ts',
       'src/content/posts',
       'public/assets/img/posts',
     ],
-    collections: ['posts'],
-    sections: ['blog'],
-    nav: ['blog'],
-    footer: [],
     manual: [],
   },
 
@@ -145,10 +120,6 @@ export const FEATURES = [
     presets: ['profile', 'project'],
     requires: [],
     paths: ['src/pages/feed.xml.ts', 'src/lib/feed'],
-    collections: [],
-    sections: [],
-    nav: [],
-    footer: ['Feed'],
     // Deliberately NOT owned by the blog: a project site has no blog and still
     // wants a feed, of its paper pages — but it needs one of the two.
     requiresAny: ['blog', 'papers'],
@@ -162,10 +133,6 @@ export const FEATURES = [
     presets: ['profile'],
     requires: [],
     paths: ['src/pages/cv', 'src/lib/cv.ts', 'src/data/cv.yml'],
-    collections: [],
-    sections: ['cv'],
-    nav: ['cv'],
-    footer: [],
     manual: [],
   },
 
@@ -183,10 +150,6 @@ export const FEATURES = [
       'scripts/fetch-github-metadata.mjs',
       '.github/workflows/update-github-metadata.yml',
     ],
-    collections: [],
-    sections: ['repositories'],
-    nav: ['repositories'],
-    footer: [],
     manual: ['drop the `data:github` script from package.json'],
   },
 
@@ -203,10 +166,6 @@ export const FEATURES = [
       'src/data/people.yml',
       'src/assets/people',
     ],
-    collections: ['people'],
-    sections: ['people'],
-    nav: ['people'],
-    footer: [],
     manual: [],
   },
 
@@ -217,10 +176,6 @@ export const FEATURES = [
     presets: ['profile', 'project'],
     requires: [],
     paths: ['src/data/authors.yml'],
-    collections: ['authors'],
-    sections: [],
-    nav: [],
-    footer: [],
     manual: [],
   },
 
@@ -229,10 +184,14 @@ export const FEATURES = [
     label: 'Citation counts',
     blurb: 'Google Scholar counts on each entry, plus h-index and i10 on the list.',
     presets: ['profile', 'project'],
-    // `socials` for the refresh script, not the page: update_scholar_citations.py
-    // reads `scholar_userid` from src/data/socials.yml. The `project` preset kept
-    // the script and dropped the file.
-    requires: ['publications', 'socials'],
+    /*
+     * NOT `socials`, although the refresh script needs it:
+     * update_scholar_citations.py reads `scholar_userid` from
+     * src/data/socials.yml, and that file is on disk whatever the flags say.
+     * `requires` means "cannot build", and this builds — citations.yml is read
+     * on its own. Turning socials off only means nobody refreshes the counts.
+     */
+    requires: ['publications'],
     paths: [
       'src/lib/citations.ts',
       'src/data/citations.yml',
@@ -240,10 +199,6 @@ export const FEATURES = [
       'requirements.txt',
       '.github/workflows/update-citations.yml',
     ],
-    collections: [],
-    sections: [],
-    nav: [],
-    footer: [],
     manual: [],
   },
 
@@ -254,10 +209,6 @@ export const FEATURES = [
     presets: ['profile'],
     requires: [],
     paths: ['src/components/SocialRow.astro', 'src/data/socials.yml'],
-    collections: [],
-    sections: [],
-    nav: [],
-    footer: [],
     manual: [],
   },
 
@@ -267,12 +218,10 @@ export const FEATURES = [
     blurb:
       'A page for your public key: fingerprint, key id, download, and the armored block inline.',
     presets: ['profile'],
-    requires: ['socials'],
+    /* Not `socials`, for the same reason citations is not: the fingerprint is
+       one value in src/data/socials.yml, and that file is always on disk. */
+    requires: [],
     paths: ['src/pages/pgp-key', 'src/lib/pgp.ts', 'public/assets/pgp-key'],
-    collections: [],
-    sections: [],
-    nav: [],
-    footer: ['PGP'],
     manual: [],
   },
 
@@ -283,16 +232,12 @@ export const FEATURES = [
     /*
      * In NO preset, on purpose — the only feature like that. The switcher and
      * its second URL exist so someone evaluating the template can see both
-     * entry-page shapes; picking a preset chooses one, and init resolves the
-     * PRESET fences only when demo is gone (see applyShape in init.mjs).
+     * entry-page shapes. With it off, HOME_SHAPE alone decides which one `/`
+     * renders.
      */
     presets: [],
     requires: [],
     paths: ['src/pages/demo', 'src/components/DemoSwitch.astro'],
-    collections: [],
-    sections: [],
-    nav: [],
-    footer: [],
     manual: [],
   },
 
@@ -303,24 +248,20 @@ export const FEATURES = [
     presets: ['profile', 'project'],
     requires: [],
     paths: ['src/pages/imprint'],
-    collections: [],
-    sections: [],
-    nav: [],
-    footer: ['Imprint'],
     manual: [],
   },
 ];
 
 /**
- * The feed source each preset starts from: one import line in
- * src/pages/feed.xml.ts, and the unused variant deleted. There is no
- * PRESET_HERO beside it: which hero a preset uses is decided by the PRESET
- * fences in the source, and a table would be a second copy of that answer.
+ * The FEED_SOURCE each preset starts from. A profile site feeds its posts, a
+ * project site its paper pages; either is a choice afterwards, not a mode.
+ * There is no PRESET_HOME beside it only because HOME_SHAPE happens to carry
+ * the preset's own name.
  */
-export const PRESET_FEED = {
-  profile: 'fromPosts',
-  project: 'fromPapers',
-};
+export const PRESET_FEED = /** @type {Record<Preset, 'posts' | 'papers'>} */ ({
+  profile: 'posts',
+  project: 'papers',
+});
 
 export const PRESETS = /** @type {Preset[]} */ (['profile', 'project']);
 
@@ -331,36 +272,31 @@ export const featuresFor = (preset) =>
   FEATURES.filter((f) => f.presets.includes(preset)).map((f) => f.id);
 
 /**
- * Expand a selection so its dependencies are included.
+ * What is wrong with a selection, if anything.
  *
  * `requires` is a real dependency, not a suggestion: papers reference authors
- * through Astro's reference(), so keeping papers while dropping authors fails
- * the build. Pulling the dependency in silently is friendlier than letting the
- * build explain it afterwards, so the caller is told what was added.
+ * through Astro's reference(), so a build with papers on and authors off is a
+ * build with broken references. The old pruning init silently added the
+ * dependency; flags make the opposite choice, and so does this. Being told
+ * "papers needs authors" beats having authors switched back on behind your
+ * back, because now you can simply turn papers off instead.
  *
- * `requiresAny` cannot be satisfied that way — picking one of `blog`/`papers`
- * for somebody would hand them a whole area they unticked — so it is reported
- * as `unmet` and init refuses the selection.
+ * `requiresAny` is the same rule where more than one answer satisfies it:
+ * picking one of `blog`/`papers` for somebody would hand them a whole area
+ * they had turned off.
+ *
+ * src/features.ts asserts exactly this at build time, from the same manifest.
  */
-export function resolve(selected) {
-  const keep = new Set(selected);
-  const added = [];
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const id of [...keep]) {
-      for (const dep of byId(id)?.requires ?? []) {
-        if (!keep.has(dep)) {
-          keep.add(dep);
-          added.push({ dep, because: id });
-          changed = true;
-        }
-      }
-    }
+export function check(selected) {
+  const on = new Set(selected);
+  const missing = [];
+  const unmet = [];
+  for (const id of on) {
+    const f = byId(id);
+    if (!f) continue;
+    for (const dep of f.requires) if (!on.has(dep)) missing.push({ id, dep });
+    const any = f.requiresAny ?? [];
+    if (any.length > 0 && !any.some((o) => on.has(o))) unmet.push({ id, options: any });
   }
-  const unmet = [...keep]
-    .map((id) => ({ id, options: byId(id)?.requiresAny ?? [] }))
-    .filter(({ options }) => options.length > 0 && !options.some((o) => keep.has(o)));
-
-  return { keep: [...keep], added, unmet };
+  return { missing, unmet };
 }

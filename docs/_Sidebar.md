@@ -7,7 +7,7 @@
 - [Configuration](Configuration.md)
 - [Content](Content.md)
 - [Theming](Theming.md)
-- [Removing features](Removing-Features.md)
+- [Features](Features.md)
 
 **Shipping it**
 

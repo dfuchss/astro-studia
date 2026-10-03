@@ -1,31 +1,31 @@
 /**
- * Regenerate the removal table in docs/Removing-Features.md from the manifest,
- * so the docs cannot drift from what init.mjs actually does.
+ * Keep the two generated regions in step with scripts/features.mjs:
  *
- *   npm run docs         rewrite the table
- *   npm run docs:check   fail if the table is out of date (prints a diff)
+ *   src/features.ts   the flags, and the dependencies between them
+ *   docs/Features.md  the table of what each feature is and owns
  *
- * Only the region between `<!-- BEGIN GENERATED: features -->` and
- * `<!-- END GENERATED: features -->` is touched; the prose around it is not.
+ *   npm run docs         rewrite both regions
+ *   npm run docs:check   fail if either is out of date (prints a diff)
+ *
+ * Only the text between a target's markers is touched, and your true/false
+ * values are read out of the old region and written back, so regenerating
+ * never switches a feature behind you.
+ *
+ * `docs:check` also catches an impossible combination in CI without building:
+ * src/features.ts asserts the same rules at config load, but `astro check`
+ * does not execute the module.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { FEATURES } from './features.mjs';
+import { FEATURES, check as checkSelection } from './features.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DOC = join(ROOT, 'docs/Removing-Features.md');
-const DOC_REL = 'docs/Removing-Features.md';
 
-const BEGIN = '<!-- BEGIN GENERATED: features -->';
-const END = '<!-- END GENERATED: features -->';
+const checkOnly = process.argv.includes('--check');
 
-const NOTE = '<!-- Generated from scripts/features.mjs by `npm run docs`. Do not edit by hand. -->';
-
-const check = process.argv.includes('--check');
-
-// ---- the table -------------------------------------------------------------
+// ---- the docs table --------------------------------------------------------
 
 /** `|` ends a Markdown cell, and a `<…>` is parsed as HTML and vanishes from the
     page. The manifest is prose written for humans and contains both. */
@@ -36,78 +36,113 @@ const code = (items) => (items.length === 0 ? '—' : items.map((i) => `\`${cell
 
 const prose = (items) => (items.length === 0 ? '—' : items.map(cell).join('; '));
 
-const COLUMNS = [
-  'Feature',
-  'What you lose',
-  'Presets',
-  'Routes & files',
-  'Collections',
-  'Also by hand',
-];
+const COLUMNS = ['Feature', 'Flag', 'What you lose', 'Presets', 'Needs', 'Owns', 'Also by hand'];
+
+const needs = (f) => {
+  const all = [...f.requires.map((r) => `\`${r}\``)];
+  if (f.requiresAny?.length) all.push(f.requiresAny.map((r) => `\`${r}\``).join(' or '));
+  return all.length === 0 ? '—' : all.join(', ');
+};
 
 const row = (f) => [
   cell(f.label),
+  `\`${f.id}\``,
   cell(f.blurb),
   f.presets.length === 0 ? '—' : f.presets.map((p) => `\`${p}\``).join(', '),
+  needs(f),
   code(f.paths),
-  code(f.collections),
   prose(f.manual),
 ];
 
-function table() {
-  const lines = [
+const table = () =>
+  [
     `| ${COLUMNS.join(' | ')} |`,
     `| ${COLUMNS.map(() => '---').join(' | ')} |`,
     ...FEATURES.map((f) => `| ${row(f).join(' | ')} |`),
-  ];
+  ].join('\n');
+
+// ---- the flag region -------------------------------------------------------
+
+/** The booleans currently in the file, so regenerating preserves them. A new
+    feature starts on, like everything else. */
+function currentFlags(region) {
+  const flags = new Map();
+  for (const [, id, value] of region.matchAll(/^\s*(\w+): (true|false),/gm)) {
+    flags.set(id, value === 'true');
+  }
+  return flags;
+}
+
+/** Quoted ids on one line, for the dependency tables. */
+const ids = (list) => list.map((i) => `'${i}'`).join(', ');
+
+function flags(region) {
+  const was = currentFlags(region);
+  const lines = [];
+
+  lines.push('/** The flags. One boolean per feature; `npm run init` writes them for you. */');
+  lines.push('export const FEATURES = {');
+  for (const f of FEATURES) {
+    lines.push(`  /** ${f.blurb} */`);
+    lines.push(`  ${f.id}: ${was.get(f.id) ?? true},`);
+  }
+  // No `as const`: literal types would make TypeScript call the other branch
+  // of every `FEATURES.x ?` dead code and collapse what follows.
+  lines.push('};');
+  lines.push('');
+
+  const requires = FEATURES.filter((f) => f.requires.length > 0);
+  lines.push('/** `a: [b]` — `a` cannot build with `b` off. */');
+  lines.push('const REQUIRES: Partial<Record<FeatureId, FeatureId[]>> = {');
+  for (const f of requires) lines.push(`  ${f.id}: [${ids(f.requires)}],`);
+  lines.push('};');
+  lines.push('');
+
+  const any = FEATURES.filter((f) => f.requiresAny?.length);
+  lines.push('/** `a: [b, c]` — `a` needs at least one of `b` or `c`. */');
+  lines.push('const REQUIRES_ANY: Partial<Record<FeatureId, FeatureId[]>> = {');
+  for (const f of any) lines.push(`  ${f.id}: [${ids(f.requiresAny)}],`);
+  lines.push('};');
+
   return lines.join('\n');
 }
 
-function block() {
-  return [BEGIN, NOTE, '', table(), '', END].join('\n');
-}
+// ---- targets ---------------------------------------------------------------
 
-// ---- splice it into the document -------------------------------------------
+const TARGETS = [
+  {
+    rel: 'src/features.ts',
+    begin: '// BEGIN GENERATED: flags',
+    end: '// END GENERATED: flags',
+    note: '// Generated from scripts/features.mjs by `npm run docs`; your values are kept.',
+    body: flags,
+  },
+  {
+    rel: 'docs/Features.md',
+    begin: '<!-- BEGIN GENERATED: features -->',
+    end: '<!-- END GENERATED: features -->',
+    note: '<!-- Generated from scripts/features.mjs by `npm run docs`. Do not edit by hand. -->',
+    body: table,
+  },
+];
 
-/** First run, no markers yet: the region replaces the table under the heading. */
-function insertMarkers(src) {
-  const heading = src.indexOf('## What goes with what');
-  if (heading === -1) {
+/** The target's region replaced, markers and note included. The markers must
+    already be there — guessing where they belong is how a generator eats a
+    file it did not write. */
+function render(target, src) {
+  const b = src.indexOf(target.begin);
+  const e = src.indexOf(target.end);
+  if (b === -1 || e === -1) {
     fail(
-      `${DOC_REL} has neither the generated markers nor a "## What goes with what" heading — ` +
-        'add the markers by hand where the table belongs.',
+      `${target.rel} is missing the ${b === -1 ? 'BEGIN' : 'END'} marker ` +
+        `(${b === -1 ? target.begin : target.end}). Put it back where the region belongs.`,
     );
   }
-  const after = src.indexOf('\n', heading) + 1;
-  const rest = src.slice(after);
+  if (e < b) fail(`${target.rel}: the END marker comes before the BEGIN marker.`);
 
-  // The existing table is the first run of lines starting with `|`. Take it,
-  // and the blank lines around it, and nothing further.
-  const lines = rest.split('\n');
-  let i = 0;
-  while (i < lines.length && lines[i].trim() === '') i += 1;
-  const start = i;
-  while (i < lines.length && lines[i].trimStart().startsWith('|')) i += 1;
-  if (i === start) {
-    fail(`${DOC_REL}: found "## What goes with what" but no table under it.`);
-  }
-  return src.slice(0, after) + '\n' + '@@BLOCK@@' + '\n' + lines.slice(i).join('\n');
-}
-
-function render(src) {
-  let out;
-  const b = src.indexOf(BEGIN);
-  const e = src.indexOf(END);
-  if ((b === -1) !== (e === -1)) {
-    fail(`${DOC_REL}: found one generated marker but not the other. Fix it by hand.`);
-  }
-  if (b === -1) {
-    out = insertMarkers(src).replace('@@BLOCK@@', () => block());
-  } else {
-    if (e < b) fail(`${DOC_REL}: the END marker comes before the BEGIN marker.`);
-    out = src.slice(0, b) + block() + src.slice(e + END.length);
-  }
-  return out;
+  const region = src.slice(b, e);
+  const block = [target.begin, target.note, '', target.body(region), '', target.end].join('\n');
+  return src.slice(0, b) + block + src.slice(e + target.end.length);
 }
 
 // ---- diff (line based, no dependency) --------------------------------------
@@ -168,14 +203,14 @@ function diff(a, b) {
 // ---- prettier --------------------------------------------------------------
 
 /** Formatted through prettier because `npm run check` runs `prettier --check`
-    over the repo: an unformatted table would fail that check forever. */
-async function format(text) {
+    over the repo: an unformatted region would fail that check forever. */
+async function format(text, file) {
   try {
     const prettier = await import('prettier');
-    const config = (await prettier.resolveConfig(DOC)) ?? {};
-    return await prettier.format(text, { ...config, filepath: DOC });
+    const config = (await prettier.resolveConfig(file)) ?? {};
+    return await prettier.format(text, { ...config, filepath: file });
   } catch (err) {
-    console.error(`! prettier could not format the docs (${err.message}); writing unformatted.`);
+    console.error(`! prettier could not format ${file} (${err.message}); writing unformatted.`);
     return text;
   }
 }
@@ -185,22 +220,55 @@ function fail(msg) {
   process.exit(1);
 }
 
+// ---- the combination itself -------------------------------------------------
+
+/** The same rules src/features.ts asserts, on what it currently says. */
+function assertCombination(src) {
+  const on = [...currentFlags(src.slice(src.indexOf('export const FEATURES')))]
+    .filter(([, value]) => value)
+    .map(([id]) => id);
+
+  const { missing, unmet } = checkSelection(on);
+  const problems = [
+    ...missing.map(({ id, dep }) => `${id} is on and ${dep} is off`),
+    ...unmet.map(({ id, options }) => `${id} is on and all of ${options.join(', ')} are off`),
+  ];
+
+  const source = /FEED_SOURCE: 'posts' \| 'papers' = '(posts|papers)'/.exec(src)?.[1];
+  const needed = source === 'posts' ? 'blog' : 'papers';
+  if (on.includes('feed') && source && !on.includes(needed)) {
+    problems.push(`FEED_SOURCE is '${source}' and ${needed} is off`);
+  }
+
+  if (problems.length > 0) {
+    fail(
+      `src/features.ts holds a combination that cannot build:\n` +
+        problems.map((p) => `    · ${p}`).join('\n'),
+    );
+  }
+}
+
 // ---- main ------------------------------------------------------------------
 
-const current = readFileSync(DOC, 'utf8');
-const next = await format(render(current));
+let stale = 0;
 
-if (check) {
+for (const target of TARGETS) {
+  const file = join(ROOT, target.rel);
+  const current = readFileSync(file, 'utf8');
+  const next = await format(render(target, current), file);
+
   if (current === next) {
-    console.log(`✓ ${DOC_REL} is up to date with scripts/features.mjs`);
-  } else {
-    console.error(`✗ ${DOC_REL} is out of date. Run \`npm run docs\`.\n`);
+    console.log(`${checkOnly ? '✓' : '·'} ${target.rel} is up to date`);
+  } else if (checkOnly) {
+    console.error(`✗ ${target.rel} is out of date. Run \`npm run docs\`.\n`);
     console.error(diff(current, next));
-    process.exit(1);
+    stale += 1;
+  } else {
+    writeFileSync(file, next);
+    console.log(`✓ wrote ${target.rel} (${FEATURES.length} features)`);
   }
-} else if (current === next) {
-  console.log(`· ${DOC_REL} already up to date (${FEATURES.length} features)`);
-} else {
-  writeFileSync(DOC, next);
-  console.log(`✓ wrote the feature table in ${DOC_REL} (${FEATURES.length} features)`);
 }
+
+assertCombination(readFileSync(join(ROOT, 'src/features.ts'), 'utf8'));
+
+if (stale > 0) process.exit(1);
