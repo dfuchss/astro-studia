@@ -6,6 +6,26 @@
       "description": "Automerge non-major updates",
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
+    },
+    {
+      "description": "One PR for the Node version: .nvmrc is what CI reads, and the devcontainer image has to agree with it",
+      "matchManagers": ["nvm", "devcontainer"],
+      "groupName": "node"
+    },
+    {
+      "description": "Only even majors of the devcontainer image: an odd Node line is never an LTS, and this pin tracks the LTS",
+      "matchPackageNames": ["mcr.microsoft.com/devcontainers/javascript-node"],
+      "allowedVersions": "/^\\d*[02468]$/"
+    },
+    {
+      "description": "TypeScript 7 is refused by `astro check`, which says to install TypeScript 6 instead. Revisit when @astrojs/check supports it, or when astro check gives way to @astrojs/ts-content-mapper",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
+    },
+    {
+      "description": "scholarly 1.7.11 imports bibtexparser.bibdatabase, removed in 2.x, and declares the dependency without an upper bound. Revisit when scholarly does",
+      "matchPackageNames": ["bibtexparser"],
+      "allowedVersions": "<2"
     }
   ]
 }
