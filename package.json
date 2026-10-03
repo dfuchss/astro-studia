@@ -38,7 +38,7 @@
     "astro": "^7.3.5",
     "sharp": "^0.35.5",
     "yaml": "^2.8.1",
-    "zod": "^4.6.4"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
