@@ -1,9 +1,10 @@
 {
   "name": "Studia Theme",
 
-  // Pinned: `npm ci` fails the engines check on an older Node, and Codespaces'
-  // default image does not guarantee 22.
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  // Pinned to the same major as .nvmrc, which CI reads: `npm ci` fails the
+  // engines check on an older Node, and Codespaces' default image does not
+  // guarantee it. An even major, because that is what a Node LTS line is.
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24",
 
   "postCreateCommand": "npm ci",
 
