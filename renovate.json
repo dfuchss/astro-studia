@@ -8,14 +8,10 @@
       "automerge": true
     },
     {
-      "description": "One PR for the Node version: .nvmrc is what CI reads, and the devcontainer image has to agree with it",
-      "matchManagers": ["nvm", "devcontainer"],
-      "groupName": "node"
-    },
-    {
-      "description": "Only even majors of the devcontainer image: an odd Node line is never an LTS, and this pin tracks the LTS",
+      "description": "The devcontainer image follows .nvmrc, which is the Node LTS. Renovate cannot tell an LTS line from a current one for a Docker tag, and offered 26 while 24 was still the LTS, so the major is a hand edit made together with .nvmrc",
       "matchPackageNames": ["mcr.microsoft.com/devcontainers/javascript-node"],
-      "allowedVersions": "/^\\d*[02468]$/"
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     },
     {
       "description": "TypeScript 7 is refused by `astro check`, which says to install TypeScript 6 instead. Revisit when @astrojs/check supports it, or when astro check gives way to @astrojs/ts-content-mapper",
