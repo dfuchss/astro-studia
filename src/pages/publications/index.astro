@@ -23,35 +23,38 @@ const links = FEATURES.people ? await peopleLinks() : undefined;
   section="publications"
 >
   <section class="wrap section">
-    <p class="kicker" data-sigil="##">publications</p>
+    <p class="kicker" data-sigil="##">
+      publications
+    </p>
     <h1>Publications</h1>
     <p class="lede">
-      {pubs.length} entries, parsed from <code>src/data/papers.bib</code> at build time. Each one carries
-      its own BibTeX; entries with a <strong>Paper page</strong> link have a page of their own.
+      {pubs.length} entries, parsed from <code>src/data/papers.bib</code> at build time. Each one
+      carries its own BibTeX; entries with a <strong>Paper page</strong> link have a page of their
+      own.
     </p>
 
-    {
-      metrics && metrics.total > 0 && (
-        <ul class="metrics">
-          <li class="metric">
-            <span class="metric-value">{formatCount(metrics.total)}</span>
-            <span class="metric-label mono">citations</span>
-            <span class="metric-sub mono">as of {formatUpdated(metrics.lastUpdated)}</span>
-          </li>
-          <li class="metric">
-            <span class="metric-value">{metrics.hIndex}</span>
-            <span class="metric-label mono">h-index</span>
-          </li>
-          <li class="metric">
-            <span class="metric-value">{metrics.i10}</span>
-            <span class="metric-label mono">i10-index</span>
-          </li>
-        </ul>
-      )
-    }
+    {metrics && metrics.total > 0 && (
+      <ul class="metrics">
+        <li class="metric">
+          <span class="metric-value">{formatCount(metrics.total)}</span>
+          <span class="metric-label mono">citations</span>
+          <span class="metric-sub mono">as of {formatUpdated(metrics.lastUpdated)}</span>
+        </li>
+        <li class="metric">
+          <span class="metric-value">{metrics.hIndex}</span>
+          <span class="metric-label mono">h-index</span>
+        </li>
+        <li class="metric">
+          <span class="metric-value">{metrics.i10}</span>
+          <span class="metric-label mono">i10-index</span>
+        </li>
+      </ul>
+    )}
 
     <div class="filter">
-      <label class="sr-only" for="pubsearch">Filter publications</label>
+      <label class="sr-only" for="pubsearch">
+        Filter publications
+      </label>
       <input
         id="pubsearch"
         type="search"
@@ -60,20 +63,20 @@ const links = FEATURES.people ? await peopleLinks() : undefined;
         hidden
       />
     </div>
-    <p class="no-results" hidden>No publications match that filter.</p>
+    <p class="no-results" hidden>
+      No publications match that filter.
+    </p>
 
-    {
-      groups.map((g) => (
-        <section class="year" data-year={g.year}>
-          <h2 class="year-head mono">{g.year}</h2>
-          <ul class="entries">
-            {g.items.map((pub) => (
-              <PubEntry pub={pub} links={links} />
-            ))}
-          </ul>
-        </section>
-      ))
-    }
+    {groups.map((g) => (
+      <section class="year" data-year={g.year}>
+        <h2 class="year-head mono">{g.year}</h2>
+        <ul class="entries">
+          {g.items.map((pub) => (
+            <PubEntry pub={pub} links={links} />
+          ))}
+        </ul>
+      </section>
+    ))}
   </section>
 </Base>
 

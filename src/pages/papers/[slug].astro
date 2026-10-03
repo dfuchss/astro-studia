@@ -110,73 +110,63 @@ hasLinkSection ||= projects.length > 0;
 ---
 
 <Base title={paper.data.title} description={paperDescription(paper, pub)} section="papers">
-  {
-    pub && (
-      <Fragment slot="head">
-        <ScholarMeta pub={pub} />
-      </Fragment>
-    )
-  }
+  {pub && (
+    <Fragment slot="head">
+      <ScholarMeta pub={pub} />
+    </Fragment>
+  )}
 
   <article class="wrap section">
     <header class="head">
-      {
-        /* Breadcrumb and venue kicker in one line: the path's leaf is the
+      {/* Breadcrumb and venue kicker in one line: the path's leaf is the
            venue's short name (see paperVenueShort()), and the slug, which the
            reader just clicked, is not repeated. No leaf when there is nothing
-           true to put there. */
-      }
+           true to put there. */}
       <p class="kicker" data-sigil="none">
         <a href={PAPERS}>papers</a>
-        {
-          leaf && (
-            <>
-              <span aria-hidden="true">/</span>
-              {` ${leaf}`}
-            </>
-          )
-        }
+        {leaf && (
+          <>
+            <span aria-hidden="true">/</span>
+            {` ${leaf}`}
+          </>
+        )}
       </p>
 
       <h1>{paper.data.title}</h1>
 
-      {
-        authors.length > 0 && (
-          <p class="byline">
-            {/* The trailing space is in the string: a space between two
+      {authors.length > 0 && (
+        <p class="byline">
+          {/* The trailing space is in the string: a space between two
                 expressions is whitespace between markup nodes, and which of
                 those survive is not something to bet a byline on. */}
-            {connector && `${connector} `}
-            {authors.map((a, i) => (
-              <>
-                {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
-                <span class:list={['author', { self: isSelfName(a.data.name) }]}>
-                  {a.data.name}
-                  {/* The badge is the link, not the name: a linked name promises
+          {connector && `${connector} `}
+          {authors.map((a, i) => (
+            <>
+              {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
+              <span class:list={['author', { self: isSelfName(a.data.name) }]}>
+                {a.data.name}
+                {/* The badge is the link, not the name: a linked name promises
                       the person's page, and this goes to a registry record. */}
-                  {a.data.orcid && (
-                    <a
-                      class="orcid"
-                      href={`https://orcid.org/${a.data.orcid}`}
-                      rel="noopener"
-                      aria-label={`ORCID record for ${a.data.name}`}
-                      title={`ORCID ${a.data.orcid}`}
-                    >
-                      iD
-                    </a>
-                  )}
-                </span>
-              </>
-            ))}
-          </p>
-        )
-      }
+                {a.data.orcid && (
+                  <a
+                    class="orcid"
+                    href={`https://orcid.org/${a.data.orcid}`}
+                    rel="noopener"
+                    aria-label={`ORCID record for ${a.data.name}`}
+                    title={`ORCID ${a.data.orcid}`}
+                  >
+                    iD
+                  </a>
+                )}
+              </span>
+            </>
+          ))}
+        </p>
+      )}
 
-      {
-        /* Badge, year and the venue sentence on one flex row: they are one
+      {/* Badge, year and the venue sentence on one flex row: they are one
            fact — where this was published — and stacking them as three lines
-           made the header read as a form with three fields. */
-      }
+           made the header read as a form with three fields. */}
       <p class="venue-line">
         <VenueBadge abbr={d?.abbr} />
         {year !== undefined && <span class="mono year">{year}</span>}
@@ -212,133 +202,123 @@ hasLinkSection ||= projects.length > 0;
 
       {inParts.length > 0 && <p class="imprint">{inParts.join(', ')}</p>}
 
-      {
-        paper.data.additionalPresentations.length > 0 && (
-          <p class="also">
-            Also presented at{' '}
-            {paper.data.additionalPresentations.map((p, i) => (
-              <>
-                {/* `additionalPresentations.length`, not `authors.length` —
+      {paper.data.additionalPresentations.length > 0 && (
+        <p class="also">
+          Also presented at{' '}
+          {paper.data.additionalPresentations.map((p, i) => (
+            <>
+              {/* `additionalPresentations.length`, not `authors.length` —
                     this list is not the byline, and the two happening to be
                     the same length in the demo is what hid it. */}
-                {i > 0 && (
-                  <span aria-hidden="true">
-                    {i === paper.data.additionalPresentations.length - 1 ? ', and ' : ', '}
-                  </span>
-                )}
-                <a href={p.url} rel="noopener" title={p.shortName ? p.name : undefined}>
-                  {p.shortName ?? p.name}
-                </a>
-              </>
-            ))}
-          </p>
-        )
-      }
+              {i > 0 && (
+                <span aria-hidden="true">
+                  {i === paper.data.additionalPresentations.length - 1 ? ', and ' : ', '}
+                </span>
+              )}
+              <a href={p.url} rel="noopener" title={p.shortName ? p.name : undefined}>
+                {p.shortName ?? p.name}
+              </a>
+            </>
+          ))}
+        </p>
+      )}
 
-      {
-        hasActions && (
-          <p class="actions">
-            {d?.pdfUrl && (
-              <a class="chip primary" href={d.pdfUrl}>
-                Read the PDF
-              </a>
-            )}
-            {d?.doi && (
-              <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
-                DOI
-              </a>
-            )}
-          </p>
-        )
-      }
+      {hasActions && (
+        <p class="actions">
+          {d?.pdfUrl && (
+            <a class="chip primary" href={d.pdfUrl}>
+              Read the PDF
+            </a>
+          )}
+          {d?.doi && (
+            <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
+              DOI
+            </a>
+          )}
+        </p>
+      )}
     </header>
 
-    {
-      paper.data.figure && (
-        <Figure
-          src={paper.data.figure.src}
-          alt={paper.data.figure.alt}
-          plate={paper.data.figure.plate}
-          frame={paper.data.figure.frame}
-        />
-      )
-    }
+    {paper.data.figure && (
+      <Figure
+        src={paper.data.figure.src}
+        alt={paper.data.figure.alt}
+        plate={paper.data.figure.plate}
+        frame={paper.data.figure.frame}
+      />
+    )}
 
     <Prose>
       <Content />
     </Prose>
 
-    {
-      hasLinkSection && (
-        <section class="links" aria-labelledby="links-h">
-          <h2 class="mono" id="links-h">
-            Links
-          </h2>
-          {/* One column per group, plain links rather than chips: a chip reads
+    {hasLinkSection && (
+      <section class="links" aria-labelledby="links-h">
+        <h2 class="mono" id="links-h">
+          Links
+        </h2>
+        {/* One column per group, plain links rather than chips: a chip reads
               as an action, and this section is an index of everywhere the work
               lives. */}
-          <div class="link-grid">
-            {/* A column like any other: their own row of chips made the
+        <div class="link-grid">
+          {/* A column like any other: their own row of chips made the
                 section look like two sections. */}
-            {projects.length > 0 && (
-              <div>
-                <h3 class="mono">projects</h3>
-                <ul>
-                  {projects.map((p) => (
-                    <li>
-                      <a href={p.href} rel={p.external ? 'noopener' : undefined}>
-                        {p.title}
-                        {p.external && <span aria-hidden="true">↗</span>}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {linkRows.map((row) => (
-              <div>
-                <h3 class="mono">{row.title}</h3>
-                <ul>
-                  {Object.entries(row.map!).map(([key, href]) => (
-                    <li>
-                      <a href={href} rel="noopener">
-                        {label(key)}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
-      )
-    }
+          {projects.length > 0 && (
+            <div>
+              <h3 class="mono">projects</h3>
+              <ul>
+                {projects.map((p) => (
+                  <li>
+                    <a href={p.href} rel={p.external ? 'noopener' : undefined}>
+                      {p.title}
+                      {p.external && <span aria-hidden="true">↗</span>}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {linkRows.map((row) => (
+            <div>
+              <h3 class="mono">{row.title}</h3>
+              <ul>
+                {Object.entries(row.map!).map(([key, href]) => (
+                  <li>
+                    <a href={href} rel="noopener">
+                      {label(key)}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
 
     <section class="cite" aria-labelledby="cite-h">
-      <h2 class="mono" id="cite-h">Cite</h2>
-      {
-        /* BibTeX alone, deliberately: a full <PubEntry> here repeats the
+      <h2 class="mono" id="cite-h">
+        Cite
+      </h2>
+      {/* BibTeX alone, deliberately: a full <PubEntry> here repeats the
            header a screen further down and buries the record behind a
-           disclosure. Both source sites tried it and moved back. */
-      }
-      {
-        cite ? (
-          <div class="cite-body">
-            <CopyButton target={cite.id} />
-            <pre id={cite.id}>{cite.bibtex}</pre>
-          </div>
-        ) : (
-          /* The section STAYS, with a sentence in place of the record: a
+           disclosure. Both source sites tried it and moved back. */}
+      {cite ? (
+        <div class="cite-body">
+          <CopyButton target={cite.id} />
+          <pre id={cite.id}>{cite.bibtex}</pre>
+        </div>
+      ) : (
+        /* The section STAYS, with a sentence in place of the record: a
              missing heading reads as "this site does not offer citations".
              The absence is a fact about the venue, so say it. */
-          <p class="uncited">
-            This was a talk at a venue that publishes no proceedings, so there is no bibliographic
-            record of it and nothing to cite — that is a fact about the venue rather than a gap in
-            this page.
-            {linkRows.length > 0 && ' What it did leave behind is under Links, above.'}
-          </p>
-        )
-      }
+        <p class="uncited">
+          This was a talk at a venue that publishes no proceedings, so there is no bibliographic
+          record of it and nothing to cite — that is a fact about the venue rather than a gap in
+          this page.
+          {linkRows.length > 0 && ' What it did leave behind is under Links, above.'}
+        </p>
+      )}
     </section>
   </article>
 </Base>

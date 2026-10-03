@@ -11,16 +11,14 @@ interface Props {
 const { text } = Astro.props;
 ---
 
-{
-  typeof text === 'string' ? (
-    text
-  ) : (
-    <>
-      {text.before}
-      <a href={text.link.href} rel={text.link.href.startsWith('http') ? 'noopener' : undefined}>
-        {text.link.label}
-      </a>
-      {text.after}
-    </>
-  )
-}
+{typeof text === 'string' ? (
+  text
+) : (
+  <>
+    {text.before}
+    <a href={text.link.href} rel={text.link.href.startsWith('http') ? 'noopener' : undefined}>
+      {text.link.label}
+    </a>
+    {text.after}
+  </>
+)}

@@ -10,24 +10,22 @@ interface Props {
 const { variant = 'banner' } = Astro.props;
 ---
 
-{
-  SITE.demoNotice &&
-    (variant === 'banner' ? (
-      <aside class="banner wrap" aria-label="About this site">
-        <p>
-          <strong>This is a template demo.</strong> {SITE.demoNotice} Start by editing{' '}
-          <code>src/consts.ts</code> — see <a href={SITE.repo}>the README</a>.
-        </p>
-      </aside>
-    ) : (
-      /* Just the word, with its separator: the footer's own credit already
+{SITE.demoNotice &&
+  (variant === 'banner' ? (
+    <aside class="banner wrap" aria-label="About this site">
+      <p>
+        <strong>This is a template demo.</strong> {SITE.demoNotice} Start by editing{' '}
+        <code>src/consts.ts</code> — see <a href={SITE.repo}>the README</a>.
+      </p>
+    </aside>
+  ) : (
+    /* Just the word, with its separator: the footer's own credit already
          links the theme, and the copyright always precedes this. */
-      <>
-        <span aria-hidden="true">·</span>
-        <span class="line">demo content</span>
-      </>
-    ))
-}
+    <>
+      <span aria-hidden="true">·</span>
+      <span class="line">demo content</span>
+    </>
+  ))}
 
 <style>
   .banner {

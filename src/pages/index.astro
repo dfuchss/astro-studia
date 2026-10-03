@@ -95,179 +95,174 @@ const subProjectsBlurb =
 
   <!-- Each section carries its own data-section, so the accent changes down the page. -->
 
-  {
-    isProfile && (
-      <>
-        <PersonHero />
+  {isProfile && (
+    <>
+      <PersonHero />
 
-        {FEATURES.publications && (
-          <section class="wrap section" id="research" data-section="publications">
-            <p class="kicker" data-sigil="##">
-              research
-            </p>
-            <h2>What I work on</h2>
-            <ul class="interests">
-              {interests.map((i) => (
-                <li class="chip">{i}</li>
-              ))}
-            </ul>
+      {FEATURES.publications && (
+        <section class="wrap section" id="research" data-section="publications">
+          <p class="kicker" data-sigil="##">
+            research
+          </p>
+          <h2>What I work on</h2>
+          <ul class="interests">
+            {interests.map((i) => (
+              <li class="chip">{i}</li>
+            ))}
+          </ul>
 
-            {papers.length > 0 && (
-              <>
-                <h3 class="sub">Paper pages</h3>
-                <p class="blurb">
-                  Some works get a page of their own — the figure, the argument, where to find the
-                  text.
-                </p>
-                <ul class="bare">
-                  {papers.map(({ paper, pub }) => (
-                    <PaperEntry paper={paper} pub={pub} />
-                  ))}
-                </ul>
-              </>
-            )}
+          {papers.length > 0 && (
+            <>
+              <h3 class="sub">Paper pages</h3>
+              <p class="blurb">
+                Some works get a page of their own — the figure, the argument, where to find the
+                text.
+              </p>
+              <ul class="bare">
+                {papers.map(({ paper, pub }) => (
+                  <PaperEntry paper={paper} pub={pub} />
+                ))}
+              </ul>
+            </>
+          )}
 
-            <p class="more mono">
-              <a href={PUBLICATIONS}>
-                all {pubs.length} publications{latestYear ? `, up to ${latestYear}` : ''} →
-              </a>
-            </p>
-          </section>
-        )}
+          <p class="more mono">
+            <a href={PUBLICATIONS}>
+              all {pubs.length} publications{latestYear ? `, up to ${latestYear}` : ''} →
+            </a>
+          </p>
+        </section>
+      )}
 
-        {FEATURES.projects && (
-          <section class="wrap section" id="building" data-section="projects">
-            <p class="kicker" data-sigil="##">
-              building
-            </p>
-            <h2>Also involved in</h2>
-            <ul class="involve">
-              {involvement.map((i) => (
-                <li>
-                  {i.text}{' '}
-                  <a
-                    href={i.link.href}
-                    rel={i.link.href.startsWith('http') ? 'noopener' : undefined}
-                  >
-                    {i.link.label}
-                  </a>
-                  {i.tail && <span class="muted"> {i.tail}</span>}
-                </li>
-              ))}
-            </ul>
-            <p class="more mono">
-              <a href={PROJECTS}>my own projects →</a>
-            </p>
-          </section>
-        )}
+      {FEATURES.projects && (
+        <section class="wrap section" id="building" data-section="projects">
+          <p class="kicker" data-sigil="##">
+            building
+          </p>
+          <h2>Also involved in</h2>
+          <ul class="involve">
+            {involvement.map((i) => (
+              <li>
+                {i.text}{' '}
+                <a href={i.link.href} rel={i.link.href.startsWith('http') ? 'noopener' : undefined}>
+                  {i.link.label}
+                </a>
+                {i.tail && <span class="muted"> {i.tail}</span>}
+              </li>
+            ))}
+          </ul>
+          <p class="more mono">
+            <a href={PROJECTS}>my own projects →</a>
+          </p>
+        </section>
+      )}
 
-        {posts.length > 0 && (
-          <section class="wrap section" id="writing" data-section="blog">
-            <p class="kicker" data-sigil="##">
-              writing
-            </p>
-            <h2>Recent posts</h2>
-            <ul class="postlist">
-              {posts.map((p) => (
-                <li>
-                  <a href={permalink(p.id)}>
-                    <time class="mono" datetime={p.data.date.toISOString().slice(0, 10)}>
-                      {formatPostDate(p.data.date)}
-                    </time>
-                    <span>{p.data.title}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <p class="more mono">
-              <a href={BLOG}>all posts →</a>
-            </p>
-          </section>
-        )}
-      </>
-    )
-  }
+      {posts.length > 0 && (
+        <section class="wrap section" id="writing" data-section="blog">
+          <p class="kicker" data-sigil="##">
+            writing
+          </p>
+          <h2>Recent posts</h2>
+          <ul class="postlist">
+            {posts.map((p) => (
+              <li>
+                <a href={permalink(p.id)}>
+                  <time class="mono" datetime={p.data.date.toISOString().slice(0, 10)}>
+                    {formatPostDate(p.data.date)}
+                  </time>
+                  <span>{p.data.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p class="more mono">
+            <a href={BLOG}>all posts →</a>
+          </p>
+        </section>
+      )}
+    </>
+  )}
 
-  {
-    isProject && (
-      <>
-        <ProjectHero />
+  {isProject && (
+    <>
+      <ProjectHero />
 
-        {FEATURES.projects && (
-          <section class="wrap section" id="subprojects" data-section="projects">
-            <p class="kicker" data-sigil="##">
-              sub-projects
-            </p>
-            <h2>What the programme runs on</h2>
-            <p class="blurb">{subProjectsBlurb}</p>
+      {FEATURES.projects && (
+        <section class="wrap section" id="subprojects" data-section="projects">
+          <p class="kicker" data-sigil="##">
+            sub-projects
+          </p>
+          <h2>What the programme runs on</h2>
+          <p class="blurb">{subProjectsBlurb}</p>
 
-            <ul class="grid">
-              {subProjects.map((project) => (
-                <ProjectCard project={project} />
-              ))}
-            </ul>
+          <ul class="grid">
+            {subProjects.map((project) => (
+              <ProjectCard project={project} />
+            ))}
+          </ul>
 
-            <p class="more mono">
-              <a href={PROJECTS}>all {subProjects.length} sub-projects →</a>
-            </p>
-          </section>
-        )}
+          <p class="more mono">
+            <a href={PROJECTS}>all {subProjects.length} sub-projects →</a>
+          </p>
+        </section>
+      )}
 
-        {FEATURES.publications && (
-          <section class="wrap section" id="treatises" data-section="publications">
-            <p class="kicker" data-sigil="##">
-              treatises
-            </p>
-            <h2>The works themselves</h2>
-            {papers.length > 0 && (
-              <>
-                <p class="blurb">
-                  {papers.length} of the works carry a page of their own — the argument, not just
-                  the citation.
-                </p>
+      {FEATURES.publications && (
+        <section class="wrap section" id="treatises" data-section="publications">
+          <p class="kicker" data-sigil="##">
+            treatises
+          </p>
+          <h2>The works themselves</h2>
+          {papers.length > 0 && (
+            <>
+              <p class="blurb">
+                {papers.length} of the works carry a page of their own — the argument, not just the
+                citation.
+              </p>
 
-                <ul class="bare">
-                  {papers.map(({ paper, pub }) => (
-                    <PaperEntry paper={paper} pub={pub} />
-                  ))}
-                </ul>
-              </>
-            )}
+              <ul class="bare">
+                {papers.map(({ paper, pub }) => (
+                  <PaperEntry paper={paper} pub={pub} />
+                ))}
+              </ul>
+            </>
+          )}
 
-            <p class="more mono">
-              <a href={PUBLICATIONS}>all {pubs.length} publications →</a>
-            </p>
-          </section>
-        )}
+          <p class="more mono">
+            <a href={PUBLICATIONS}>all {pubs.length} publications →</a>
+          </p>
+        </section>
+      )}
 
-        {FEATURES.people && (
-          <section class="wrap section" id="circle" data-section="people">
-            <p class="kicker" data-sigil="##">
-              circle
-            </p>
-            <h2>Who it passed through</h2>
-            <p class="blurb">
-              Correspondent, secretary, editor: {team.length} people the work relied on, none of
-              them the author.
-            </p>
+      {FEATURES.people && (
+        <section class="wrap section" id="circle" data-section="people">
+          <p class="kicker" data-sigil="##">
+            circle
+          </p>
+          <h2>Who it passed through</h2>
+          <p class="blurb">
+            Correspondent, secretary, editor: {team.length} people the work relied on, none of them
+            the author.
+          </p>
 
-            <ul class="grid people">
-              {team.map((member) => (
-                <PersonCard member={member} />
-              ))}
-            </ul>
+          <ul class="grid people">
+            {team.map((member) => (
+              <PersonCard member={member} />
+            ))}
+          </ul>
 
-            <p class="more mono">
-              <a href={PEOPLE}>all {team.length} people →</a>
-            </p>
-          </section>
-        )}
-      </>
-    )
-  }
+          <p class="more mono">
+            <a href={PEOPLE}>all {team.length} people →</a>
+          </p>
+        </section>
+      )}
+    </>
+  )}
 
   <section class="wrap section" id="contact" data-section="contact">
-    <p class="kicker" data-sigil="##">contact</p>
+    <p class="kicker" data-sigil="##">
+      contact
+    </p>
     <h2>Get in touch</h2>
     <p class="blurb">Questions, corrections and arguments all welcome.</p>
 

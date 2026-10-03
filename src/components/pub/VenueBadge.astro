@@ -12,26 +12,24 @@ const { abbr } = Astro.props;
 const venue: DataEntryMap['venues'][string] | undefined = abbr ? await getEntry(abbr) : undefined;
 ---
 
-{
-  venue &&
-    (venue.data.url ? (
-      <a
-        class="venue"
-        href={venue.data.url}
-        style={`--brand: ${venue.data.color}`}
-        title={`${venue.data.name} (${venue.id})`}
-        rel="noopener"
-      >
-        {venue.id}
-      </a>
-    ) : (
-      /* A venue with no series page of its own — a thesis, a tech report —
+{venue &&
+  (venue.data.url ? (
+    <a
+      class="venue"
+      href={venue.data.url}
+      style={`--brand: ${venue.data.color}`}
+      title={`${venue.data.name} (${venue.id})`}
+      rel="noopener"
+    >
+      {venue.id}
+    </a>
+  ) : (
+    /* A venue with no series page of its own — a thesis, a tech report —
          still gets a badge, just not a link. */
-      <span class="venue" style={`--brand: ${venue.data.color}`} title={venue.data.name}>
-        {venue.id}
-      </span>
-    ))
-}
+    <span class="venue" style={`--brand: ${venue.data.color}`} title={venue.data.name}>
+      {venue.id}
+    </span>
+  ))}
 
 <style>
   /* venues.yml holds each venue's real brand colour, usually chosen for a

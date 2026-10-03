@@ -27,16 +27,14 @@ const initials = d.title
 <li class="project reveal">
   <a class="hit" href={href} rel={external ? 'noopener' : undefined}>
     <div class="head">
-      {
-        d.logo ? (
-          /* 1x and 2x: the logo is small at a fixed size, so retina is cheap. */
-          <Image class="logo" src={d.logo} alt="" width={44} height={44} densities={[1, 2]} />
-        ) : (
-          <span class="logo fallback mono" aria-hidden="true">
-            {initials}
-          </span>
-        )
-      }
+      {d.logo ? (
+        /* 1x and 2x: the logo is small at a fixed size, so retina is cheap. */
+        <Image class="logo" src={d.logo} alt="" width={44} height={44} densities={[1, 2]} />
+      ) : (
+        <span class="logo fallback mono" aria-hidden="true">
+          {initials}
+        </span>
+      )}
       <h3>{d.title}</h3>
       {
         /* A sibling of the heading, not a child: `.head` is the flex container,

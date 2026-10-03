@@ -35,7 +35,9 @@ const [firstPage, lastPage] = (d.pages ?? '').split(DASHES);
 ---
 
 <meta name="citation_title" content={d.title} />
-{d.authors.map((a) => <meta name="citation_author" content={`${a.last}, ${a.first}`} />)}
+{d.authors.map((a) => (
+  <meta name="citation_author" content={`${a.last}, ${a.first}`} />
+))}
 <meta name="citation_publication_date" content={date} />
 {container && <meta name="citation_conference_title" content={container} />}
 {d.journal && <meta name="citation_journal_title" content={d.journal} />}

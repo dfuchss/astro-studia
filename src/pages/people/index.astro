@@ -15,15 +15,19 @@ const list = await members();
   section="people"
 >
   <section class="wrap section">
-    <p class="kicker" data-sigil="##">people</p>
+    <p class="kicker" data-sigil="##">
+      people
+    </p>
     <h1>People</h1>
     <p class="lede">
-      Each entry's key in <code>src/data/people.yml</code> is its anchor here, which is where an author
-      name in the publication list points.
+      Each entry's key in <code>src/data/people.yml</code> is its anchor here, which is where an
+      author name in the publication list points.
     </p>
 
     <ul class="grid">
-      {list.map((member) => <PersonCard member={member} />)}
+      {list.map((member) => (
+        <PersonCard member={member} />
+      ))}
     </ul>
   </section>
 </Base>

@@ -25,21 +25,17 @@ const maxWidth = isVector ? 'var(--measure)' : `${src.width}px`;
   class:list={['figure', plate && 'has-plate', frame && 'framed']}
   style={`--fig-max: ${maxWidth}`}
 >
-  {
-    /* Here whether or not the figure is framed: unstyled it is an inert block
-       div, and this file keeps one <img> rather than one per branch. */
-  }
+  {/* Here whether or not the figure is framed: unstyled it is an inert block
+       div, and this file keeps one <img> rather than one per branch. */}
   <div class="frame">
-    {
-      frame && (
-        <div class="frame-bar" aria-hidden="true">
-          <span class="dot" />
-          <span class="dot" />
-          <span class="dot" />
-          <span class="frame-label mono">{frame}</span>
-        </div>
-      )
-    }
+    {frame && (
+      <div class="frame-bar" aria-hidden="true">
+        <span class="dot" />
+        <span class="dot" />
+        <span class="dot" />
+        <span class="frame-label mono">{frame}</span>
+      </div>
+    )}
     <Image
       src={src}
       alt={alt}

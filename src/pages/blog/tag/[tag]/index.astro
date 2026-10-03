@@ -28,25 +28,29 @@ const { tag, items } = Astro.props;
 
 <Base section="blog" title={`Posts tagged ${tag}`} description={`Posts tagged ${tag}.`}>
   <section class="wrap section">
-    <p class="kicker" data-sigil="none"><a href="/blog/">blog</a> / tag</p>
+    <p class="kicker" data-sigil="none">
+      <a href="/blog/">blog</a> / tag
+    </p>
     <h1>{tag}</h1>
-    <p class="lede">{items.length} {items.length === 1 ? 'post' : 'posts'}.</p>
+    <p class="lede">
+      {items.length} {items.length === 1 ? 'post' : 'posts'}.
+    </p>
 
     <ol class="posts">
-      {
-        items.map((p) => (
-          <li>
-            <a href={permalink(p.id)}>
-              <time class="mono" datetime={p.data.date.toISOString().slice(0, 10)}>
-                {formatPostDate(p.data.date)}
-              </time>
-              <span>{p.data.title}</span>
-            </a>
-          </li>
-        ))
-      }
+      {items.map((p) => (
+        <li>
+          <a href={permalink(p.id)}>
+            <time class="mono" datetime={p.data.date.toISOString().slice(0, 10)}>
+              {formatPostDate(p.data.date)}
+            </time>
+            <span>{p.data.title}</span>
+          </a>
+        </li>
+      ))}
     </ol>
-    <p class="back mono"><a href="/blog/">← all posts</a></p>
+    <p class="back mono">
+      <a href="/blog/">← all posts</a>
+    </p>
   </section>
 </Base>
 

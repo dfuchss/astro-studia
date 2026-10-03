@@ -50,101 +50,85 @@ const bibId = `bib-${pub.id}`;
 
   <div class="body">
     <h3 class="title">
-      {
-        pagePath ? (
-          <a class="title-link" href={pagePath}>
-            {d.title}
-          </a>
-        ) : (
-          d.title
-        )
-      }
+      {pagePath ? (
+        <a class="title-link" href={pagePath}>
+          {d.title}
+        </a>
+      ) : (
+        d.title
+      )}
     </h3>
 
     <p class="authors">
-      {
-        shown.map((p, i) => {
-          const href = links?.get(surnameKey(p.last));
-          const name = isSelf(p) ? <strong>{fullName(p)}</strong> : fullName(p);
-          return (
-            <>
-              {i > 0 && <span aria-hidden="true">, </span>}
-              {href ? (
-                <a class="who" href={href}>
-                  {name}
-                </a>
-              ) : (
-                <span>{name}</span>
-              )}
-            </>
-          );
-        })
-      }
+      {shown.map((p, i) => {
+        const href = links?.get(surnameKey(p.last));
+        const name = isSelf(p) ? <strong>{fullName(p)}</strong> : fullName(p);
+        return (
+          <>
+            {i > 0 && <span aria-hidden="true">, </span>}
+            {href ? (
+              <a class="who" href={href}>
+                {name}
+              </a>
+            ) : (
+              <span>{name}</span>
+            )}
+          </>
+        );
+      })}
       {hidden > 0 && <span class="more"> and {hidden} more authors</span>}
     </p>
 
-    {
-      inParts.length > 0 && (
-        <p class="venue-line">
-          <em>{inParts.join(', ')}</em>
-          {d.year ? <span>, {d.year}</span> : null}
-        </p>
-      )
-    }
+    {inParts.length > 0 && (
+      <p class="venue-line">
+        <em>{inParts.join(', ')}</em>
+        {d.year ? <span>, {d.year}</span> : null}
+      </p>
+    )}
 
     <div class="links">
-      {
-        d.pdfUrl && (
-          <a class="chip" href={d.pdfUrl}>
-            PDF
-          </a>
-        )
-      }
-      {
-        d.doi ? (
-          <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
-            DOI
-          </a>
-        ) : (
-          /* Only when there is no DOI: a DOI is the better permalink, and two
+      {d.pdfUrl && (
+        <a class="chip" href={d.pdfUrl}>
+          PDF
+        </a>
+      )}
+      {d.doi ? (
+        <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
+          DOI
+        </a>
+      ) : (
+        /* Only when there is no DOI: a DOI is the better permalink, and two
              chips pointing at the same paper is noise. */
-          d.url && (
-            <a class="chip" href={d.url} rel="noopener">
-              Link
-            </a>
-          )
-        )
-      }
-      {
-        cites > 0 && (
-          <span class="chip cites" title="Citations (Google Scholar)">
-            {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
-          </span>
-        )
-      }
-      {
-        pagePath && !compact && (
-          <a class="chip paper-page" href={pagePath}>
-            Paper page →
+        d.url && (
+          <a class="chip" href={d.url} rel="noopener">
+            Link
           </a>
         )
-      }
-      {
-        !compact && (
-          <details class="bib">
-            <summary class="chip bib-toggle">
-              <span class="caret mono" aria-hidden="true">
-                ▸
-              </span>
-              BibTeX
-            </summary>
-            <div class="bib-body">
-              <CopyButton target={bibId} />
-              <pre id={bibId}>{d.bibtex}</pre>
-            </div>
-          </details>
-        )
-      }
+      )}
+      {cites > 0 && (
+        <span class="chip cites" title="Citations (Google Scholar)">
+          {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
+        </span>
+      )}
+      {pagePath && !compact && (
+        <a class="chip paper-page" href={pagePath}>
+          Paper page →
+        </a>
+      )}
+      {!compact && (
+        <details class="bib">
+          <summary class="chip bib-toggle">
+            <span class="caret mono" aria-hidden="true">
+              ▸
+            </span>
+            BibTeX
+          </summary>
+          <div class="bib-body">
+            <CopyButton target={bibId} />
+            <pre id={bibId}>{d.bibtex}</pre>
+          </div>
+        </details>
+      )}
     </div>
   </div>
 </li>

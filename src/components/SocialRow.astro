@@ -63,31 +63,29 @@ const links: Link[] = [
 ].filter(Boolean) as Link[];
 ---
 
-{
-  links.length > 0 && (
-    <ul class="row">
-      {links.map((l) => (
-        <li>
-          <a
-            class:list={['chip', l.icon && 'social']}
-            href={l.href}
-            rel="me noopener"
-            aria-label={l.icon ? l.label : undefined}
-            title={l.label}
-          >
-            {l.icon ? (
-              <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false">
-                <path d={ICONS[l.icon]} />
-              </svg>
-            ) : (
-              l.label
-            )}
-          </a>
-        </li>
-      ))}
-    </ul>
-  )
-}
+{links.length > 0 && (
+  <ul class="row">
+    {links.map((l) => (
+      <li>
+        <a
+          class:list={['chip', l.icon && 'social']}
+          href={l.href}
+          rel="me noopener"
+          aria-label={l.icon ? l.label : undefined}
+          title={l.label}
+        >
+          {l.icon ? (
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false">
+              <path d={ICONS[l.icon]} />
+            </svg>
+          ) : (
+            l.label
+          )}
+        </a>
+      </li>
+    ))}
+  </ul>
+)}
 
 <style>
   .row {

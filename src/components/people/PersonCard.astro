@@ -46,13 +46,11 @@ const profiles = [
     {d.role && <p class="role mono">{d.role}</p>}
 
     <div class="chips">
-      {
-        profiles.map((p) => (
-          <a class="chip" href={p.href} rel="noopener" title={p.title}>
-            {p.label}
-          </a>
-        ))
-      }
+      {profiles.map((p) => (
+        <a class="chip" href={p.href} rel="noopener" title={p.title}>
+          {p.label}
+        </a>
+      ))}
       {d.email && <Email address={d.email} label={PEOPLE_CHIPS.email} class="chip" />}
     </div>
   </div>

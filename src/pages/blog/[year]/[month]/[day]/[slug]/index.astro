@@ -33,22 +33,22 @@ const d = post.data;
 
 <Base section="blog" title={d.title} description={d.description}>
   <article class="wrap section">
-    <p class="kicker" data-sigil="none"><a href="/blog/">blog</a></p>
+    <p class="kicker" data-sigil="none">
+      <a href="/blog/">blog</a>
+    </p>
 
     <header class="head">
       <h1>{d.title}</h1>
       <p class="meta mono">
         <time datetime={d.date.toISOString().slice(0, 10)}>{formatPostDate(d.date)}</time>
-        {
-          d.tags.length > 0 && (
-            <>
-              <span aria-hidden="true">·</span>
-              {d.tags.map((t) => (
-                <a href={tagPath(slugifyTag(t))}>{t}</a>
-              ))}
-            </>
-          )
-        }
+        {d.tags.length > 0 && (
+          <>
+            <span aria-hidden="true">·</span>
+            {d.tags.map((t) => (
+              <a href={tagPath(slugifyTag(t))}>{t}</a>
+            ))}
+          </>
+        )}
       </p>
       {d.description && <p class="desc">{d.description}</p>}
     </header>
@@ -57,28 +57,26 @@ const d = post.data;
       <Content />
     </Prose>
 
-    {
-      (older || newer) && (
-        <nav class="pager" aria-label="More posts">
-          {/* An empty span holds the grid column when there is no older post,
+    {(older || newer) && (
+      <nav class="pager" aria-label="More posts">
+        {/* An empty span holds the grid column when there is no older post,
               so a lone "newer" link stays on the right where it belongs. */}
-          {older ? (
-            <a class="prev" href={permalink(older.id)}>
-              <span class="mono">← older</span>
-              <span>{older.data.title}</span>
-            </a>
-          ) : (
-            <span />
-          )}
-          {newer && (
-            <a class="next" href={permalink(newer.id)}>
-              <span class="mono">newer →</span>
-              <span>{newer.data.title}</span>
-            </a>
-          )}
-        </nav>
-      )
-    }
+        {older ? (
+          <a class="prev" href={permalink(older.id)}>
+            <span class="mono">← older</span>
+            <span>{older.data.title}</span>
+          </a>
+        ) : (
+          <span />
+        )}
+        {newer && (
+          <a class="next" href={permalink(newer.id)}>
+            <span class="mono">newer →</span>
+            <span>{newer.data.title}</span>
+          </a>
+        )}
+      </nav>
+    )}
   </article>
 </Base>
 

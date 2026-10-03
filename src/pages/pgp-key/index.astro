@@ -20,61 +20,61 @@ const key = armoredKey();
 
 <Base title="pgp key" description="Public key for encrypted mail." section="home">
   <section class="wrap section page">
-    <p class="kicker" data-sigil="##">pgp</p>
+    <p class="kicker" data-sigil="##">
+      pgp
+    </p>
     <h1>PGP key</h1>
 
-    {
-      fp ? (
-        <>
-          <p class="lede">For anything you would rather not send in the clear.</p>
-          <dl class="fields">
-            <div>
-              <dt class="mono">Fingerprint</dt>
-              <dd class="mono fp">{pretty}</dd>
-            </div>
-            <div>
-              <dt class="mono">Long key id</dt>
-              <dd class="mono">{id}</dd>
-            </div>
-          </dl>
-          {asc && (
-            <p class="actions">
-              <a class="chip" href={asc} download>
-                Download public key
-              </a>
-            </p>
-          )}
+    {fp ? (
+      <>
+        <p class="lede">For anything you would rather not send in the clear.</p>
+        <dl class="fields">
+          <div>
+            <dt class="mono">Fingerprint</dt>
+            <dd class="mono fp">{pretty}</dd>
+          </div>
+          <div>
+            <dt class="mono">Long key id</dt>
+            <dd class="mono">{id}</dd>
+          </div>
+        </dl>
+        {asc && (
+          <p class="actions">
+            <a class="chip" href={asc} download>
+              Download public key
+            </a>
+          </p>
+        )}
 
-          {key && (
-            <div class="keybox">
-              <CopyButton target="pgp-key" label="Copy key" />
-              <div class="scroll-x">
-                <pre id="pgp-key">{key}</pre>
-              </div>
+        {key && (
+          <div class="keybox">
+            <CopyButton target="pgp-key" label="Copy key" />
+            <div class="scroll-x">
+              <pre id="pgp-key">{key}</pre>
             </div>
-          )}
+          </div>
+        )}
 
-          <p class="hint">
-            Verify the fingerprint over a second channel before you trust it. A key served from the
-            same site as the address it belongs to proves very little on its own.
-          </p>
-        </>
-      ) : (
-        <div class="notice">
-          <p>
-            <strong>No key is configured.</strong> Set <code>pgp_fingerprint</code> in
-            <code>src/data/socials.yml</code> to the 40-character fingerprint, then put the exported
-            public key at <code>public/assets/pgp-key/&lt;FINGERPRINT&gt;.asc</code>.
-          </p>
-          <p>
-            This page and the PGP chip in the profile row both appear on their own once it is set,
-            and the key block is inlined here with a copy button as soon as the <code>.asc</code>{' '}
-            file is in place. If you do not use PGP, delete
-            <code>src/pages/pgp-key/index.astro</code> and <code>src/lib/pgp.ts</code>.
-          </p>
-        </div>
-      )
-    }
+        <p class="hint">
+          Verify the fingerprint over a second channel before you trust it. A key served from the
+          same site as the address it belongs to proves very little on its own.
+        </p>
+      </>
+    ) : (
+      <div class="notice">
+        <p>
+          <strong>No key is configured.</strong> Set <code>pgp_fingerprint</code> in
+          <code>src/data/socials.yml</code> to the 40-character fingerprint, then put the exported
+          public key at <code>public/assets/pgp-key/&lt;FINGERPRINT&gt;.asc</code>.
+        </p>
+        <p>
+          This page and the PGP chip in the profile row both appear on their own once it is set, and
+          the key block is inlined here with a copy button as soon as the <code>.asc</code> file is
+          in place. If you do not use PGP, delete
+          <code>src/pages/pgp-key/index.astro</code> and <code>src/lib/pgp.ts</code>.
+        </p>
+      </div>
+    )}
   </section>
 </Base>
 

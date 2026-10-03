@@ -73,62 +73,52 @@ hasLinks ||= cites > 0;
 
   <div class="body">
     <h3 class="title">
-      {
-        /* Always a link: every paper in this collection HAS a page — that is what
+      {/* Always a link: every paper in this collection HAS a page — that is what
           being in it means. PubEntry has to ask, because most publications
-          do not. */
-      }
-      <a class="title-link" href={paperPath(paper.id)}>{paper.data.title}</a>
+          do not. */}
+      <a class="title-link" href={paperPath(paper.id)}>
+        {paper.data.title}
+      </a>
     </h3>
 
-    {
-      authors.length > 0 && (
-        <p class="authors">
-          {/* The trailing space is inside the string: whitespace between two
+    {authors.length > 0 && (
+      <p class="authors">
+        {/* The trailing space is inside the string: whitespace between two
               markup expressions is not something to bet a byline on. */}
-          {connector && `${connector} `}
-          {authors.map((a, i) => (
-            <>
-              {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
-              {isSelfName(a.data.name) ? (
-                <strong>{a.data.name}</strong>
-              ) : (
-                <span>{a.data.name}</span>
-              )}
-            </>
-          ))}
-        </p>
-      )
-    }
+        {connector && `${connector} `}
+        {authors.map((a, i) => (
+          <>
+            {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
+            {isSelfName(a.data.name) ? <strong>{a.data.name}</strong> : <span>{a.data.name}</span>}
+          </>
+        ))}
+      </p>
+    )}
 
-    {
-      venue && (
-        <p class="venue-line">
-          {venue.mark && `${venue.mark} `}
-          {venue.prefix && `${venue.prefix} `}
-          {venue.url ? (
-            <a href={venue.url} rel="noopener">
-              {venue.label}
-            </a>
-          ) : (
-            venue.label
-          )}
-        </p>
-      )
-    }
+    {venue && (
+      <p class="venue-line">
+        {venue.mark && `${venue.mark} `}
+        {venue.prefix && `${venue.prefix} `}
+        {venue.url ? (
+          <a href={venue.url} rel="noopener">
+            {venue.label}
+          </a>
+        ) : (
+          venue.label
+        )}
+      </p>
+    )}
 
-    {
-      (inParts.length > 0 || year !== undefined) && (
-        <p class="venue-line">
-          {inParts.length > 0 && <em>{inParts.join(', ')}</em>}
-          {year !== undefined && <span>{inParts.length > 0 ? `, ${year}` : year}</span>}
-          {/* The one thing about a paper that changes after it is written, so a
+    {(inParts.length > 0 || year !== undefined) && (
+      <p class="venue-line">
+        {inParts.length > 0 && <em>{inParts.join(', ')}</em>}
+        {year !== undefined && <span>{inParts.length > 0 ? `, ${year}` : year}</span>}
+        {/* The one thing about a paper that changes after it is written, so a
               reader scanning the block for what is new wants it here. Only when
               the venue sentence has not already said it. */}
-          {paper.data.status === 'to-appear' && !venue && <span> · to appear</span>}
-        </p>
-      )
-    }
+        {paper.data.status === 'to-appear' && !venue && <span> · to appear</span>}
+      </p>
+    )}
 
     {
       /* The work's other outings, in the paper page's own words and with its
@@ -154,35 +144,33 @@ hasLinks ||= cites > 0;
       )
     }
 
-    {
-      hasLinks && (
-        <div class="links">
-          {d?.pdfUrl && (
-            <a class="chip" href={d.pdfUrl}>
-              PDF
-            </a>
-          )}
-          {d?.doi ? (
-            <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
-              DOI
-            </a>
-          ) : (
-            /* Only when there is no DOI: a DOI is the better permalink, and two
+    {hasLinks && (
+      <div class="links">
+        {d?.pdfUrl && (
+          <a class="chip" href={d.pdfUrl}>
+            PDF
+          </a>
+        )}
+        {d?.doi ? (
+          <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
+            DOI
+          </a>
+        ) : (
+          /* Only when there is no DOI: a DOI is the better permalink, and two
                chips pointing at the same paper is noise. */
-            d?.url && (
-              <a class="chip" href={d.url} rel="noopener">
-                Link
-              </a>
-            )
-          )}
-          {cites > 0 && (
-            <span class="chip cites" title="Citations (Google Scholar)">
-              {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
-            </span>
-          )}
-        </div>
-      )
-    }
+          d?.url && (
+            <a class="chip" href={d.url} rel="noopener">
+              Link
+            </a>
+          )
+        )}
+        {cites > 0 && (
+          <span class="chip cites" title="Citations (Google Scholar)">
+            {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
+          </span>
+        )}
+      </div>
+    )}
   </div>
 </li>
 

@@ -57,11 +57,9 @@ const related = (
 <Base title={d.title} description={d.description} section="projects">
   <article class="wrap section">
     <header class="head">
-      {
-        d.logo && (
-          <Image class="logo" src={d.logo} alt="" width={64} height={64} densities={[1, 2]} />
-        )
-      }
+      {d.logo && (
+        <Image class="logo" src={d.logo} alt="" width={64} height={64} densities={[1, 2]} />
+      )}
       <div>
         <h1>{d.title}</h1>
         <p class="lede">{d.description}</p>
@@ -105,37 +103,37 @@ const related = (
       )
     }
 
-    {
-      related.length > 0 && (
-        <section class="block" aria-labelledby="papers-h">
-          <h2 class="mono" id="papers-h">
-            {related.length === 1 ? 'Related paper' : 'Related papers'}
-          </h2>
-          <ul class="papers">
-            {related.map(({ paper, pub, year, tag }) => (
-              <li>
-                <div class="badge">
-                  <VenueBadge abbr={pub?.data.abbr} />
-                </div>
-                <div>
-                  <a class="title" href={paperPath(paper.id)}>
-                    {paper.data.title}
-                  </a>
-                  <p class="mono year">
-                    {year}
-                    {tag && <span> · {tag}</span>}
-                    {paper.data.status === 'to-appear' && <span> · to appear</span>}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )
-    }
+    {related.length > 0 && (
+      <section class="block" aria-labelledby="papers-h">
+        <h2 class="mono" id="papers-h">
+          {related.length === 1 ? 'Related paper' : 'Related papers'}
+        </h2>
+        <ul class="papers">
+          {related.map(({ paper, pub, year, tag }) => (
+            <li>
+              <div class="badge">
+                <VenueBadge abbr={pub?.data.abbr} />
+              </div>
+              <div>
+                <a class="title" href={paperPath(paper.id)}>
+                  {paper.data.title}
+                </a>
+                <p class="mono year">
+                  {year}
+                  {tag && <span> · {tag}</span>}
+                  {paper.data.status === 'to-appear' && <span> · to appear</span>}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
 
     <p class="back">
-      <a class="chip" href={PROJECTS}>← All projects</a>
+      <a class="chip" href={PROJECTS}>
+        ← All projects
+      </a>
     </p>
   </article>
 </Base>

@@ -19,7 +19,9 @@ const featured = posts.filter((p) => p.data.featured);
 
 <Base title="Blog" description="Occasional notes, newest first." section="blog">
   <section class="wrap section">
-    <p class="kicker" data-sigil="##">blog</p>
+    <p class="kicker" data-sigil="##">
+      blog
+    </p>
     <h1>Blog</h1>
     <p class="lede">
       {posts.length} posts{featured.length > 0 ? `, ${featured.length} of them featured` : ''}.
@@ -27,49 +29,47 @@ const featured = posts.filter((p) => p.data.featured);
       built.
     </p>
 
-    {
-      tags.length > 0 && (
-        <ul class="tags">
-          {tags.map(([tag, items]) => (
-            <li>
-              <a
-                class="chip tag-pill"
-                href={tagPath(slugifyTag(tag))}
-                data-tag={slugifyTag(tag)}
-                aria-pressed="false"
-              >
-                {tag} <span>{items.length}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )
-    }
-    <p class="no-posts mono" hidden>No posts with that tag.</p>
-
-    <ol class="posts">
-      {
-        posts.map((p) => (
-          <li class="reveal" data-tags={p.data.tags.map(slugifyTag).join(' ')}>
-            <a class="post" href={permalink(p.id)}>
-              <time class="date mono" datetime={p.data.date.toISOString().slice(0, 10)}>
-                {formatPostDate(p.data.date)}
-              </time>
-              <span class="ptext">
-                <span class="ptitle">
-                  {p.data.title}
-                  {p.data.featured && (
-                    <span class="star mono" title="Featured">
-                      ★
-                    </span>
-                  )}
-                </span>
-                {p.data.description && <span class="pdesc">{p.data.description}</span>}
-              </span>
+    {tags.length > 0 && (
+      <ul class="tags">
+        {tags.map(([tag, items]) => (
+          <li>
+            <a
+              class="chip tag-pill"
+              href={tagPath(slugifyTag(tag))}
+              data-tag={slugifyTag(tag)}
+              aria-pressed="false"
+            >
+              {tag} <span>{items.length}</span>
             </a>
           </li>
-        ))
-      }
+        ))}
+      </ul>
+    )}
+    <p class="no-posts mono" hidden>
+      No posts with that tag.
+    </p>
+
+    <ol class="posts">
+      {posts.map((p) => (
+        <li class="reveal" data-tags={p.data.tags.map(slugifyTag).join(' ')}>
+          <a class="post" href={permalink(p.id)}>
+            <time class="date mono" datetime={p.data.date.toISOString().slice(0, 10)}>
+              {formatPostDate(p.data.date)}
+            </time>
+            <span class="ptext">
+              <span class="ptitle">
+                {p.data.title}
+                {p.data.featured && (
+                  <span class="star mono" title="Featured">
+                    ★
+                  </span>
+                )}
+              </span>
+              {p.data.description && <span class="pdesc">{p.data.description}</span>}
+            </span>
+          </a>
+        </li>
+      ))}
     </ol>
   </section>
 </Base>

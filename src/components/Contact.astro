@@ -56,12 +56,29 @@ if (position) {
 const external = (href?: string) => (href?.startsWith('http') ? 'noopener' : undefined);
 ---
 
-{
-  layout === 'inline' ? (
-    <p class="inline mono">
-      {rows.map((row) => (
-        <span class="pair">
-          <span class="ilabel">{row.label}</span>
+{layout === 'inline' ? (
+  <p class="inline mono">
+    {rows.map((row) => (
+      <span class="pair">
+        <span class="ilabel">{row.label}</span>
+        {row.address ? (
+          <Email address={row.address} />
+        ) : row.href ? (
+          <a href={row.href} rel={external(row.href)}>
+            {row.text}
+          </a>
+        ) : (
+          <span>{row.text}</span>
+        )}
+      </span>
+    ))}
+  </p>
+) : (
+  <dl class="contact">
+    {rows.map((row) => (
+      <div class="line">
+        <dt class="mono">{row.label}</dt>
+        <dd class:list={[row.mono && 'mono']}>
           {row.address ? (
             <Email address={row.address} />
           ) : row.href ? (
@@ -69,41 +86,20 @@ const external = (href?: string) => (href?.startsWith('http') ? 'noopener' : und
               {row.text}
             </a>
           ) : (
-            <span>{row.text}</span>
+            row.text
           )}
-        </span>
-      ))}
-    </p>
-  ) : (
-    <dl class="contact">
-      {rows.map((row) => (
-        <div class="line">
-          <dt class="mono">{row.label}</dt>
-          <dd class:list={[row.mono && 'mono']}>
-            {row.address ? (
-              <Email address={row.address} />
-            ) : row.href ? (
-              <a href={row.href} rel={external(row.href)}>
-                {row.text}
-              </a>
-            ) : (
-              row.text
-            )}
-            {row.note && <span class="muted"> — {row.note}</span>}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
+          {row.note && <span class="muted"> — {row.note}</span>}
+        </dd>
+      </div>
+    ))}
+  </dl>
+)}
 
-{
-  FEATURES.cv && layout === 'rows' && (
-    <p class="more mono">
-      <a href={CV}>full cv →</a>
-    </p>
-  )
-}
+{FEATURES.cv && layout === 'rows' && (
+  <p class="more mono">
+    <a href={CV}>full cv →</a>
+  </p>
+)}
 
 <style>
   .contact {

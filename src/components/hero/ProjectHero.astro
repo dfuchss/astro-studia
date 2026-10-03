@@ -65,38 +65,36 @@ const stats = rows.filter((s) => s.value > 0);
   <img class="logo" src={logo} alt="" width={logoWidth} height={logoHeight} />
   <h1>{SITE.title}</h1>
   {/* Can carry one link — see SITE.tagline and Tagline.astro. */}
-  <p class="tagline"><Tagline text={SITE.tagline} /></p>
+  <p class="tagline">
+    <Tagline text={SITE.tagline} />
+  </p>
   <p class="actions">
-    {
-      actions.map((a) => (
-        <a
-          class:list={['chip', a.primary && 'primary']}
-          href={a.href}
-          rel={a.href.startsWith('http') ? 'noopener' : undefined}
-        >
-          {a.label}
-        </a>
-      ))
-    }
+    {actions.map((a) => (
+      <a
+        class:list={['chip', a.primary && 'primary']}
+        href={a.href}
+        rel={a.href.startsWith('http') ? 'noopener' : undefined}
+      >
+        {a.label}
+      </a>
+    ))}
   </p>
 
-  {
-    stats.length > 0 && (
-      <ul class="stats">
-        {stats.map((s) => (
-          <li>
-            <a href={s.href}>
-              <span class="stat-value">{formatCount(s.value)}</span>
-              <span class="stat-label mono">
-                {s.label}
-                {s.note && <span class="stat-note">{s.note}</span>}
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    )
-  }
+  {stats.length > 0 && (
+    <ul class="stats">
+      {stats.map((s) => (
+        <li>
+          <a href={s.href}>
+            <span class="stat-value">{formatCount(s.value)}</span>
+            <span class="stat-label mono">
+              {s.label}
+              {s.note && <span class="stat-note">{s.note}</span>}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
 </section>
 
 <style>

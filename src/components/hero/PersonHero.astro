@@ -49,13 +49,17 @@ const stats = rows.filter((s) => s.value > 0);
   <div class="hero-grid">
     <div>
       <p class="kicker">whoami</p>
-      <h1>{SELF.first}&nbsp;{SELF.last}</h1>
+      <h1>
+        {SELF.first}&nbsp;{SELF.last}
+      </h1>
       {/* The role line can carry one link — see SITE.tagline and Tagline.astro. */}
-      <p class="role"><Tagline text={SITE.tagline} /></p>
+      <p class="role">
+        <Tagline text={SITE.tagline} />
+      </p>
       <p class="pitch">
-        I write about <strong>duty</strong>, <strong>friendship</strong> and what holds a republic together,
-        and I argue that Latin is perfectly capable of the job — which is a claim you can only make by
-        doing it.
+        I write about <strong>duty</strong>, <strong>friendship</strong> and what holds a republic
+        together, and I argue that Latin is perfectly capable of the job — which is a claim you can
+        only make by doing it.
       </p>
       {FEATURES.socials && <SocialRow />}
     </div>
@@ -65,23 +69,21 @@ const stats = rows.filter((s) => s.value > 0);
     </figure>
   </div>
 
-  {
-    stats.length > 0 && (
-      <ul class="stats">
-        {stats.map((s) => (
-          <li>
-            <a href={s.href}>
-              <span class="stat-value">{formatCount(s.value)}</span>
-              <span class="stat-label mono">
-                {s.label}
-                {s.note && <span class="stat-note">{s.note}</span>}
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    )
-  }
+  {stats.length > 0 && (
+    <ul class="stats">
+      {stats.map((s) => (
+        <li>
+          <a href={s.href}>
+            <span class="stat-value">{formatCount(s.value)}</span>
+            <span class="stat-label mono">
+              {s.label}
+              {s.note && <span class="stat-note">{s.note}</span>}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
 </section>
 
 <style>

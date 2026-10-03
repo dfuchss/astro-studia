@@ -3,10 +3,8 @@ import Base from '../layouts/Base.astro';
 import { NAV } from '../consts.ts';
 ---
 
-{
-  /* noindex: served for every URL that does not exist, so no canonical could
-     name it truthfully — without the flag it claimed "/404/". */
-}
+{/* noindex: served for every URL that does not exist, so no canonical could
+     name it truthfully — without the flag it claimed "/404/". */}
 <Base title="Page not found" description="That page does not exist." noindex>
   <section class="wrap section center">
     <p class="kicker">cat $REQUEST_URI</p>

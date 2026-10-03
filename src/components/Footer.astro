@@ -13,15 +13,13 @@ const year = new Date().getFullYear();
 
 <footer class="foot">
   <div class="wrap">
-    {
-      /* One wrapping row of middot-separated parts, and every {' '} in it is
+    {/* One wrapping row of middot-separated parts, and every {' '} in it is
          load-bearing: Astro strips the newline before an <a>, and the audit
          fails the build on "Astro andStudia Theme".
 
          The copyright is the only part that is always there, so each optional
          part can carry its own leading separator and no combination of them
-         can leave a dot dangling at either end. */
-    }
+         can leave a dot dangling at either end. */}
     <p class="meta mono">
       <span>{`© ${year} ${SITE.copyright}`}</span>
 
@@ -46,37 +44,31 @@ const year = new Date().getFullYear();
         )
       }
 
-      {
-        FOOTER_LINKS.map((link) => (
-          <>
-            <span aria-hidden="true">·</span>
-            <a href={link.href}>{link.label}</a>
-          </>
-        ))
-      }
+      {FOOTER_LINKS.map((link) => (
+        <>
+          <span aria-hidden="true">·</span>
+          <a href={link.href}>{link.label}</a>
+        </>
+      ))}
 
-      {
-        FOOTER.email && (
-          <>
-            <span aria-hidden="true">·</span>
-            {/* Through Email.astro, never a mailto: the audit fails the build on
+      {FOOTER.email && (
+        <>
+          <span aria-hidden="true">·</span>
+          {/* Through Email.astro, never a mailto: the audit fails the build on
               any address-shaped string in the served bytes. */}
-            <Email address={SITE.email} label="Email" />
-          </>
-        )
-      }
+          <Email address={SITE.email} label="Email" />
+        </>
+      )}
 
-      {
-        FOOTER.credit && (
-          <>
-            <span aria-hidden="true">·</span>
-            <span>
-              built with <a href="https://astro.build/">Astro</a> and{' '}
-              <a href={SITE.repo}>Studia Theme</a>
-            </span>
-          </>
-        )
-      }
+      {FOOTER.credit && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>
+            built with <a href="https://astro.build/">Astro</a> and{' '}
+            <a href={SITE.repo}>Studia Theme</a>
+          </span>
+        </>
+      )}
 
       <DemoNotice variant="line" />
       <slot />

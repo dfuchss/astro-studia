@@ -33,120 +33,114 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
   description="Open-source repositories and archived replication packages."
 >
   <section class="wrap section">
-    <p class="kicker" data-sigil="##">repositories</p>
+    <p class="kicker" data-sigil="##">
+      repositories
+    </p>
     <h1>Repositories</h1>
     <p class="lede">
       Code I maintain, plus every replication package archived with a DOI. Rendered from a metadata
       file in this repository, so the build itself makes no network calls.
     </p>
 
-    {
-      user && (
-        /* This one IS a filled card, unlike the repo cells below: a single
+    {user && (
+      /* This one IS a filled card, unlike the repo cells below: a single
            summary panel, not one item in a list, and a rule above it would read
            as a divider between things that are not a series. */
-        <div class="ghuser card">
-          <div class="ghuser-main">
-            <p class="ghname mono">
-              <a href={user.htmlUrl} rel="noopener me">
-                @{user.login}
-              </a>
-            </p>
-            {user.bio && <p class="ghbio">{user.bio}</p>}
-          </div>
-          <dl class="stats">
-            <div>
-              <dt class="mono">repos</dt>
-              <dd>{fmt.format(user.publicRepos)}</dd>
-            </div>
-            <div>
-              <dt class="mono">followers</dt>
-              <dd>{fmt.format(user.followers)}</dd>
-            </div>
-            <div>
-              <dt class="mono">replication packages</dt>
-              <dd>{fmt.format(zenodo.length)}</dd>
-            </div>
-          </dl>
+      <div class="ghuser card">
+        <div class="ghuser-main">
+          <p class="ghname mono">
+            <a href={user.htmlUrl} rel="noopener me">
+              @{user.login}
+            </a>
+          </p>
+          {user.bio && <p class="ghbio">{user.bio}</p>}
         </div>
-      )
-    }
+        <dl class="stats">
+          <div>
+            <dt class="mono">repos</dt>
+            <dd>{fmt.format(user.publicRepos)}</dd>
+          </div>
+          <div>
+            <dt class="mono">followers</dt>
+            <dd>{fmt.format(user.followers)}</dd>
+          </div>
+          <div>
+            <dt class="mono">replication packages</dt>
+            <dd>{fmt.format(zenodo.length)}</dd>
+          </div>
+        </dl>
+      </div>
+    )}
 
-    {
-      repos.length > 0 && (
-        <section class="block">
-          <h2>
-            Maintained code <span class="count mono">{repos.length}</span>
-          </h2>
-          <ul class="grid">
-            {repos.map(({ full, meta }) => (
-              <li class="reveal">
-                <a class="repo" href={meta?.htmlUrl ?? `https://github.com/${full}`} rel="noopener">
-                  <p class="repo-name mono">
-                    <span class="owner">{full.split('/')[0]}/</span>
-                    <strong>{full.split('/')[1]}</strong>
+    {repos.length > 0 && (
+      <section class="block">
+        <h2>
+          Maintained code <span class="count mono">{repos.length}</span>
+        </h2>
+        <ul class="grid">
+          {repos.map(({ full, meta }) => (
+            <li class="reveal">
+              <a class="repo" href={meta?.htmlUrl ?? `https://github.com/${full}`} rel="noopener">
+                <p class="repo-name mono">
+                  <span class="owner">{full.split('/')[0]}/</span>
+                  <strong>{full.split('/')[1]}</strong>
+                </p>
+                {meta?.description && (
+                  <p class="repo-desc" title={meta.description}>
+                    {meta.description}
                   </p>
-                  {meta?.description && (
-                    <p class="repo-desc" title={meta.description}>
-                      {meta.description}
-                    </p>
+                )}
+                <p class="repo-meta mono">
+                  {meta?.language && (
+                    <span class="lang">
+                      <span
+                        class="dot"
+                        style={`background:${languageColors[meta.language] ?? 'var(--text-faint)'}`}
+                        aria-hidden="true"
+                      />
+                      {meta.language}
+                    </span>
                   )}
-                  <p class="repo-meta mono">
-                    {meta?.language && (
-                      <span class="lang">
-                        <span
-                          class="dot"
-                          style={`background:${languageColors[meta.language] ?? 'var(--text-faint)'}`}
-                          aria-hidden="true"
-                        />
-                        {meta.language}
-                      </span>
-                    )}
-                    {meta && <span>★ {fmt.format(meta.stars)}</span>}
-                    {meta && meta.forks > 0 && <span>⑂ {fmt.format(meta.forks)}</span>}
-                    {meta?.license && <span>{meta.license}</span>}
-                    {meta?.archived && <span class="archived">archived</span>}
-                    {!meta && <span class="archived">no metadata yet</span>}
-                  </p>
-                </a>
-              </li>
-            ))}
-          </ul>
-          <p class="fresh mono">
-            GitHub data captured {fetched}
-            {stale > 0 && (
-              <>
-                {' '}
-                · {stale} without metadata — run <code>npm run data:github</code>
-              </>
-            )}
-          </p>
-        </section>
-      )
-    }
+                  {meta && <span>★ {fmt.format(meta.stars)}</span>}
+                  {meta && meta.forks > 0 && <span>⑂ {fmt.format(meta.forks)}</span>}
+                  {meta?.license && <span>{meta.license}</span>}
+                  {meta?.archived && <span class="archived">archived</span>}
+                  {!meta && <span class="archived">no metadata yet</span>}
+                </p>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p class="fresh mono">
+          GitHub data captured {fetched}
+          {stale > 0 && (
+            <>
+              {' '}
+              · {stale} without metadata — run <code>npm run data:github</code>
+            </>
+          )}
+        </p>
+      </section>
+    )}
 
-    {
-      zenodo.length > 0 && (
-        <section class="block">
-          <h2>
-            Replication packages <span class="count mono">{zenodo.length}</span>
-          </h2>
-          <p class="blurb">
-            Archived with a permanent DOI — cite these rather than a git revision.
-          </p>
-          <ul class="doi-list">
-            {zenodo.map((z) => (
-              <li>
-                <a class="doi" href={`https://doi.org/${z.doi}`} rel="noopener">
-                  <span class="doi-name">{z.name}</span>
-                  <span class="doi-id mono">{z.doi}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )
-    }
+    {zenodo.length > 0 && (
+      <section class="block">
+        <h2>
+          Replication packages <span class="count mono">{zenodo.length}</span>
+        </h2>
+        <p class="blurb">Archived with a permanent DOI — cite these rather than a git revision.</p>
+        <ul class="doi-list">
+          {zenodo.map((z) => (
+            <li>
+              <a class="doi" href={`https://doi.org/${z.doi}`} rel="noopener">
+                <span class="doi-name">{z.name}</span>
+                <span class="doi-id mono">{z.doi}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
   </section>
 </Base>
 

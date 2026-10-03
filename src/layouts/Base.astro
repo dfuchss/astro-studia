@@ -33,23 +33,23 @@ const { title, description, section, noindex } = Astro.props;
 <html lang={SITE.lang}>
   <head>
     <BaseHead title={title} description={description} noindex={noindex} />
-    {
-      /* Page-specific <head> markup — a paper page's citation_* tags and JSON-LD
-        go through here. */
-    }
+    {/* Page-specific <head> markup — a paper page's citation_* tags and JSON-LD
+        go through here. */}
     <slot name="head" />
   </head>
   <body data-section={section}>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main">
+      Skip to content
+    </a>
     <Nav section={section} />
     <main id="main">
       <slot />
     </main>
-    {
-      /* Footer markup a page adds through `slot="footer"` — a funding notice, a
-         logo: whatever FOOTER in src/consts.ts cannot say. */
-    }
-    <Footer><slot name="footer" /></Footer>
+    {/* Footer markup a page adds through `slot="footer"` — a funding notice, a
+         logo: whatever FOOTER in src/consts.ts cannot say. */}
+    <Footer>
+      <slot name="footer" />
+    </Footer>
 
     <script>
       // Marks that JS is available, so `.reveal` may start hidden: without it,
