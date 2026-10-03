@@ -60,6 +60,17 @@ const ALLOWED = new Set(
   ].map((m) => m[1]),
 );
 
+/**
+ * The feature flags, read the same way, for the one question `dist/` cannot
+ * answer on its own: whether something absent was supposed to be there.
+ */
+const flags = readFileSync(join(SRC, 'features.ts'), 'utf8');
+if (!/^\s*feed: (true|false),$/m.test(flags)) {
+  console.error('✗ could not read the flags from src/features.ts — run `npm run docs`');
+  process.exit(1);
+}
+const featureOn = (id) => new RegExp(`^\\s*${id}: true,$`, 'm').test(flags);
+
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
@@ -752,11 +763,10 @@ const ownPath = (url) => {
     }
   }
 
-  // Only expected when the feed is still here. Removing it removes the
-  // endpoint, and an audit that then demanded one would be telling you off
-  // for following the documented removal recipe. A feed that *should* exist
-  // and does not is still a failure.
-  if (existsSync(join(SRC, 'pages/feed.xml.ts'))) {
+  /* Only expected when the feed is ON: the endpoint is on disk either way, so
+     its presence says nothing. A feed that should exist and does not still
+     fails. */
+  if (featureOn('feed')) {
     const xml = readXml('feed.xml');
     if (xml) {
       const items = count(xml, 'item');

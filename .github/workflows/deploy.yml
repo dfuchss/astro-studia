@@ -35,15 +35,25 @@ jobs:
       - name: Type-check
         run: npx astro check
 
-      # The table in docs/Removing-Features.md is generated from
-      # scripts/features.mjs. Guarded because `npm run init` offers to delete the
-      # generator, and a CI step demanding a removed script would be a trap.
-      - name: Check the generated docs are in sync
-        if: hashFiles('scripts/gen-docs.mjs') != ''
+      # The flags in src/features.ts and the table in docs/Features.md are both
+      # generated from scripts/features.mjs. This also refuses a flag
+      # combination that cannot build, which `astro check` cannot see: it
+      # type-checks the module without executing it.
+      - name: Check the generated regions are in sync
         run: npm run docs:check
 
+      # Piped through grep because Astro reports a dangling content reference
+      # with logger.error and then exits 0 — so the exit code on its own would
+      # let a silently blank field ship. Switching a feature off empties its
+      # collection, which is exactly how such a reference comes about.
       - name: Build
-        run: npm run build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee "$RUNNER_TEMP/build.log"
+          if grep -qE 'Invalid content reference|does not exist or is empty' "$RUNNER_TEMP/build.log"; then
+            echo "::error::the build logged a content-collection problem above, and still exited 0"
+            exit 1
+          fi
 
       # Structure, accessibility and the host files Pages needs. Before the
       # deploy step, so a regression fails the run instead of reaching the site.

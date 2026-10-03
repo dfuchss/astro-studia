@@ -1,7 +1,7 @@
 # Publish docs/ to this repository's GitHub wiki.
 #
 # docs/ is written WIKI-NATIVE: flat, one file per page, and the filename is the
-# page name and the title (Removing-Features.md -> "Removing Features"). So this
+# page name and the title (Features.md -> "Removing Features"). So this
 # is a copy, not a build — the only transformation is the link rewrite below.
 #
 # Two things are needed once, and both are checked below before anything runs: a
