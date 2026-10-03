@@ -9,8 +9,16 @@ import { URL_POLICY } from './src/lib/paths.ts';
 import basePaths from './src/integrations/base-paths.ts';
 import sitemapShape from './src/integrations/sitemap-shape.ts';
 
+/**
+ * The origin this build is for. SITE.url normally; SITE_URL overrides it so the
+ * same source can build for a host that serves it at a different root — a
+ * Netlify deploy preview, say. Not a second place to configure the site: unset,
+ * nothing changes. docs/Deploying.md, "Another host".
+ */
+const siteUrl = (process.env.SITE_URL ?? SITE.url).replace(/\/$/, '');
+
 export default defineConfig({
-  site: SITE.url,
+  site: siteUrl,
 
   // Both derived from URL_POLICY (src/lib/paths.ts): one decision, not two. Set
   // by hand, the helpers, feed and canonicals drift from disk, as the audit says.
@@ -32,10 +40,10 @@ export default defineConfig({
     shikiConfig: { theme: 'github-dark-default', wrap: true },
   },
 
-  // Derived from SITE.url, never set by hand: https://user.github.io/repo/ would
-  // otherwise state "/repo" here and in consts.ts, and two copies of one fact
-  // drift. A domain root gives '/', Astro's default. See docs/Deploying.md.
-  base: new URL(SITE.url).pathname,
+  // Derived, never set by hand: https://user.github.io/repo/ would otherwise
+  // state "/repo" here and in consts.ts, and two copies of one fact drift. A
+  // domain root gives '/', Astro's default. See docs/Deploying.md.
+  base: new URL(siteUrl).pathname,
 
   // Redirects for URLs you have already published elsewhere and cannot move:
   // redirects: { '/old-path/': '/new-path/' },
@@ -50,9 +58,9 @@ function publicPdfs(dir: string = 'public/assets/pdf', out: string[] = []): stri
     const rel = posix.join(dir, name.name);
     if (name.isDirectory()) publicPdfs(rel, out);
     else if (name.name.toLowerCase().endsWith('.pdf')) {
-      // Concatenated, not new URL(): with a base, SITE.url ends "/repo" and a
-      // root-absolute path resolved against it drops it. robots.txt.ts does the same.
-      out.push(`${SITE.url.replace(/\/$/, '')}${rel.replace(/^public/, '')}`);
+      // Concatenated, not new URL(): with a base, the origin ends "/repo" and a
+      // root-absolute path resolved against it drops it.
+      out.push(`${siteUrl}${rel.replace(/^public/, '')}`);
     }
   }
   return out;

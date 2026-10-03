@@ -17,12 +17,14 @@ const d = pub.data;
  */
 const container = d.booktitle ?? d.journal;
 const date = d.month ? `${d.year}/${String(d.month).padStart(2, '0')}` : String(d.year);
-// routePath(), as in BaseHead: under URL_POLICY 'preserve' the pathname is
-// this page's FILE ("/papers/foo.html"), not its address.
-const pageUrl = new URL(routePath(Astro.url.pathname), SITE.url).href;
+/* Astro.site, as in BaseHead: the origin this build was made for, so these
+   survive a SITE_URL override. routePath() because under URL_POLICY 'preserve'
+   the pathname is this page's FILE ("/papers/foo.html"), not its address. */
+const origin = Astro.site ?? new URL(SITE.url);
+const pageUrl = new URL(routePath(Astro.url.pathname), origin).href;
 /* Concatenated, not new URL(): d.pdfUrl is root-absolute, and resolving it
-   against a SITE.url that ends "/astro-studia" drops it. */
-const pdfUrl = d.pdfUrl && `${SITE.url.replace(/\/$/, '')}${d.pdfUrl}`;
+   against an origin that ends "/astro-studia" drops it. */
+const pdfUrl = d.pdfUrl && `${origin.href.replace(/\/$/, '')}${d.pdfUrl}`;
 /*
  * Page ranges reach us as "44–55": the parser has already turned the BibTeX
  * `--` into an en dash. Split on any of the three dashes it might use so a
@@ -60,6 +62,6 @@ const [firstPage, lastPage] = (d.pages ?? '').split(DASHES);
     identifier: d.doi ? `https://doi.org/${d.doi}` : undefined,
     url: pageUrl,
     isAccessibleForFree: true,
-    sourceOrganization: { '@type': 'Organization', name: SITE.title, url: SITE.url },
+    sourceOrganization: { '@type': 'Organization', name: SITE.title, url: origin.href },
   })}
 />

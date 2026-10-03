@@ -44,9 +44,11 @@ url: 'https://<user>.github.io/my-repo',
 ```
 
 **There is no `base` to set.** `astro.config.ts` reads it off that URL's own path
-— `base: new URL(SITE.url).pathname` — so the path is not written down twice,
-and `scripts/audit-site.mjs` takes it from the same field. A hand-written
-`base` is the second copy the derivation exists to prevent.
+— `base: new URL(siteUrl).pathname`, where `siteUrl` is `SITE.url` unless the
+`SITE_URL` environment variable overrides it (see [Another host](#another-host))
+— so the path is not written down twice, and `scripts/audit-site.mjs` takes it
+from the same place. A hand-written `base` is the second copy the derivation
+exists to prevent.
 
 The dev server follows it. `http://localhost:4321/` answers with a 302 to
 `/my-repo/`, and `src/integrations/base-paths.ts` runs as dev middleware as well
@@ -129,6 +131,40 @@ server-side anything.
 Under the default URL policy every route is `<route>/index.html`, which every
 static host serves correctly without configuration. Point the host at `dist/`
 — or, as fuchss.org does, have a web server pull the `gh-pages` branch.
+
+### A second host for the same build
+
+`SITE.url` is where the site lives, and editing it is the normal way to move.
+But a preview host serves the same commit at a different origin, and you cannot
+edit a file per deploy. So one environment variable overrides that one value:
+
+```bash
+SITE_URL=https://astro-studia.netlify.app npm run build
+```
+
+`astro.config.ts` reads it for `site`, for `base` and for the PDF list;
+`BaseHead.astro` and `pub/ScholarMeta.astro` take it from `Astro.site`, so
+canonicals, `og:` tags and the Scholar metadata follow; `robots.txt.ts` names it
+in the `Sitemap:` line; and `scripts/audit-site.mjs` honours it too, so you can
+audit a build made for another origin. Unset — which is every normal build —
+nothing changes, and `SITE.url` remains the only thing a site owner edits.
+
+On Netlify the build command is
+
+```
+SITE_URL=$DEPLOY_PRIME_URL npm run build
+```
+
+with `dist` as the publish directory. `DEPLOY_PRIME_URL` is Netlify's own
+per-deploy variable: the site URL for a production deploy, the
+`deploy-preview-<n>--…` URL for a pull request, so one command covers both.
+It has to go in the command and not in `netlify.toml`'s `[build.environment]`,
+whose values are literal and would pass `$DEPLOY_PRIME_URL` through unexpanded.
+Node comes from `.nvmrc`, which Netlify reads before its own default.
+
+Such a host is a copy, not the original, so give it
+`X-Robots-Tag: noindex` — Netlify sends that on deploy previews by itself, but
+not on the production `*.netlify.app` URL.
 
 ## The URL policy
 

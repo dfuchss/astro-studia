@@ -33,9 +33,15 @@ if (!existsSync(DIST)) {
 // ---- configuration, read by regex: a plain node script has no TS loader ----
 const consts = readFileSync(join(SRC, 'consts.ts'), 'utf8');
 
-const siteUrl = consts.match(/url:\s*'([^']+)'/)?.[1];
+/* SITE_URL first, for the same reason astro.config.ts reads it: a build made for
+   another origin has to be audited against that origin, or check 4 fails every
+   internal URL for carrying the wrong base. */
+const siteUrl = (process.env.SITE_URL ?? consts.match(/url:\s*'([^']+)'/)?.[1] ?? '').replace(
+  /\/$/,
+  '',
+);
 if (!siteUrl) {
-  console.error('✗ could not read SITE.url from src/consts.ts');
+  console.error('✗ could not read SITE.url from src/consts.ts, and SITE_URL is unset');
   process.exit(1);
 }
 const OWN_HOST = new URL(siteUrl).host;

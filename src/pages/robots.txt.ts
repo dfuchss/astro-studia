@@ -1,10 +1,12 @@
 import type { APIRoute } from 'astro';
 import { SITE } from '../consts.ts';
 
-/** Generated so the Sitemap: line is built from SITE.url. */
-export const GET: APIRoute = () => {
+/** Generated so the Sitemap: line names the origin that was built — context.site
+    rather than SITE.url, so a SITE_URL override reaches here too. */
+export const GET: APIRoute = (context) => {
   // Concatenated, not new URL(): resolving against "https://host/repo" drops "/repo".
-  const sitemap = `${SITE.url.replace(/\/$/, '')}/sitemap-index.xml`;
+  const origin = (context.site ?? new URL(SITE.url)).href.replace(/\/$/, '');
+  const sitemap = `${origin}/sitemap-index.xml`;
 
   return new Response(
     `User-agent: *
