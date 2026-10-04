@@ -315,6 +315,12 @@ keeps a profile is not something a template gets to decide.
 
 `scholar_userid` does two things: it renders the Scholar chip, and it tells
 `scripts/update_scholar_citations.py` whose citations to fetch.
+`scripts/find-missing-papers.mjs` (`npm run bib:missing`) reads `dblp_url` for
+the publication list and falls back to `orcid_id` (OpenAlex) without it; with
+neither it says which keys to set and changes nothing. Papers you decline for
+good are listed in `src/data/papers-ignore.yml`, which the script creates on
+demand, and `CROSSREF_MAILTO` sets the contact address it sends, as for
+`bib:check`.
 `pgp_fingerprint` is the only setting `/pgp-key/` has — the key id, the grouped
 fingerprint, the download path and the inlined armored block all derive from it.
 

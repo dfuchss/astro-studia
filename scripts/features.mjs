@@ -51,11 +51,16 @@ export const FEATURES = [
       'src/data/papers.bib',
       'src/data/venues.yml',
       'scripts/update_bib.py',
+      'scripts/find-missing-papers.mjs',
+      'scripts/lib/missing-papers.mjs',
+      'src/data/papers-ignore.yml',
       'src/content/pages/publications.md',
       // The words on an entry, shared with `papers`, which needs this feature.
       'src/content/pages/site/publication.md',
     ],
-    manual: [],
+    manual: [
+      'drop the `bib:check` and `bib:missing` scripts, and `fast-xml-parser`, from package.json',
+    ],
   },
 
   {

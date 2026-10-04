@@ -330,15 +330,16 @@ disk for every entry and drops the ones with nothing behind them.
 
 ## `scripts/`
 
-| Script                        | Run by                       | Is                                                                                                                                |
-| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `features.mjs`                | —                            | the manifest: what each optional area is made of, and the rules a selection has to satisfy                                        |
-| `init.mjs`                    | `npm run init`               | writes `src/features.ts`, `src/consts.ts` and `site/site.md` from a preset or selection, then checks, builds and audits           |
-| `gen-docs.mjs`                | `npm run docs`, `docs:check` | regenerates the flags and dependency tables in `src/features.ts` and the table in [Features](Features.md), both from the manifest |
-| `audit-site.mjs`              | `npm run audit`              | the one gate: every check over `dist/`, including the host files                                                                  |
-| `fetch-github-metadata.mjs`   | `npm run data:github`        | writes the committed `src/data/github-metadata.json`                                                                              |
-| `update_bib.py`               | `npm run bib:check`          | checks `papers.bib` against Crossref. Python stdlib only.                                                                         |
-| `update_scholar_citations.py` | the citations workflow       | writes the committed `src/data/citations.yml`. The one piece of tooling that needs pip.                                           |
+| Script                        | Run by                       | Is                                                                                                                                                            |
+| ----------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `features.mjs`                | —                            | the manifest: what each optional area is made of, and the rules a selection has to satisfy                                                                    |
+| `init.mjs`                    | `npm run init`               | writes `src/features.ts`, `src/consts.ts` and `site/site.md` from a preset or selection, then checks, builds and audits                                       |
+| `gen-docs.mjs`                | `npm run docs`, `docs:check` | regenerates the flags and dependency tables in `src/features.ts` and the table in [Features](Features.md), both from the manifest                             |
+| `audit-site.mjs`              | `npm run audit`              | the one gate: every check over `dist/`, including the host files                                                                                              |
+| `fetch-github-metadata.mjs`   | `npm run data:github`        | writes the committed `src/data/github-metadata.json`                                                                                                          |
+| `update_bib.py`               | `npm run bib:check`          | checks `papers.bib` against Crossref. Python stdlib only.                                                                                                     |
+| `find-missing-papers.mjs`     | `npm run bib:missing`        | proposes papers from DBLP (or OpenAlex) that `papers.bib` lacks, completed from Crossref. `-i` asks per entry, `--yes` adds. Shares `lib/missing-papers.mjs`. |
+| `update_scholar_citations.py` | the citations workflow       | writes the committed `src/data/citations.yml`. The one piece of tooling that needs pip.                                                                       |
 
 None of these three are template setup to be stripped out once the site is
 done. `init` is re-runnable — changing your mind about a feature later is

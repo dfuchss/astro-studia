@@ -203,22 +203,23 @@ little is too little.
 
 ## Scripts
 
-| Command               | Does                                                                              |
-| --------------------- | --------------------------------------------------------------------------------- |
-| `npm run dev`         | dev server at http://localhost:4321; `/` redirects to the based root              |
-| `npm run start`       | the same thing under the name other toolchains expect                             |
-| `npm run dev:fresh`   | clears `.astro` and Vite's cache first, for when a stale one is the suspect       |
-| `npm run build`       | → `dist/`                                                                         |
-| `npm run preview`     | serve the built `dist/` locally, to look at the bytes rather than the sources     |
-| `npm run check`       | `astro check` + `prettier --check`                                                |
-| `npm run format`      | `prettier --write`                                                                |
-| `npm run audit`       | the one gate: every check over `dist/` — see below                                |
-| `npm run icons`       | write the three `public/` icon PNGs from one image: `npm run icons -- logo.png`   |
-| `npm run data:github` | refresh `src/data/github-metadata.json`                                           |
-| `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)                          |
-| `npm run init`        | write the flags, and who the site is about, from a preset or a selection          |
-| `npm run docs`        | regenerate the flag list in `src/features.ts` and the table in `docs/Features.md` |
-| `npm run docs:check`  | fail if either is out of date, or a flag combination cannot build (run in CI)     |
+| Command               | Does                                                                                   |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `npm run dev`         | dev server at http://localhost:4321; `/` redirects to the based root                   |
+| `npm run start`       | the same thing under the name other toolchains expect                                  |
+| `npm run dev:fresh`   | clears `.astro` and Vite's cache first, for when a stale one is the suspect            |
+| `npm run build`       | → `dist/`                                                                              |
+| `npm run preview`     | serve the built `dist/` locally, to look at the bytes rather than the sources          |
+| `npm run check`       | `astro check` + `prettier --check`                                                     |
+| `npm run format`      | `prettier --write`                                                                     |
+| `npm run audit`       | the one gate: every check over `dist/` — see below                                     |
+| `npm run icons`       | write the three `public/` icon PNGs from one image: `npm run icons -- logo.png`        |
+| `npm run data:github` | refresh `src/data/github-metadata.json`                                                |
+| `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)                               |
+| `npm run bib:missing` | propose papers from DBLP or OpenAlex that `papers.bib` lacks (`-i` asks, `--yes` adds) |
+| `npm run init`        | write the flags, and who the site is about, from a preset or a selection               |
+| `npm run docs`        | regenerate the flag list in `src/features.ts` and the table in `docs/Features.md`      |
+| `npm run docs:check`  | fail if either is out of date, or a flag combination cannot build (run in CI)          |
 
 The based root is `/astro-studia/` as shipped, because `base` is derived from
 `SITE.url`; dev and the build serve identical URLs.

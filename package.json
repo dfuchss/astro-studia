@@ -26,6 +26,7 @@
     "icons": "node scripts/generate-icons.mjs",
     "data:github": "node scripts/fetch-github-metadata.mjs",
     "bib:check": "python3 scripts/update_bib.py",
+    "bib:missing": "node scripts/find-missing-papers.mjs",
     "docs": "node scripts/gen-docs.mjs",
     "docs:check": "node scripts/gen-docs.mjs --check"
   },
@@ -43,6 +44,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@types/node": "^26.6.4",
+    "fast-xml-parser": "^5.11.2",
     "prettier": "^3.8.0",
     "prettier-plugin-astro": "^1.1.0",
     "typescript": "^6.0.3"
