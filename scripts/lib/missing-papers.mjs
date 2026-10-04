@@ -201,8 +201,8 @@ export function appendToIgnoreFile(sourceId, title) {
   const header = existsSync(IGNORE_FILE)
     ? ''
     : '# Source ids (DBLP keys or OpenAlex ids) that scripts/find-missing-papers.mjs must not propose again.\n' +
-      "# One '- id  # title' per line.\n";
-  appendFileSync(IGNORE_FILE, `${header}- ${sourceId}  # ${title}\n`);
+      "# One '- id # title' per line.\n";
+  appendFileSync(IGNORE_FILE, `${header}- ${sourceId} # ${title}\n`);
 }
 
 /** [{title, scholarId}] from the local Scholar dump (ids lose the user part). */
