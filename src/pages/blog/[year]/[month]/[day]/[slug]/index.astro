@@ -12,6 +12,7 @@ import {
   slugifyTag,
 } from '../../../../../../lib/blog.ts';
 import { tagPath } from '../../../../../../lib/paths.ts';
+import { getPage } from '../../../../../../lib/pages.ts';
 
 export const getStaticPaths = (async () => {
   /* getStaticPaths runs whatever the page's own guard says, and getCollection()
@@ -19,38 +20,43 @@ export const getStaticPaths = (async () => {
   if (!FEATURES.blog) return [];
   // publishedPosts() drops drafts, so a draft has no route at all.
   const all = await publishedPosts();
-  return all.map((post, i) => ({
+  return all.map((post, index) => ({
     params: permalinkParts(post.id),
     // Neighbours are resolved here, where the sorted list already exists.
-    props: { post, newer: all[i - 1], older: all[i + 1] },
+    props: { post, newer: all[index - 1], older: all[index + 1] },
   }));
 }) satisfies GetStaticPaths;
 
 const { post, newer, older } = Astro.props;
 const { Content } = await render(post);
-const d = post.data;
+const frontmatter = post.data;
+
+/* The pager's words: src/content/pages/blog.md. */
+const { label } = await getPage('blog');
 ---
 
-<Base section="blog" title={d.title} description={d.description}>
+<Base section="blog" title={frontmatter.title} description={frontmatter.description}>
   <article class="wrap section">
     <p class="kicker" data-sigil="none">
       <a href="/blog/">blog</a>
     </p>
 
     <header class="head">
-      <h1>{d.title}</h1>
+      <h1>{frontmatter.title}</h1>
       <p class="meta mono">
-        <time datetime={d.date.toISOString().slice(0, 10)}>{formatPostDate(d.date)}</time>
-        {d.tags.length > 0 && (
+        <time datetime={frontmatter.date.toISOString().slice(0, 10)}>
+          {formatPostDate(frontmatter.date)}
+        </time>
+        {frontmatter.tags.length > 0 && (
           <>
             <span aria-hidden="true">·</span>
-            {d.tags.map((t) => (
-              <a href={tagPath(slugifyTag(t))}>{t}</a>
+            {frontmatter.tags.map((tag) => (
+              <a href={tagPath(slugifyTag(tag))}>{tag}</a>
             ))}
           </>
         )}
       </p>
-      {d.description && <p class="desc">{d.description}</p>}
+      {frontmatter.description && <p class="desc">{frontmatter.description}</p>}
     </header>
 
     <Prose>
@@ -63,7 +69,7 @@ const d = post.data;
               so a lone "newer" link stays on the right where it belongs. */}
         {older ? (
           <a class="prev" href={permalink(older.id)}>
-            <span class="mono">← older</span>
+            <span class="mono">{label('older')}</span>
             <span>{older.data.title}</span>
           </a>
         ) : (
@@ -71,7 +77,7 @@ const d = post.data;
         )}
         {newer && (
           <a class="next" href={permalink(newer.id)}>
-            <span class="mono">newer →</span>
+            <span class="mono">{label('newer')}</span>
             <span>{newer.data.title}</span>
           </a>
         )}

@@ -39,8 +39,10 @@ export type PaperVenue = {
   stated: boolean;
   /** A flag or other mark, before the label. Stated venues only. */
   mark?: string;
-  /** The words in front of a DERIVED label. A stated label is the whole sentence. */
-  prefix?: string;
+  /** Which words go in front of a DERIVED label: `publishedAt` or `toAppearAt`
+      in src/content/pages/site/publication.md. Unset for a stated label,
+      which is the whole sentence. */
+  prefix?: 'publishedAt' | 'toAppearAt';
   label: string;
   url?: string;
   /** The byline's "by", in the page's language. Stated venues only. */
@@ -48,20 +50,20 @@ export type PaperVenue = {
 };
 
 export function paperVenue(paper: Paper): PaperVenue | undefined {
-  const v = paper.data.venue;
-  if (v) {
+  const venue = paper.data.venue;
+  if (venue) {
     return {
       stated: true,
-      mark: v.mark,
-      label: v.label,
-      url: v.url,
-      connector: v.bylineConnector,
+      mark: venue.mark,
+      label: venue.label,
+      url: venue.url,
+      connector: venue.bylineConnector,
     };
   }
   if (paper.data.conferenceName) {
     return {
       stated: false,
-      prefix: paper.data.status === 'to-appear' ? 'To appear at' : 'Published at',
+      prefix: paper.data.status === 'to-appear' ? 'toAppearAt' : 'publishedAt',
       label: paper.data.conferenceName,
       url: paper.data.conferenceUrl,
     };
@@ -83,8 +85,15 @@ export function paperByline(venue: PaperVenue | undefined, count: number) {
 
 /** What a BibTeX entry says the work appeared IN — one chain, two callers. */
 export function paperContainer(pub: Pub | undefined): string | undefined {
-  const d = pub?.data;
-  return d?.booktitle ?? d?.journal ?? d?.series ?? d?.school ?? d?.institution ?? d?.publisher;
+  const record = pub?.data;
+  return (
+    record?.booktitle ??
+    record?.journal ??
+    record?.series ??
+    record?.school ??
+    record?.institution ??
+    record?.publisher
+  );
 }
 
 /**
@@ -99,7 +108,8 @@ export function paperVenueShort(paper: Paper, pub: Pub | undefined): string | un
 }
 
 /** The one-line summary for a link preview and a feed reader. Never the site's
-    blurb; when there is nothing, BaseHead falls back to SITE.description. */
+    blurb; when there is nothing, BaseHead falls back to the site description
+    in src/content/pages/site/site.md. */
 export function paperDescription(paper: Paper, pub: Pub | undefined): string | undefined {
   return paper.data.description ?? paperVenue(paper)?.label ?? paperContainer(pub);
 }
@@ -111,8 +121,9 @@ export function paperDescription(paper: Paper, pub: Pub | undefined): string | u
  */
 export function linkLabel(key: string, labels: Record<string, string>): string {
   if (labels[key]) return labels[key];
-  const m = /^(.+)_([a-z0-9]+)$/i.exec(key);
-  if (m && labels[m[2]]) return `${labels[m[2]]} (${m[1].replace(/[-_]/g, ' ').toUpperCase()})`;
+  const match = /^(.+)_([a-z0-9]+)$/i.exec(key);
+  if (match && labels[match[2]])
+    return `${labels[match[2]]} (${match[1].replace(/[-_]/g, ' ').toUpperCase()})`;
   return key;
 }
 
@@ -122,7 +133,7 @@ export function linkLabel(key: string, labels: Record<string, string>): string {
  * rather than cited has no row there and would never appear.
  */
 export async function featuredPapers(): Promise<{ paper: Paper; pub: Pub | undefined }[]> {
-  const papers = await getCollection('papers', (p) => p.data.featured);
+  const papers = await getCollection('papers', (paper) => paper.data.featured);
   const rows = await Promise.all(
     papers.map(async (paper) => {
       const pub = await paperPublication(paper);
@@ -131,10 +142,10 @@ export async function featuredPapers(): Promise<{ paper: Paper; pub: Pub | undef
   );
   return rows
     .sort(
-      (a, b) =>
-        (b.year ?? 0) - (a.year ?? 0) ||
-        a.paper.data.order - b.paper.data.order ||
-        a.paper.data.title.localeCompare(b.paper.data.title),
+      (first, second) =>
+        (second.year ?? 0) - (first.year ?? 0) ||
+        first.paper.data.order - second.paper.data.order ||
+        first.paper.data.title.localeCompare(second.paper.data.title),
     )
     .map(({ paper, pub }) => ({ paper, pub }));
 }

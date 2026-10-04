@@ -3,12 +3,12 @@ import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 
 import { FEATURES } from '../../features.ts';
-import { SITE, SELF, STAT_LABELS } from '../../consts.ts';
+import { SELF } from '../../consts.ts';
 import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
 import { PROJECTS, PUBLICATIONS } from '../../lib/paths.ts';
 import { formatUpdatedShort, scholarMetrics } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
-import Tagline from '../Tagline.astro';
+import { fill, getPage, need } from '../../lib/pages.ts';
 import SocialRow from '../SocialRow.astro';
 
 /*
@@ -20,8 +20,19 @@ import SocialRow from '../SocialRow.astro';
 /* Empty when switched off; the flags are stated so each row's source shows. */
 const pubs = FEATURES.publications ? await getCollection('publications') : [];
 const projects = FEATURES.projects ? await getCollection('projects') : [];
-const m = FEATURES.citations ? scholarMetrics() : undefined;
-const updated = m ? `(updated ${formatUpdatedShort(m.lastUpdated)})` : undefined;
+/* The words: the stat labels in src/content/pages/home.md, the line under
+   the name in site/tagline.md, the pitch in home/profile.md. */
+const home = await getPage('home');
+const { Content: Tagline } = await getPage('site/tagline');
+const { Content: Pitch } = await getPage('home/profile');
+const statLabel = (key: string) => home.text('statLabels', key);
+
+const metrics = FEATURES.citations ? scholarMetrics() : undefined;
+const updated = metrics
+  ? fill(need(home.data.statNote, 'home.statNote'), {
+      date: formatUpdatedShort(metrics.lastUpdated),
+    })
+  : undefined;
 
 /*
  * Counted, never typed in: a hardcoded "35 publications" is wrong the day you
@@ -33,16 +44,16 @@ const updated = m ? `(updated ${formatUpdatedShort(m.lastUpdated)})` : undefined
 type Stat = { value: number; label: string; href: string; note?: string };
 
 const rows: Stat[] = [
-  { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
-  ...(m
+  { value: pubs.length, label: statLabel('publications'), href: PUBLICATIONS },
+  ...(metrics
     ? [
-        { value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS, note: updated },
-        { value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS, note: updated },
+        { value: metrics.total, label: statLabel('citations'), href: PUBLICATIONS, note: updated },
+        { value: metrics.hIndex, label: statLabel('hIndex'), href: PUBLICATIONS, note: updated },
       ]
     : []),
-  { value: projects.length, label: STAT_LABELS.projects, href: PROJECTS },
+  { value: projects.length, label: statLabel('projects'), href: PROJECTS },
 ];
-const stats = rows.filter((s) => s.value > 0);
+const stats = rows.filter((stat) => stat.value > 0);
 ---
 
 <section class="wrap hero">
@@ -52,15 +63,14 @@ const stats = rows.filter((s) => s.value > 0);
       <h1>
         {SELF.first}&nbsp;{SELF.last}
       </h1>
-      {/* The role line can carry one link — see SITE.tagline and Tagline.astro. */}
-      <p class="role">
-        <Tagline text={SITE.tagline} />
-      </p>
-      <p class="pitch">
-        I write about <strong>duty</strong>, <strong>friendship</strong> and what holds a republic
-        together, and I argue that Latin is perfectly capable of the job — which is a claim you can
-        only make by doing it.
-      </p>
+      {/* Markdown, so either can carry links; divs, since each brings its own
+          paragraph. */}
+      <div class="role">
+        <Tagline />
+      </div>
+      <div class="pitch">
+        <Pitch />
+      </div>
       {FEATURES.socials && <SocialRow />}
     </div>
 
@@ -71,13 +81,13 @@ const stats = rows.filter((s) => s.value > 0);
 
   {stats.length > 0 && (
     <ul class="stats">
-      {stats.map((s) => (
+      {stats.map((stat) => (
         <li>
-          <a href={s.href}>
-            <span class="stat-value">{formatCount(s.value)}</span>
+          <a href={stat.href}>
+            <span class="stat-value">{formatCount(stat.value)}</span>
             <span class="stat-label mono">
-              {s.label}
-              {s.note && <span class="stat-note">{s.note}</span>}
+              {stat.label}
+              {stat.note && <span class="stat-note">{stat.note}</span>}
             </span>
           </a>
         </li>
@@ -115,7 +125,13 @@ const stats = rows.filter((s) => s.value > 0);
     color: var(--text-muted);
     margin-bottom: 1.5rem;
   }
-  .pitch strong {
+  .role :global(p) {
+    margin: 0;
+  }
+  .pitch :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .pitch :global(strong) {
     color: var(--text);
     font-weight: 600;
   }

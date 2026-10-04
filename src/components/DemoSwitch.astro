@@ -21,9 +21,9 @@ const sides = [
 
 <p class="switch">
   <span class="note mono">demo — two entry pages, one template:</span>
-  {sides.map((s) => (
-    <a class="chip" href={s.href} aria-current={s.id === current ? 'page' : undefined}>
-      {s.label}
+  {sides.map((side) => (
+    <a class="chip" href={side.href} aria-current={side.id === current ? 'page' : undefined}>
+      {side.label}
     </a>
   ))}
   <span class="note mono">

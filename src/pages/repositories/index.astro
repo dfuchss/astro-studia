@@ -3,6 +3,7 @@ import { FEATURES, disabled } from '../../features.ts';
 import Base from '../../layouts/Base.astro';
 import { SITE } from '../../consts.ts';
 import { repositories, languageColors, github, socials } from '../../lib/data.ts';
+import { fill, getPage, need } from '../../lib/pages.ts';
 
 if (!FEATURES.repositories) return disabled();
 
@@ -14,11 +15,15 @@ if (!FEATURES.repositories) return disabled();
 const repos = (repositories.github_repos ?? [])
   .map((full) => ({ full, meta: github.repos[full] }))
   // Most-starred first: the YAML order is nobody's deliberate choice.
-  .sort((a, b) => (b.meta?.stars ?? 0) - (a.meta?.stars ?? 0));
+  .sort((first, second) => (second.meta?.stars ?? 0) - (first.meta?.stars ?? 0));
 
 const zenodo = repositories.zenodo_repos ?? [];
 const user = socials.github_username ? github.users[socials.github_username] : undefined;
-const stale = repos.filter((r) => !r.meta).length;
+const stale = repos.filter((repo) => !repo.meta).length;
+
+/* The words: src/content/pages/repositories.md. */
+const page = await getPage('repositories');
+const { label } = page;
 
 const fmt = new Intl.NumberFormat(SITE.locale);
 const fetched = new Intl.DateTimeFormat(SITE.locale, {
@@ -27,20 +32,13 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
 }).format(new Date(github.fetched));
 ---
 
-<Base
-  section="repositories"
-  title="Repositories"
-  description="Open-source repositories and archived replication packages."
->
+<Base section="repositories" {...page.meta()}>
   <section class="wrap section">
     <p class="kicker" data-sigil="##">
       repositories
     </p>
     <h1>Repositories</h1>
-    <p class="lede">
-      Code I maintain, plus every replication package archived with a DOI. Rendered from a metadata
-      file in this repository, so the build itself makes no network calls.
-    </p>
+    <p class="lede">{need(page.data.lede, 'repositories.lede')}</p>
 
     {user && (
       /* This one IS a filled card, unlike the repo cells below: a single
@@ -57,15 +55,15 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
         </div>
         <dl class="stats">
           <div>
-            <dt class="mono">repos</dt>
+            <dt class="mono">{label('repos')}</dt>
             <dd>{fmt.format(user.publicRepos)}</dd>
           </div>
           <div>
-            <dt class="mono">followers</dt>
+            <dt class="mono">{label('followers')}</dt>
             <dd>{fmt.format(user.followers)}</dd>
           </div>
           <div>
-            <dt class="mono">replication packages</dt>
+            <dt class="mono">{label('replication')}</dt>
             <dd>{fmt.format(zenodo.length)}</dd>
           </div>
         </dl>
@@ -104,7 +102,7 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
                   {meta && <span>★ {fmt.format(meta.stars)}</span>}
                   {meta && meta.forks > 0 && <span>⑂ {fmt.format(meta.forks)}</span>}
                   {meta?.license && <span>{meta.license}</span>}
-                  {meta?.archived && <span class="archived">archived</span>}
+                  {meta?.archived && <span class="archived">{label('archived')}</span>}
                   {!meta && <span class="archived">no metadata yet</span>}
                 </p>
               </a>
@@ -112,7 +110,7 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
           ))}
         </ul>
         <p class="fresh mono">
-          GitHub data captured {fetched}
+          {fill(label('captured'), { date: fetched })}
           {stale > 0 && (
             <>
               {' '}
@@ -128,13 +126,13 @@ const fetched = new Intl.DateTimeFormat(SITE.locale, {
         <h2>
           Replication packages <span class="count mono">{zenodo.length}</span>
         </h2>
-        <p class="blurb">Archived with a permanent DOI — cite these rather than a git revision.</p>
+        <p class="blurb">{label('replicationIntro')}</p>
         <ul class="doi-list">
-          {zenodo.map((z) => (
+          {zenodo.map((deposit) => (
             <li>
-              <a class="doi" href={`https://doi.org/${z.doi}`} rel="noopener">
-                <span class="doi-name">{z.name}</span>
-                <span class="doi-id mono">{z.doi}</span>
+              <a class="doi" href={`https://doi.org/${deposit.doi}`} rel="noopener">
+                <span class="doi-name">{deposit.name}</span>
+                <span class="doi-id mono">{deposit.doi}</span>
               </a>
             </li>
           ))}

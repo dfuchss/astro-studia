@@ -3,11 +3,16 @@ import { FEATURES, disabled } from '../../features.ts';
 import Base from '../../layouts/Base.astro';
 import Email from '../../components/Email.astro';
 import { SITE } from '../../consts.ts';
+import { getPage } from '../../lib/pages.ts';
 
 if (!FEATURES.imprint) return disabled();
+
+/* The words: src/content/pages/imprint.md — the body is the box, `fields` the
+   rows under it. */
+const page = await getPage('imprint');
 ---
 
-<Base title="imprint" description="Site notice." section="home">
+<Base {...page.meta()} section="home">
   <section class="wrap section page">
     <p class="kicker" data-sigil="##">
       imprint
@@ -15,36 +20,25 @@ if (!FEATURES.imprint) return disabled();
     <h1>Imprint</h1>
 
     <div class="notice">
-      <p>
-        <strong>This is a placeholder.</strong> It exists because several jurisdictions require a
-        site notice with a real name and a real address — Germany's <em>Impressumspflicht</em> is
-        the one most academics reading this will be subject to — and a template that quietly omitted
-        the page would be a trap.
-      </p>
-      <p>
-        Replace everything below with your own details, or delete
-        <code>src/pages/imprint/index.astro</code> and its row in <code>FOOTER_LINKS</code> if you
-        are not required to have one. Nothing here is legal advice.
-      </p>
+      <page.Content />
     </div>
 
     <dl class="fields">
+      {(page.data.fields ?? []).map((field) => (
+        <div>
+          <dt class="mono">{field.label}</dt>
+          <dd>
+            {field.lines.map((line, index) => (
+              <>
+                {index > 0 && <br />}
+                {line}
+              </>
+            ))}
+          </dd>
+        </div>
+      ))}
       <div>
-        <dt class="mono">Responsible for the content</dt>
-        <dd>Your name</dd>
-      </div>
-      <div>
-        <dt class="mono">Address</dt>
-        <dd>
-          Street and number
-          <br />
-          Postcode and town
-          <br />
-          Country
-        </dd>
-      </div>
-      <div>
-        <dt class="mono">Contact</dt>
+        <dt class="mono">{page.label('contact')}</dt>
         <dd>
           <Email address={SITE.email} />
         </dd>
@@ -66,10 +60,10 @@ if (!FEATURES.imprint) return disabled();
     color: var(--text-muted);
     font-size: var(--fs-small);
   }
-  .notice p:last-child {
+  .notice :global(p:last-child) {
     margin-bottom: 0;
   }
-  .notice strong {
+  .notice :global(strong) {
     color: var(--text);
   }
 

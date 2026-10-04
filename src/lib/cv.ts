@@ -21,11 +21,11 @@ export type CvEntry = {
   /** Sends this entry to the section's collapsed tail — per-entry rather than
       "keep the first N", because it is about the kind of entry, not its rank. */
   minor?: boolean;
-  /** Chips under a `cards` entry, e.g. the areas a project touches. */
+  /** Chips under a `cards` entry, entry.g. the areas a project touches. */
   highlights?: string[];
-  /** A `courses` entry's term, e.g. "WS 26/27" or "SS 2026". */
+  /** A `courses` entry's term, entry.g. "WS 26/27" or "SS 2026". */
   semester?: string;
-  /** A `courses` entry's kind, e.g. "Lecture / Practice". */
+  /** A `courses` entry's kind, entry.g. "Lecture / Practice". */
   type?: string;
 };
 
@@ -53,8 +53,8 @@ export const cv = parse(cvRaw) as Cv;
     in UTC so the month cannot shift with the build machine's zone; anything else
     ("Winter 2024/25", "63 BC") passes through untouched. */
 export function formatDate(value: string): string {
-  const ym = /^(\d{4})-(\d{2})$/.exec(value);
-  if (ym) {
+  const yearMonth = /^(\d{4})-(\d{2})$/.exec(value);
+  if (yearMonth) {
     return new Intl.DateTimeFormat(SITE.locale, {
       month: 'short',
       year: 'numeric',
@@ -64,11 +64,13 @@ export function formatDate(value: string): string {
   return value;
 }
 
-/** "Jan 2020 – present", "63 BC – 62 BC", "2020", or "" when undated. */
-export function dateRange(entry: CvEntry): string {
+/** "Jan 2020 – present", "63 BC – 62 BC", "2020", or "" when undated.
+    `present` is the word for a range still going: `labels.present` in
+    src/content/pages/cv.md. */
+export function dateRange(entry: CvEntry, present: string): string {
   if (!entry.start) return entry.end ? formatDate(entry.end) : '';
   const from = formatDate(entry.start);
-  if (entry.current) return `${from} – present`;
+  if (entry.current) return `${from} – ${present}`;
   if (!entry.end) return from;
   const to = formatDate(entry.end);
   return from === to ? from : `${from} – ${to}`;
@@ -91,29 +93,35 @@ export function currentPosition(): CvEntry | undefined {
 /** The default layout for a section that names none: a rail only once there
     are dates to hang on it. */
 export function layoutOf(section: CvSection): CvLayout {
-  return section.layout ?? (section.entries.some((e) => e.start || e.end) ? 'timeline' : 'rows');
+  return (
+    section.layout ??
+    (section.entries.some((entry) => entry.start || entry.end) ? 'timeline' : 'rows')
+  );
 }
 
 /** "6 courses" for a section that named a `count` noun, nothing otherwise. */
 export function countLabel(section: CvSection): string | undefined {
   if (!section.count) return undefined;
-  const n = section.entries.length;
+  const count = section.entries.length;
   const [one, many = one] = section.count.split('|');
-  return `${n} ${n === 1 ? one : many}`;
+  return `${count} ${count === 1 ? one : many}`;
 }
 
 /** An entry's `minor` flag splits a section's main list from its collapsed tail. */
 export function splitMinor(entries: CvEntry[]): { main: CvEntry[]; minor: CvEntry[] } {
-  return { main: entries.filter((e) => !e.minor), minor: entries.filter((e) => e.minor) };
+  return {
+    main: entries.filter((entry) => !entry.minor),
+    minor: entries.filter((entry) => entry.minor),
+  };
 }
 
 /** A semester string → a sortable number, newest largest. Keyed on the year the
     semester STARTS in, so the two spellings mix: `WS 26/27` sorts above
     `SS 2026`. */
 export function semesterKey(semester: string): number {
-  const m = /(\d{4}|\d{2})/.exec(semester);
-  if (!m) return 0;
-  const year = m[1].length === 2 ? 2000 + Number(m[1]) : Number(m[1]);
+  const match = /(\d{4}|\d{2})/.exec(semester);
+  if (!match) return 0;
+  const year = match[1].length === 2 ? 2000 + Number(match[1]) : Number(match[1]);
   return year * 10 + (semester.startsWith('WS') ? 1 : 0);
 }
 
@@ -121,12 +129,12 @@ export function semesterKey(semester: string): number {
     current term and everything before it. */
 export function groupCourses(entries: CvEntry[]): { current: CvEntry[]; past: CvEntry[] } {
   const sorted = [...entries].sort(
-    (a, b) => semesterKey(b.semester ?? '') - semesterKey(a.semester ?? ''),
+    (first, second) => semesterKey(second.semester ?? '') - semesterKey(first.semester ?? ''),
   );
   const currentSemester = sorted[0]?.semester;
   return {
-    current: sorted.filter((c) => c.semester === currentSemester),
-    past: sorted.filter((c) => c.semester !== currentSemester),
+    current: sorted.filter((course) => course.semester === currentSemester),
+    past: sorted.filter((course) => course.semester !== currentSemester),
   };
 }
 
@@ -138,11 +146,11 @@ export function parseDetail(detail: string): DetailPart[] {
   const parts: DetailPart[] = [];
   const link = /\[([^\]]+)\]\(([^)]+)\)/g;
   let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = link.exec(detail))) {
-    if (m.index > last) parts.push({ text: detail.slice(last, m.index) });
-    parts.push({ text: m[1], url: m[2] });
-    last = m.index + m[0].length;
+  let match: RegExpExecArray | null;
+  while ((match = link.exec(detail))) {
+    if (match.index > last) parts.push({ text: detail.slice(last, match.index) });
+    parts.push({ text: match[1], url: match[2] });
+    last = match.index + match[0].length;
   }
   if (last < detail.length) parts.push({ text: detail.slice(last) });
   return parts;

@@ -5,6 +5,7 @@ import { FEATURES } from '../features.ts';
 import { keyId } from '../lib/pgp.ts';
 import { currentPosition, dateRange } from '../lib/cv.ts';
 import { CV, PGP_KEY } from '../lib/paths.ts';
+import { getPage } from '../lib/pages.ts';
 
 /**
  * How people reach you, from `src/data/contact.yml`. Rows the site can DERIVE
@@ -17,6 +18,10 @@ interface Props {
 }
 const { layout = 'rows' } = Astro.props;
 
+/* The words for the rows derived below, and the link under the block:
+   src/content/pages/site/contact.md. */
+const contact = await getPage('site/contact');
+
 // Listed first, derived after: a derived row above the listed ones would be
 // the template overruling a choice.
 const rows: ResolvedRow[] = [...contactRows];
@@ -25,11 +30,11 @@ const rows: ResolvedRow[] = [...contactRows];
 const pgp = FEATURES.pgp ? keyId() : null;
 if (pgp) {
   rows.push({
-    label: 'pgp',
+    label: contact.label('pgp'),
     text: pgp,
     href: PGP_KEY,
     mono: true,
-    note: 'for anything sensitive',
+    note: contact.label('pgpNote'),
   });
 }
 
@@ -37,12 +42,13 @@ if (pgp) {
    /cv/'s own Experience section. */
 const position = FEATURES.cv ? currentPosition() : undefined;
 if (position) {
+  const { label } = await getPage('cv');
   rows.push({
-    label: 'where',
+    label: contact.label('where'),
     text: position.org ?? position.title,
     href: position.url,
     mono: false,
-    note: dateRange(position),
+    note: dateRange(position, label('present')),
   });
 }
 
@@ -97,7 +103,7 @@ const external = (href?: string) => (href?.startsWith('http') ? 'noopener' : und
 
 {FEATURES.cv && layout === 'rows' && (
   <p class="more mono">
-    <a href={CV}>full cv →</a>
+    <a href={CV}>{contact.text('more', 'cv')}</a>
   </p>
 )}
 

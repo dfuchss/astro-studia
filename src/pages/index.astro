@@ -16,6 +16,7 @@ import { featuredPapers } from '../lib/papers.ts';
 import { publishedPosts, permalink, formatPostDate } from '../lib/blog.ts';
 import { members } from '../lib/people.ts';
 import { BLOG, PEOPLE, PROJECTS, PUBLICATIONS } from '../lib/paths.ts';
+import { fill, getPage } from '../lib/pages.ts';
 
 /*
  * The entry page, in both shapes: one person, or one project and its people.
@@ -36,7 +37,7 @@ const isProject = shape === 'project';
 /* A switched-off collection loads empty, so each of these would come back []
    on its own; the flag is stated so the dependency is readable here. */
 const pubs = FEATURES.publications ? await getCollection('publications') : [];
-const latestYear = pubs.length > 0 ? Math.max(...pubs.map((p) => p.data.year)) : undefined;
+const latestYear = pubs.length > 0 ? Math.max(...pubs.map((pub) => pub.data.year)) : undefined;
 
 /* From the `papers` collection, not `publications.filter(pageSlug)`: a page
    whose venue is stated rather than cited has no row there. */
@@ -46,46 +47,21 @@ const posts = FEATURES.blog ? (await publishedPosts()).slice(0, 3) : [];
 
 const subProjects = FEATURES.projects
   ? (await getCollection('projects')).sort(
-      (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),
+      (first, second) =>
+        first.data.order - second.data.order || first.data.title.localeCompare(second.data.title),
     )
   : [];
 
 const team = FEATURES.people ? await members() : [];
 
-/* ── page text with one consumer, which is why it lives here ────────────── */
+/* ── page text ─────────────────────────────────────────────────────── */
 
-/* DEMO COPY. */
-const interests = [
-  'Moral philosophy',
-  'Rhetoric and the theory of persuasion',
-  'Translation as a technical problem',
-  'Constitutional theory',
-];
-
-/* DEMO COPY. */
-const involvement = [
-  {
-    text: 'Advocate before the',
-    link: { label: 'Roman courts', href: 'https://www.perseus.tufts.edu/' },
-    tail: 'from 81 BC, including the defence of Sextus Roscius',
-  },
-  {
-    text: 'Member of the',
-    link: { label: 'Senate', href: 'https://www.perseus.tufts.edu/' },
-    tail: 'and, in 63 BC, consul',
-  },
-  // External, not /people/#atticus: that anchor is gone whenever people is off.
-  {
-    text: 'Correspondent of',
-    link: { label: 'Atticus', href: 'https://en.wikipedia.org/wiki/Titus_Pomponius_Atticus' },
-  },
-];
-
-/* DEMO COPY. */
-const subProjectsBlurb =
-  'Turning Greek philosophy into Latin took more than a translator: a vocabulary that ' +
-  'did not exist yet, source texts worth basing a version on, and a way to get the ' +
-  'result down as fast as it was dictated.';
+/* The words are src/content/pages/home.md, plus one file per shape —
+   home/profile.md and home/project.md — read only for the shape rendering. */
+const home = await getPage('home');
+const profile = isProfile ? await getPage('home/profile') : undefined;
+const project = isProject ? await getPage('home/project') : undefined;
+const involvement = isProfile ? await getPage('home/involvement') : undefined;
 ---
 
 <Base section="home">
@@ -95,7 +71,7 @@ const subProjectsBlurb =
 
   <!-- Each section carries its own data-section, so the accent changes down the page. -->
 
-  {isProfile && (
+  {profile && (
     <>
       <PersonHero />
 
@@ -106,18 +82,15 @@ const subProjectsBlurb =
           </p>
           <h2>What I work on</h2>
           <ul class="interests">
-            {interests.map((i) => (
-              <li class="chip">{i}</li>
+            {(profile.data.interests ?? []).map((interest) => (
+              <li class="chip">{interest}</li>
             ))}
           </ul>
 
           {papers.length > 0 && (
             <>
               <h3 class="sub">Paper pages</h3>
-              <p class="blurb">
-                Some works get a page of their own — the figure, the argument, where to find the
-                text.
-              </p>
+              <p class="blurb">{profile.text('intros', 'papers')}</p>
               <ul class="bare">
                 {papers.map(({ paper, pub }) => (
                   <PaperEntry paper={paper} pub={pub} />
@@ -128,7 +101,12 @@ const subProjectsBlurb =
 
           <p class="more mono">
             <a href={PUBLICATIONS}>
-              all {pubs.length} publications{latestYear ? `, up to ${latestYear}` : ''} →
+              {latestYear
+                ? fill(profile.text('more', 'publications'), {
+                    count: pubs.length,
+                    year: latestYear,
+                  })
+                : fill(profile.text('more', 'publicationsUndated'), { count: pubs.length })}
             </a>
           </p>
         </section>
@@ -140,19 +118,9 @@ const subProjectsBlurb =
             building
           </p>
           <h2>Also involved in</h2>
-          <ul class="involve">
-            {involvement.map((i) => (
-              <li>
-                {i.text}{' '}
-                <a href={i.link.href} rel={i.link.href.startsWith('http') ? 'noopener' : undefined}>
-                  {i.link.label}
-                </a>
-                {i.tail && <span class="muted"> {i.tail}</span>}
-              </li>
-            ))}
-          </ul>
+          <div class="involve">{involvement && <involvement.Content />}</div>
           <p class="more mono">
-            <a href={PROJECTS}>my own projects →</a>
+            <a href={PROJECTS}>{profile.text('more', 'projects')}</a>
           </p>
         </section>
       )}
@@ -164,26 +132,26 @@ const subProjectsBlurb =
           </p>
           <h2>Recent posts</h2>
           <ul class="postlist">
-            {posts.map((p) => (
+            {posts.map((post) => (
               <li>
-                <a href={permalink(p.id)}>
-                  <time class="mono" datetime={p.data.date.toISOString().slice(0, 10)}>
-                    {formatPostDate(p.data.date)}
+                <a href={permalink(post.id)}>
+                  <time class="mono" datetime={post.data.date.toISOString().slice(0, 10)}>
+                    {formatPostDate(post.data.date)}
                   </time>
-                  <span>{p.data.title}</span>
+                  <span>{post.data.title}</span>
                 </a>
               </li>
             ))}
           </ul>
           <p class="more mono">
-            <a href={BLOG}>all posts →</a>
+            <a href={BLOG}>{profile.text('more', 'posts')}</a>
           </p>
         </section>
       )}
     </>
   )}
 
-  {isProject && (
+  {project && (
     <>
       <ProjectHero />
 
@@ -193,7 +161,7 @@ const subProjectsBlurb =
             sub-projects
           </p>
           <h2>What the programme runs on</h2>
-          <p class="blurb">{subProjectsBlurb}</p>
+          <p class="blurb">{project.text('intros', 'subProjects')}</p>
 
           <ul class="grid">
             {subProjects.map((project) => (
@@ -202,7 +170,9 @@ const subProjectsBlurb =
           </ul>
 
           <p class="more mono">
-            <a href={PROJECTS}>all {subProjects.length} sub-projects →</a>
+            <a href={PROJECTS}>
+              {fill(project.text('more', 'subProjects'), { count: subProjects.length })}
+            </a>
           </p>
         </section>
       )}
@@ -216,8 +186,7 @@ const subProjectsBlurb =
           {papers.length > 0 && (
             <>
               <p class="blurb">
-                {papers.length} of the works carry a page of their own — the argument, not just the
-                citation.
+                {fill(project.text('intros', 'papers'), { count: papers.length })}
               </p>
 
               <ul class="bare">
@@ -229,7 +198,9 @@ const subProjectsBlurb =
           )}
 
           <p class="more mono">
-            <a href={PUBLICATIONS}>all {pubs.length} publications →</a>
+            <a href={PUBLICATIONS}>
+              {fill(project.text('more', 'publications'), { count: pubs.length })}
+            </a>
           </p>
         </section>
       )}
@@ -240,10 +211,7 @@ const subProjectsBlurb =
             circle
           </p>
           <h2>Who it passed through</h2>
-          <p class="blurb">
-            Correspondent, secretary, editor: {team.length} people the work relied on, none of them
-            the author.
-          </p>
+          <p class="blurb">{fill(project.text('intros', 'people'), { count: team.length })}</p>
 
           <ul class="grid people">
             {team.map((member) => (
@@ -252,7 +220,7 @@ const subProjectsBlurb =
           </ul>
 
           <p class="more mono">
-            <a href={PEOPLE}>all {team.length} people →</a>
+            <a href={PEOPLE}>{fill(project.text('more', 'people'), { count: team.length })}</a>
           </p>
         </section>
       )}
@@ -264,7 +232,7 @@ const subProjectsBlurb =
       contact
     </p>
     <h2>Get in touch</h2>
-    <p class="blurb">Questions, corrections and arguments all welcome.</p>
+    <p class="blurb">{home.text('intros', 'contact')}</p>
 
     <Contact />
   </section>
@@ -308,19 +276,21 @@ const subProjectsBlurb =
     text-decoration: none;
   }
 
-  .involve {
+  /* A Markdown list; an _emphasised_ tail reads as fainter follow-up text. */
+  .involve :global(ul) {
     margin: 1rem 0 0;
     padding-left: 1.1rem;
     max-width: 68ch;
   }
-  .involve li {
+  .involve :global(li) {
     margin-bottom: 0.5rem;
     color: var(--text-muted);
   }
-  .involve li::marker {
+  .involve :global(li::marker) {
     color: var(--sec);
   }
-  .muted {
+  .involve :global(em) {
+    font-style: normal;
     color: var(--text-faint);
   }
 

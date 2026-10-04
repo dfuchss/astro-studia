@@ -2,12 +2,12 @@
 import { getCollection } from 'astro:content';
 
 import { FEATURES } from '../../features.ts';
-import { SITE, STAT_LABELS } from '../../consts.ts';
+import { SITE } from '../../consts.ts';
 import { intrinsic } from '../../lib/images.ts';
 import { PROJECTS, PUBLICATIONS, PEOPLE } from '../../lib/paths.ts';
 import { formatUpdatedShort, scholarMetrics } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
-import Tagline from '../Tagline.astro';
+import { fill, getPage, need, siteText } from '../../lib/pages.ts';
 
 /*
  * The hero for a project or group site: a mark, a name, a tagline, and the
@@ -27,17 +27,30 @@ const { width: logoWidth, height: logoHeight } = intrinsic(logo);
    flags are here so a reader can see which row depends on what. */
 const pubs = FEATURES.publications ? await getCollection('publications') : [];
 const people = FEATURES.people ? await getCollection('people') : [];
-const m = FEATURES.citations ? scholarMetrics() : undefined;
-const updated = m ? `(updated ${formatUpdatedShort(m.lastUpdated)})` : undefined;
+/* The words: the title in src/content/pages/site/site.md, the line under it
+   in site/tagline.md, the stat labels in home.md, the buttons in
+   home/project.md. */
+const { title } = await siteText();
+const home = await getPage('home');
+const { label } = await getPage('home/project');
+const { Content: Tagline } = await getPage('site/tagline');
+const statLabel = (key: string) => home.text('statLabels', key);
+
+const metrics = FEATURES.citations ? scholarMetrics() : undefined;
+const updated = metrics
+  ? fill(need(home.data.statNote, 'home.statNote'), {
+      date: formatUpdatedShort(metrics.lastUpdated),
+    })
+  : undefined;
 
 /* Typed because `primary` is on the projects row alone: an inferred type
    would lose the field the markup reads if that entry were spread away. */
 type Action = { label: string; href: string; primary?: boolean };
 
 const actions: Action[] = [
-  ...(FEATURES.projects ? [{ label: 'Explore projects', href: PROJECTS, primary: true }] : []),
-  ...(FEATURES.publications ? [{ label: 'Publications', href: PUBLICATIONS }] : []),
-  { label: 'GitHub', href: SITE.repo },
+  ...(FEATURES.projects ? [{ label: label('projects'), href: PROJECTS, primary: true }] : []),
+  ...(FEATURES.publications ? [{ label: label('publications'), href: PUBLICATIONS }] : []),
+  { label: label('github'), href: SITE.repo },
 ];
 
 /*
@@ -49,46 +62,46 @@ const actions: Action[] = [
 type Stat = { value: number; label: string; href: string; note?: string };
 
 const rows: Stat[] = [
-  { value: pubs.length, label: STAT_LABELS.publications, href: PUBLICATIONS },
-  ...(m
+  { value: pubs.length, label: statLabel('publications'), href: PUBLICATIONS },
+  ...(metrics
     ? [
-        { value: m.total, label: STAT_LABELS.citations, href: PUBLICATIONS, note: updated },
-        { value: m.hIndex, label: STAT_LABELS.hIndex, href: PUBLICATIONS, note: updated },
+        { value: metrics.total, label: statLabel('citations'), href: PUBLICATIONS, note: updated },
+        { value: metrics.hIndex, label: statLabel('hIndex'), href: PUBLICATIONS, note: updated },
       ]
     : []),
-  { value: people.length, label: STAT_LABELS.people, href: PEOPLE },
+  { value: people.length, label: statLabel('people'), href: PEOPLE },
 ];
-const stats = rows.filter((s) => s.value > 0);
+const stats = rows.filter((stat) => stat.value > 0);
 ---
 
 <section class="wrap hero">
   <img class="logo" src={logo} alt="" width={logoWidth} height={logoHeight} />
-  <h1>{SITE.title}</h1>
-  {/* Can carry one link — see SITE.tagline and Tagline.astro. */}
-  <p class="tagline">
-    <Tagline text={SITE.tagline} />
-  </p>
+  <h1>{title}</h1>
+  {/* Markdown, so it can carry links; a div, since it brings its own paragraph. */}
+  <div class="tagline">
+    <Tagline />
+  </div>
   <p class="actions">
-    {actions.map((a) => (
+    {actions.map((action) => (
       <a
-        class:list={['chip', a.primary && 'primary']}
-        href={a.href}
-        rel={a.href.startsWith('http') ? 'noopener' : undefined}
+        class:list={['chip', action.primary && 'primary']}
+        href={action.href}
+        rel={action.href.startsWith('http') ? 'noopener' : undefined}
       >
-        {a.label}
+        {action.label}
       </a>
     ))}
   </p>
 
   {stats.length > 0 && (
     <ul class="stats">
-      {stats.map((s) => (
+      {stats.map((stat) => (
         <li>
-          <a href={s.href}>
-            <span class="stat-value">{formatCount(s.value)}</span>
+          <a href={stat.href}>
+            <span class="stat-value">{formatCount(stat.value)}</span>
             <span class="stat-label mono">
-              {s.label}
-              {s.note && <span class="stat-note">{s.note}</span>}
+              {stat.label}
+              {stat.note && <span class="stat-note">{stat.note}</span>}
             </span>
           </a>
         </li>
@@ -117,6 +130,9 @@ const stats = rows.filter((s) => s.value > 0);
     max-width: 42ch;
     margin: 0 0 1.5rem;
     color: var(--text-muted);
+  }
+  .tagline :global(p) {
+    margin: 0;
   }
   .actions {
     display: flex;

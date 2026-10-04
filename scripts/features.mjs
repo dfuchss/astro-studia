@@ -30,6 +30,8 @@
  * @property {string[]} [requiresAny]  ids of which at least ONE must be on
  * @property {string[]} paths     what the feature owns, repo-relative. NOT a
  *   delete list: it is the "if you want the files gone too" column of the docs.
+ *   That includes its page text under src/content/pages/, which is read only
+ *   while the feature is on, so deleting it with the rest is safe.
  * @property {string[]} manual    edits a human still has to make, in prose
  */
 
@@ -49,6 +51,9 @@ export const FEATURES = [
       'src/data/papers.bib',
       'src/data/venues.yml',
       'scripts/update_bib.py',
+      'src/content/pages/publications.md',
+      // The words on an entry, shared with `papers`, which needs this feature.
+      'src/content/pages/site/publication.md',
     ],
     manual: [],
   },
@@ -71,6 +76,7 @@ export const FEATURES = [
       'public/assets/img/papers',
       // The feed variant that reads the papers collection; see FEED_SOURCE.
       'src/lib/feed/fromPapers.ts',
+      'src/content/pages/papers.md',
     ],
     manual: [],
   },
@@ -89,9 +95,11 @@ export const FEATURES = [
       // one, for the same reason papers and posts have theirs: whose image is
       // whose should be answerable by looking.
       'src/assets/projects',
+      'src/data/project-groups.yml',
+      'src/content/pages/projects.md',
     ],
     manual: [
-      'a group site usually calls these `approaches` — rename the collection in src/content.config.ts, the directory under src/pages/, and the NAV label',
+      'a group site usually calls these `approaches` — rename the collection in src/content.config.ts, the directory under src/pages/, and the label in src/content/pages/site/nav.md',
     ],
   },
 
@@ -109,6 +117,7 @@ export const FEATURES = [
       'src/lib/feed/fromPosts.ts',
       'src/content/posts',
       'public/assets/img/posts',
+      'src/content/pages/blog.md',
     ],
     manual: [],
   },
@@ -132,7 +141,7 @@ export const FEATURES = [
     blurb: 'A curriculum vitae rendered from YAML, with a dated timeline rail.',
     presets: ['profile'],
     requires: [],
-    paths: ['src/pages/cv', 'src/lib/cv.ts', 'src/data/cv.yml'],
+    paths: ['src/pages/cv', 'src/lib/cv.ts', 'src/data/cv.yml', 'src/content/pages/cv.md'],
     manual: [],
   },
 
@@ -149,6 +158,7 @@ export const FEATURES = [
       'src/data/language_colors.yml',
       'scripts/fetch-github-metadata.mjs',
       '.github/workflows/update-github-metadata.yml',
+      'src/content/pages/repositories.md',
     ],
     manual: ['drop the `data:github` script from package.json'],
   },
@@ -165,6 +175,7 @@ export const FEATURES = [
       'src/lib/people.ts',
       'src/data/people.yml',
       'src/assets/people',
+      'src/content/pages/people.md',
     ],
     manual: [],
   },
@@ -221,7 +232,12 @@ export const FEATURES = [
     /* Not `socials`, for the same reason citations is not: the fingerprint is
        one value in src/data/socials.yml, and that file is always on disk. */
     requires: [],
-    paths: ['src/pages/pgp-key', 'src/lib/pgp.ts', 'public/assets/pgp-key'],
+    paths: [
+      'src/pages/pgp-key',
+      'src/lib/pgp.ts',
+      'public/assets/pgp-key',
+      'src/content/pages/pgp-key.md',
+    ],
     manual: [],
   },
 
@@ -247,7 +263,7 @@ export const FEATURES = [
     blurb: 'A site notice. Several jurisdictions require one; Germany certainly does.',
     presets: ['profile', 'project'],
     requires: [],
-    paths: ['src/pages/imprint'],
+    paths: ['src/pages/imprint', 'src/content/pages/imprint.md'],
     manual: [],
   },
 ];
@@ -265,11 +281,11 @@ export const PRESET_FEED = /** @type {Record<Preset, 'posts' | 'papers'>} */ ({
 
 export const PRESETS = /** @type {Preset[]} */ (['profile', 'project']);
 
-export const byId = (id) => FEATURES.find((f) => f.id === id);
+export const byId = (id) => FEATURES.find((feature) => feature.id === id);
 
 /** Feature ids a preset selects. */
 export const featuresFor = (preset) =>
-  FEATURES.filter((f) => f.presets.includes(preset)).map((f) => f.id);
+  FEATURES.filter((feature) => feature.presets.includes(preset)).map((feature) => feature.id);
 
 /**
  * What is wrong with a selection, if anything.
@@ -292,11 +308,11 @@ export function check(selected) {
   const missing = [];
   const unmet = [];
   for (const id of on) {
-    const f = byId(id);
-    if (!f) continue;
-    for (const dep of f.requires) if (!on.has(dep)) missing.push({ id, dep });
-    const any = f.requiresAny ?? [];
-    if (any.length > 0 && !any.some((o) => on.has(o))) unmet.push({ id, options: any });
+    const feature = byId(id);
+    if (!feature) continue;
+    for (const dep of feature.requires) if (!on.has(dep)) missing.push({ id, dep });
+    const any = feature.requiresAny ?? [];
+    if (any.length > 0 && !any.some((option) => on.has(option))) unmet.push({ id, options: any });
   }
   return { missing, unmet };
 }

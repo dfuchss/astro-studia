@@ -2,12 +2,13 @@
 import type { CollectionEntry } from 'astro:content';
 import { SITE } from '../../consts.ts';
 import { routePath } from '../../lib/paths.ts';
+import { siteText } from '../../lib/pages.ts';
 
 interface Props {
   pub: CollectionEntry<'publications'>;
 }
 const { pub } = Astro.props;
-const d = pub.data;
+const record = pub.data;
 
 /*
  * Highwire Press citation_* tags plus a ScholarlyArticle JSON-LD block, which
@@ -15,35 +16,38 @@ const d = pub.data;
  * `slot="head"`. citation_pdf_url only when you host the PDF yourself:
  * Scholar follows it expecting a PDF, so a landing page is worse than nothing.
  */
-const container = d.booktitle ?? d.journal;
-const date = d.month ? `${d.year}/${String(d.month).padStart(2, '0')}` : String(d.year);
+const container = record.booktitle ?? record.journal;
+const date = record.month
+  ? `${record.year}/${String(record.month).padStart(2, '0')}`
+  : String(record.year);
 /* Astro.site, as in BaseHead: the origin this build was made for, so these
    survive a SITE_URL override. routePath() because under URL_POLICY 'preserve'
    the pathname is this page's FILE ("/papers/foo.html"), not its address. */
 const origin = Astro.site ?? new URL(SITE.url);
+const { title: siteTitle } = await siteText();
 const pageUrl = new URL(routePath(Astro.url.pathname), origin).href;
-/* Concatenated, not new URL(): d.pdfUrl is root-absolute, and resolving it
+/* Concatenated, not new URL(): record.pdfUrl is root-absolute, and resolving it
    against an origin that ends "/astro-studia" drops it. */
-const pdfUrl = d.pdfUrl && `${origin.href.replace(/\/$/, '')}${d.pdfUrl}`;
+const pdfUrl = record.pdfUrl && `${origin.href.replace(/\/$/, '')}${record.pdfUrl}`;
 /*
  * Page ranges reach us as "44–55": the parser has already turned the BibTeX
  * `--` into an en dash. Split on any of the three dashes it might use so a
  * single-page entry (`pages = {24}`) simply yields no last page.
  */
 const DASHES = /\s*[–—-]\s*/;
-const [firstPage, lastPage] = (d.pages ?? '').split(DASHES);
+const [firstPage, lastPage] = (record.pages ?? '').split(DASHES);
 ---
 
-<meta name="citation_title" content={d.title} />
-{d.authors.map((a) => (
-  <meta name="citation_author" content={`${a.last}, ${a.first}`} />
+<meta name="citation_title" content={record.title} />
+{record.authors.map((author) => (
+  <meta name="citation_author" content={`${author.last}, ${author.first}`} />
 ))}
 <meta name="citation_publication_date" content={date} />
 {container && <meta name="citation_conference_title" content={container} />}
-{d.journal && <meta name="citation_journal_title" content={d.journal} />}
-{d.publisher && <meta name="citation_publisher" content={d.publisher} />}
-{d.doi && <meta name="citation_doi" content={d.doi} />}
-{d.volume && <meta name="citation_volume" content={d.volume} />}
+{record.journal && <meta name="citation_journal_title" content={record.journal} />}
+{record.publisher && <meta name="citation_publisher" content={record.publisher} />}
+{record.doi && <meta name="citation_doi" content={record.doi} />}
+{record.volume && <meta name="citation_volume" content={record.volume} />}
 {firstPage && <meta name="citation_firstpage" content={firstPage} />}
 {lastPage && <meta name="citation_lastpage" content={lastPage} />}
 {pdfUrl && <meta name="citation_pdf_url" content={pdfUrl} />}
@@ -55,15 +59,18 @@ const [firstPage, lastPage] = (d.pages ?? '').split(DASHES);
   set:html={JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'ScholarlyArticle',
-    headline: d.title,
-    name: d.title,
-    author: d.authors.map((a) => ({ '@type': 'Person', name: `${a.first} ${a.last}`.trim() })),
-    datePublished: String(d.year),
+    headline: record.title,
+    name: record.title,
+    author: record.authors.map((author) => ({
+      '@type': 'Person',
+      name: `${author.first} ${author.last}`.trim(),
+    })),
+    datePublished: String(record.year),
     isPartOf: container ? { '@type': 'PublicationEvent', name: container } : undefined,
-    publisher: d.publisher ? { '@type': 'Organization', name: d.publisher } : undefined,
-    identifier: d.doi ? `https://doi.org/${d.doi}` : undefined,
+    publisher: record.publisher ? { '@type': 'Organization', name: record.publisher } : undefined,
+    identifier: record.doi ? `https://doi.org/${record.doi}` : undefined,
     url: pageUrl,
     isAccessibleForFree: true,
-    sourceOrganization: { '@type': 'Organization', name: SITE.title, url: origin.href },
+    sourceOrganization: { '@type': 'Organization', name: siteTitle, url: origin.href },
   })}
 />

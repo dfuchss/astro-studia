@@ -4,7 +4,6 @@ import { Image } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import Contact from '../../components/Contact.astro';
 import SocialRow from '../../components/SocialRow.astro';
-import { SELF } from '../../consts.ts';
 import {
   cv,
   dateRange,
@@ -17,15 +16,23 @@ import {
   parseDetail,
 } from '../../lib/cv.ts';
 import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
+import { fill, getPage, need, selfName } from '../../lib/pages.ts';
 
 if (!FEATURES.cv) return disabled();
 
 /* Each section picks its shape from its data unless `layout:` says otherwise
    (see layoutOf()), so adding a section to cv.yml needs no code here. */
 const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(section) }));
+
+/* The words around the data: src/content/pages/cv.md. */
+const page = await getPage('cv');
+const { label } = page;
+const present = label('present');
+const since = (date: string) => fill(label('since'), { date });
+const more = (count: number) => fill(label('more'), { count });
 ---
 
-<Base title="Curriculum vitae" description={cv.summary} section="cv">
+<Base title={need(page.data.title, 'cv.title')} description={cv.summary} section="cv">
   <section class="wrap section">
     <div class="profile">
       <div>
@@ -36,14 +43,12 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
         {cv.summary && <p class="summary">{cv.summary}</p>}
         {cv.interests && cv.interests.length > 0 && (
           <ul class="interests">
-            {cv.interests.map((i) => (
-              <li class="chip">{i}</li>
+            {cv.interests.map((interest) => (
+              <li class="chip">{interest}</li>
             ))}
           </ul>
         )}
-        <p class="who mono">
-          {SELF.first} {SELF.last}
-        </p>
+        <p class="who mono">{selfName}</p>
         {/* The same rows as the entry page's contact block, from
             src/data/contact.yml, so a handle added there shows up here too. */}
         <Contact layout="inline" />
@@ -71,14 +76,14 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
                     <h3>
                       {entry.url ? <a href={entry.url}>{entry.title}</a> : entry.title}
                       {entry.start && (
-                        <span class="since mono">since {formatDate(entry.start)}</span>
+                        <span class="since mono">{since(formatDate(entry.start))}</span>
                       )}
                     </h3>
                     {entry.note && <p class="detail">{entry.note}</p>}
                     {entry.highlights && entry.highlights.length > 0 && (
                       <p class="hl">
-                        {entry.highlights.map((h) => (
-                          <span class="chip">{h}</span>
+                        {entry.highlights.map((highlight) => (
+                          <span class="chip">{highlight}</span>
                         ))}
                       </p>
                     )}
@@ -87,21 +92,21 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
               </ul>
               {minor.length > 0 && (
                 <details class="more">
-                  <summary>{minor.length} more</summary>
+                  <summary>{more(minor.length)}</summary>
                   <ul class="cards">
                     {minor.map((entry) => (
                       <li>
                         <h3>
                           {entry.url ? <a href={entry.url}>{entry.title}</a> : entry.title}
                           {entry.start && (
-                            <span class="since mono">since {formatDate(entry.start)}</span>
+                            <span class="since mono">{since(formatDate(entry.start))}</span>
                           )}
                         </h3>
                         {entry.note && <p class="detail">{entry.note}</p>}
                         {entry.highlights && entry.highlights.length > 0 && (
                           <p class="hl">
-                            {entry.highlights.map((h) => (
-                              <span class="chip">{h}</span>
+                            {entry.highlights.map((highlight) => (
+                              <span class="chip">{highlight}</span>
                             ))}
                           </p>
                         )}
@@ -116,41 +121,39 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
           {section.layout === 'courses' && courses && (
             <>
               <ul class="courses">
-                {courses.current.map((c) => (
+                {courses.current.map((course) => (
                   <li class="course now">
-                    <span class="sem mono">{c.semester}</span>
+                    <span class="sem mono">{course.semester}</span>
                     <span class="cname">
-                      {c.url ? (
-                        <a href={c.url} rel="noopener">
-                          {c.title}
+                      {course.url ? (
+                        <a href={course.url} rel="noopener">
+                          {course.title}
                         </a>
                       ) : (
-                        c.title
+                        course.title
                       )}
                     </span>
-                    {c.type && <span class="ctype mono">{c.type}</span>}
+                    {course.type && <span class="ctype mono">{course.type}</span>}
                   </li>
                 ))}
               </ul>
               {courses.past.length > 0 && (
                 <details class="more">
-                  <summary>
-                    {courses.past.length} earlier {courses.past.length === 1 ? 'course' : 'courses'}
-                  </summary>
+                  <summary>{page.plural('earlierCourses', courses.past.length)}</summary>
                   <ul class="courses">
-                    {courses.past.map((c) => (
+                    {courses.past.map((course) => (
                       <li class="course">
-                        <span class="sem mono">{c.semester}</span>
+                        <span class="sem mono">{course.semester}</span>
                         <span class="cname">
-                          {c.url ? (
-                            <a href={c.url} rel="noopener">
-                              {c.title}
+                          {course.url ? (
+                            <a href={course.url} rel="noopener">
+                              {course.title}
                             </a>
                           ) : (
-                            c.title
+                            course.title
                           )}
                         </span>
-                        {c.type && <span class="ctype mono">{c.type}</span>}
+                        {course.type && <span class="ctype mono">{course.type}</span>}
                       </li>
                     ))}
                   </ul>
@@ -164,11 +167,11 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
               <ol class:list={['entries', section.layout]}>
                 {main.map((entry) => (
                   <li>
-                    <span class="when mono">{dateRange(entry)}</span>
+                    <span class="when mono">{dateRange(entry, present)}</span>
                     <div class="what">
                       <h3>
                         {entry.title}
-                        {isCurrent(entry) && <span class="now mono">now</span>}
+                        {isCurrent(entry) && <span class="now mono">{label('now')}</span>}
                       </h3>
                       {entry.org && (
                         <p class="where">
@@ -185,9 +188,9 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
                       {entry.note && <p class="detail note">{entry.note}</p>}
                       {entry.details && entry.details.length > 0 && (
                         <ul class="details">
-                          {entry.details.map((d) => (
+                          {entry.details.map((detail) => (
                             <li>
-                              {parseDetail(d).map((part) =>
+                              {parseDetail(detail).map((part) =>
                                 part.url ? (
                                   <a href={part.url} rel="noopener">
                                     {part.text}
@@ -206,15 +209,15 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
               </ol>
               {minor.length > 0 && (
                 <details class="more">
-                  <summary>{minor.length} more</summary>
+                  <summary>{more(minor.length)}</summary>
                   <ol class:list={['entries', section.layout, 'compact']}>
                     {minor.map((entry) => (
                       <li>
-                        <span class="when mono">{dateRange(entry)}</span>
+                        <span class="when mono">{dateRange(entry, present)}</span>
                         <div class="what">
                           <h3>
                             {entry.title}
-                            {isCurrent(entry) && <span class="now mono">now</span>}
+                            {isCurrent(entry) && <span class="now mono">{label('now')}</span>}
                           </h3>
                           {entry.org && (
                             <p class="where">
@@ -231,9 +234,9 @@ const shaped = cv.sections.map((section) => ({ ...section, layout: layoutOf(sect
                           {entry.note && <p class="detail note">{entry.note}</p>}
                           {entry.details && entry.details.length > 0 && (
                             <ul class="details">
-                              {entry.details.map((d) => (
+                              {entry.details.map((detail) => (
                                 <li>
-                                  {parseDetail(d).map((part) =>
+                                  {parseDetail(detail).map((part) =>
                                     part.url ? (
                                       <a href={part.url} rel="noopener">
                                         {part.text}

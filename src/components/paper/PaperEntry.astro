@@ -8,6 +8,7 @@ import { formatCount } from '../../lib/format.ts';
 import { isSelfName } from '../../lib/authors.ts';
 import { paperPath } from '../../lib/paths.ts';
 import { paperByline, paperVenue, paperYear } from '../../lib/papers.ts';
+import { getPage } from '../../lib/pages.ts';
 
 /*
  * One row of an entry page's paper block: a PAPER PAGE, in the shape PubEntry
@@ -30,13 +31,15 @@ interface Props {
 }
 
 const { paper, pub } = Astro.props;
-const d = pub?.data;
+const record = pub?.data;
+/* The words on every entry: src/content/pages/site/publication.md. */
+const words = await getPage('site/publication');
 
 const venue = paperVenue(paper);
 const year = paperYear(paper, pub);
 /* 0, not undefined: a count of zero already means "no chip" everywhere below,
    so the flag needs no second spelling. */
-const cites = FEATURES.citations ? citationsFor(d?.googleScholarId) : 0;
+const cites = FEATURES.citations ? citationsFor(record?.googleScholarId) : 0;
 
 /*
  * The byline comes from authors.yml, not from the BibTeX author list, for the
@@ -52,9 +55,10 @@ const { connector, separator } = paperByline(venue, authors.length);
 
 // Where the entry says it was printed. Empty for a page with no entry, which is
 // why the venue sentence above it is that page's only answer.
-const inParts = [d?.booktitle ?? d?.journal ?? d?.school ?? d?.institution, d?.location].filter(
-  Boolean,
-);
+const inParts = [
+  record?.booktitle ?? record?.journal ?? record?.school ?? record?.institution,
+  record?.location,
+].filter(Boolean);
 
 /*
  * Whether the pill row exists at all. Tested here rather than with `:empty`,
@@ -62,13 +66,13 @@ const inParts = [d?.booktitle ?? d?.journal ?? d?.school ?? d?.institution, d?.l
  * BibTeX entry has no pills, so the row would otherwise contribute its top
  * margin to every one of those entries.
  */
-let hasLinks = Boolean(d?.pdfUrl || d?.doi || d?.url);
+let hasLinks = Boolean(record?.pdfUrl || record?.doi || record?.url);
 hasLinks ||= cites > 0;
 ---
 
 <li class="entry reveal">
   <div class="badge">
-    <VenueBadge abbr={d?.abbr} />
+    <VenueBadge abbr={record?.abbr} />
   </div>
 
   <div class="body">
@@ -86,10 +90,14 @@ hasLinks ||= cites > 0;
         {/* The trailing space is inside the string: whitespace between two
               markup expressions is not something to bet a byline on. */}
         {connector && `${connector} `}
-        {authors.map((a, i) => (
+        {authors.map((author, index) => (
           <>
-            {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
-            {isSelfName(a.data.name) ? <strong>{a.data.name}</strong> : <span>{a.data.name}</span>}
+            {index > 0 && <span aria-hidden="true">{separator(index)}</span>}
+            {isSelfName(author.data.name) ? (
+              <strong>{author.data.name}</strong>
+            ) : (
+              <span>{author.data.name}</span>
+            )}
           </>
         ))}
       </p>
@@ -98,7 +106,7 @@ hasLinks ||= cites > 0;
     {venue && (
       <p class="venue-line">
         {venue.mark && `${venue.mark} `}
-        {venue.prefix && `${venue.prefix} `}
+        {venue.prefix && `${words.label(venue.prefix)} `}
         {venue.url ? (
           <a href={venue.url} rel="noopener">
             {venue.label}
@@ -116,7 +124,7 @@ hasLinks ||= cites > 0;
         {/* The one thing about a paper that changes after it is written, so a
               reader scanning the block for what is new wants it here. Only when
               the venue sentence has not already said it. */}
-        {paper.data.status === 'to-appear' && !venue && <span> · to appear</span>}
+        {paper.data.status === 'to-appear' && !venue && <span> · {words.label('toAppear')}</span>}
       </p>
     )}
 
@@ -127,16 +135,20 @@ hasLinks ||= cites > 0;
          look like one presented once. */
       paper.data.additionalPresentations.length > 0 && (
         <p class="also">
-          Also presented at{' '}
-          {paper.data.additionalPresentations.map((p, i) => (
+          {words.label('alsoPresented')}{' '}
+          {paper.data.additionalPresentations.map((presentation, index) => (
             <>
-              {i > 0 && (
+              {index > 0 && (
                 <span aria-hidden="true">
-                  {i === paper.data.additionalPresentations.length - 1 ? ', and ' : ', '}
+                  {index === paper.data.additionalPresentations.length - 1 ? ', and ' : ', '}
                 </span>
               )}
-              <a href={p.url} rel="noopener" title={p.shortName ? p.name : undefined}>
-                {p.shortName ?? p.name}
+              <a
+                href={presentation.url}
+                rel="noopener"
+                title={presentation.shortName ? presentation.name : undefined}
+              >
+                {presentation.shortName ?? presentation.name}
               </a>
             </>
           ))}
@@ -146,27 +158,27 @@ hasLinks ||= cites > 0;
 
     {hasLinks && (
       <div class="links">
-        {d?.pdfUrl && (
-          <a class="chip" href={d.pdfUrl}>
-            PDF
+        {record?.pdfUrl && (
+          <a class="chip" href={record.pdfUrl}>
+            {words.label('pdf')}
           </a>
         )}
-        {d?.doi ? (
-          <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
-            DOI
+        {record?.doi ? (
+          <a class="chip" href={`https://doi.org/${record.doi}`} rel="noopener">
+            {words.label('doi')}
           </a>
         ) : (
           /* Only when there is no DOI: a DOI is the better permalink, and two
                chips pointing at the same paper is noise. */
-          d?.url && (
-            <a class="chip" href={d.url} rel="noopener">
-              Link
+          record?.url && (
+            <a class="chip" href={record.url} rel="noopener">
+              {words.label('link')}
             </a>
           )
         )}
         {cites > 0 && (
           <span class="chip cites" title="Citations (Google Scholar)">
-            {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
+            {words.plural('citations', cites, formatCount(cites))}
           </span>
         )}
       </div>

@@ -9,6 +9,7 @@ import {
   groupByTag,
   slugifyTag,
 } from '../../../../lib/blog.ts';
+import { fill, getPage, need, pluralize } from '../../../../lib/pages.ts';
 
 export const getStaticPaths = (async () => {
   /* getStaticPaths runs whatever the page's own guard says, and getCollection()
@@ -24,32 +25,35 @@ export const getStaticPaths = (async () => {
 }) satisfies GetStaticPaths;
 
 const { tag, items } = Astro.props;
+
+/* The words: src/content/pages/blog.md. */
+const page = await getPage('blog');
+const title = fill(need(page.data.tagTitle, 'blog.tagTitle'), { tag });
+const description = fill(need(page.data.tagDescription, 'blog.tagDescription'), { tag });
 ---
 
-<Base section="blog" title={`Posts tagged ${tag}`} description={`Posts tagged ${tag}.`}>
+<Base section="blog" title={title} description={description}>
   <section class="wrap section">
     <p class="kicker" data-sigil="none">
       <a href="/blog/">blog</a> / tag
     </p>
     <h1>{tag}</h1>
-    <p class="lede">
-      {items.length} {items.length === 1 ? 'post' : 'posts'}.
-    </p>
+    <p class="lede">{pluralize(need(page.data.tagCount, 'blog.tagCount'), items.length)}</p>
 
     <ol class="posts">
-      {items.map((p) => (
+      {items.map((post) => (
         <li>
-          <a href={permalink(p.id)}>
-            <time class="mono" datetime={p.data.date.toISOString().slice(0, 10)}>
-              {formatPostDate(p.data.date)}
+          <a href={permalink(post.id)}>
+            <time class="mono" datetime={post.data.date.toISOString().slice(0, 10)}>
+              {formatPostDate(post.data.date)}
             </time>
-            <span>{p.data.title}</span>
+            <span>{post.data.title}</span>
           </a>
         </li>
       ))}
     </ol>
     <p class="back mono">
-      <a href="/blog/">← all posts</a>
+      <a href="/blog/">{page.label('back')}</a>
     </p>
   </section>
 </Base>

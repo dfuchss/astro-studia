@@ -1,6 +1,7 @@
 ---
-// Renders nothing once SITE.demoNotice is null. Two shapes: a banner for the
-// top of the home page, and one word for the footer row.
+// Renders nothing once SITE.demoNotice is false. Two shapes: a banner for the
+// top of the home page, and one word for the footer row. The wording is the
+// theme's, not the site's, so it lives here.
 import { SITE } from '../consts.ts';
 
 interface Props {
@@ -14,8 +15,9 @@ const { variant = 'banner' } = Astro.props;
   (variant === 'banner' ? (
     <aside class="banner wrap" aria-label="About this site">
       <p>
-        <strong>This is a template demo.</strong> {SITE.demoNotice} Start by editing{' '}
-        <code>src/consts.ts</code> — see <a href={SITE.repo}>the README</a>.
+        <strong>This is a template demo.</strong> Demo content for the Studia Theme starter — the
+        works are Cicero's, the website is not. Start by editing <code>src/consts.ts</code> and{' '}
+        <code>src/content/pages/</code> — see <a href={SITE.repo}>the README</a>.
       </p>
     </aside>
   ) : (

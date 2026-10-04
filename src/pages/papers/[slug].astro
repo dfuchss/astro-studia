@@ -19,6 +19,7 @@ import {
   paperVenueShort,
   paperYear,
 } from '../../lib/papers.ts';
+import { getPage } from '../../lib/pages.ts';
 
 export const getStaticPaths = (async () => {
   /* getStaticPaths runs whatever the page's own guard says, and getCollection()
@@ -38,7 +39,7 @@ const { Content } = await render(paper);
  * resolve still throws (see paperPublication()).
  */
 const pub = await paperPublication(paper);
-const d = pub?.data;
+const record = pub?.data;
 
 const venue = paperVenue(paper);
 const year = paperYear(paper, pub);
@@ -55,30 +56,18 @@ const authors = FEATURES.authors
  * reference() proves the entry exists, not that a page was generated for it.
  */
 const projects = FEATURES.projects
-  ? (await Promise.all(paper.data.projects.map((ref) => getEntry(ref)))).map((p) => ({
-      title: p.data.title,
-      href: p.data.redirect ?? projectPath(p.id),
-      external: Boolean(p.data.redirect),
+  ? (await Promise.all(paper.data.projects.map((ref) => getEntry(ref)))).map((project) => ({
+      title: project.data.title,
+      href: project.data.redirect ?? projectPath(project.id),
+      external: Boolean(project.data.redirect),
     }))
   : [];
 
-/** Pretty names for the link keys in front matter. A key with no row renders
-    as typed, and `<venue>_<kind>` is derived — see linkLabel(). */
-const LINK_LABELS: Record<string, string> = {
-  acm: 'ACM DL',
-  ieee: 'IEEE Xplore',
-  arxiv: 'arXiv',
-  doi: 'DOI',
-  pdf: 'PDF',
-  preprint: 'Preprint',
-  zenodo: 'Zenodo',
-  repo: 'Repository',
-  data: 'Data',
-  loeb: 'Loeb',
-  archive: 'Internet Archive',
-  perseus: 'Perseus',
-};
-const label = (key: string) => linkLabel(key, LINK_LABELS);
+/* The words: src/content/pages/site/publication.md. Its `linkLabels` are the
+   pretty names for the link keys in front matter; a key with no row renders
+   as typed, and `<venue>_<kind>` is derived — see linkLabel(). */
+const words = await getPage('site/publication');
+const label = (key: string) => linkLabel(key, words.data.linkLabels ?? {});
 
 // Lowercase because the column heads are set in mono and read as keys, not as
 // sentences — the same voice as every other `.mono` label in the theme.
@@ -88,13 +77,14 @@ const linkRows = [
   { title: 'slides', map: paper.data.links.slides },
 ].filter((row) => row.map && Object.keys(row.map).length > 0);
 
-const inParts = [d?.booktitle ?? d?.journal ?? d?.school ?? d?.institution, d?.location].filter(
-  Boolean,
-);
+const inParts = [
+  record?.booktitle ?? record?.journal ?? record?.school ?? record?.institution,
+  record?.location,
+].filter(Boolean);
 
 // The two links a reader came for, repeated in the link rows below on
 // purpose: nobody should have to read an index to find the PDF.
-const hasActions = Boolean(d?.pdfUrl || d?.doi);
+const hasActions = Boolean(record?.pdfUrl || record?.doi);
 
 // The citation and the id CopyButton copies from; one object so the Cite
 // section has one thing to test.
@@ -140,20 +130,20 @@ hasLinkSection ||= projects.length > 0;
                 expressions is whitespace between markup nodes, and which of
                 those survive is not something to bet a byline on. */}
           {connector && `${connector} `}
-          {authors.map((a, i) => (
+          {authors.map((author, index) => (
             <>
-              {i > 0 && <span aria-hidden="true">{separator(i)}</span>}
-              <span class:list={['author', { self: isSelfName(a.data.name) }]}>
-                {a.data.name}
+              {index > 0 && <span aria-hidden="true">{separator(index)}</span>}
+              <span class:list={['author', { self: isSelfName(author.data.name) }]}>
+                {author.data.name}
                 {/* The badge is the link, not the name: a linked name promises
                       the person's page, and this goes to a registry record. */}
-                {a.data.orcid && (
+                {author.data.orcid && (
                   <a
                     class="orcid"
-                    href={`https://orcid.org/${a.data.orcid}`}
+                    href={`https://orcid.org/${author.data.orcid}`}
                     rel="noopener"
-                    aria-label={`ORCID record for ${a.data.name}`}
-                    title={`ORCID ${a.data.orcid}`}
+                    aria-label={`ORCID record for ${author.data.name}`}
+                    title={`ORCID ${author.data.orcid}`}
                   >
                     iD
                   </a>
@@ -168,7 +158,7 @@ hasLinkSection ||= projects.length > 0;
            fact — where this was published — and stacking them as three lines
            made the header read as a form with three fields. */}
       <p class="venue-line">
-        <VenueBadge abbr={d?.abbr} />
+        <VenueBadge abbr={record?.abbr} />
         {year !== undefined && <span class="mono year">{year}</span>}
         {
           /* Plain text, not a pill. The sentence beside it already says
@@ -177,7 +167,7 @@ hasLinkSection ||= projects.length > 0;
              there is no venue sentence to carry it — then the status has
              nowhere else to be said, and only the unpublished state is worth
              saying. */
-          paper.data.status === 'to-appear' && !venue && <span>To appear</span>
+          paper.data.status === 'to-appear' && !venue && <span>{words.label('toAppearAlone')}</span>
         }
         {
           /* One sentence, two sources: "Published at <conference>" derived from
@@ -187,7 +177,7 @@ hasLinkSection ||= projects.length > 0;
           venue && (
             <span>
               {venue.mark && `${venue.mark} `}
-              {venue.prefix && `${venue.prefix} `}
+              {venue.prefix && `${words.label(venue.prefix)} `}
               {venue.url ? (
                 <a href={venue.url} rel="noopener">
                   {venue.label}
@@ -204,19 +194,23 @@ hasLinkSection ||= projects.length > 0;
 
       {paper.data.additionalPresentations.length > 0 && (
         <p class="also">
-          Also presented at{' '}
-          {paper.data.additionalPresentations.map((p, i) => (
+          {words.label('alsoPresented')}{' '}
+          {paper.data.additionalPresentations.map((presentation, index) => (
             <>
               {/* `additionalPresentations.length`, not `authors.length` —
                     this list is not the byline, and the two happening to be
                     the same length in the demo is what hid it. */}
-              {i > 0 && (
+              {index > 0 && (
                 <span aria-hidden="true">
-                  {i === paper.data.additionalPresentations.length - 1 ? ', and ' : ', '}
+                  {index === paper.data.additionalPresentations.length - 1 ? ', and ' : ', '}
                 </span>
               )}
-              <a href={p.url} rel="noopener" title={p.shortName ? p.name : undefined}>
-                {p.shortName ?? p.name}
+              <a
+                href={presentation.url}
+                rel="noopener"
+                title={presentation.shortName ? presentation.name : undefined}
+              >
+                {presentation.shortName ?? presentation.name}
               </a>
             </>
           ))}
@@ -225,14 +219,14 @@ hasLinkSection ||= projects.length > 0;
 
       {hasActions && (
         <p class="actions">
-          {d?.pdfUrl && (
-            <a class="chip primary" href={d.pdfUrl}>
-              Read the PDF
+          {record?.pdfUrl && (
+            <a class="chip primary" href={record.pdfUrl}>
+              {words.label('readPdf')}
             </a>
           )}
-          {d?.doi && (
-            <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
-              DOI
+          {record?.doi && (
+            <a class="chip" href={`https://doi.org/${record.doi}`} rel="noopener">
+              {words.label('doi')}
             </a>
           )}
         </p>
@@ -267,11 +261,11 @@ hasLinkSection ||= projects.length > 0;
             <div>
               <h3 class="mono">projects</h3>
               <ul>
-                {projects.map((p) => (
+                {projects.map((project) => (
                   <li>
-                    <a href={p.href} rel={p.external ? 'noopener' : undefined}>
-                      {p.title}
-                      {p.external && <span aria-hidden="true">↗</span>}
+                    <a href={project.href} rel={project.external ? 'noopener' : undefined}>
+                      {project.title}
+                      {project.external && <span aria-hidden="true">↗</span>}
                     </a>
                   </li>
                 ))}

@@ -7,6 +7,7 @@ import { citationsFor } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
 import { truncateAuthors, fullName, isSelf, surnameKey } from '../../lib/authors.ts';
 import { paperPath } from '../../lib/paths.ts';
+import { fill, getPage } from '../../lib/pages.ts';
 
 interface Props {
   pub: CollectionEntry<'publications'>;
@@ -22,19 +23,24 @@ interface Props {
 }
 
 const { pub, compact = false, links } = Astro.props;
-const d = pub.data;
+const record = pub.data;
+/* The words on every entry: src/content/pages/site/publication.md. */
+const words = await getPage('site/publication');
 
-const { shown, hidden } = truncateAuthors(d.authors);
+const { shown, hidden } = truncateAuthors(record.authors);
 /* 0, not undefined: a count of zero already means "no chip" below. */
-const cites = FEATURES.citations ? citationsFor(d.googleScholarId) : 0;
+const cites = FEATURES.citations ? citationsFor(record.googleScholarId) : 0;
 
 /* Resolved here rather than in the two places it is rendered: a site with no
    paper pages has nothing to link to — `undefined` then renders the title as
    text. */
-const pagePath = FEATURES.papers && d.pageSlug ? paperPath(d.pageSlug) : undefined;
+const pagePath = FEATURES.papers && record.pageSlug ? paperPath(record.pageSlug) : undefined;
 
 // Where it appeared: proceedings, journal, or the awarding institution.
-const inParts = [d.booktitle ?? d.journal ?? d.school ?? d.institution, d.location].filter(Boolean);
+const inParts = [
+  record.booktitle ?? record.journal ?? record.school ?? record.institution,
+  record.location,
+].filter(Boolean);
 
 // The id is the anchor — /publications/#cicero_de_officiis_1913 highlights
 // this entry — and `data-search` is what the filter on that page matches
@@ -43,29 +49,29 @@ const inParts = [d.booktitle ?? d.journal ?? d.school ?? d.institution, d.locati
 const bibId = `bib-${pub.id}`;
 ---
 
-<li class="entry reveal" id={pub.id} data-search={d.searchText}>
+<li class="entry reveal" id={pub.id} data-search={record.searchText}>
   <div class="badge">
-    <VenueBadge abbr={d.abbr} />
+    <VenueBadge abbr={record.abbr} />
   </div>
 
   <div class="body">
     <h3 class="title">
       {pagePath ? (
         <a class="title-link" href={pagePath}>
-          {d.title}
+          {record.title}
         </a>
       ) : (
-        d.title
+        record.title
       )}
     </h3>
 
     <p class="authors">
-      {shown.map((p, i) => {
-        const href = links?.get(surnameKey(p.last));
-        const name = isSelf(p) ? <strong>{fullName(p)}</strong> : fullName(p);
+      {shown.map((person, index) => {
+        const href = links?.get(surnameKey(person.last));
+        const name = isSelf(person) ? <strong>{fullName(person)}</strong> : fullName(person);
         return (
           <>
-            {i > 0 && <span aria-hidden="true">, </span>}
+            {index > 0 && <span aria-hidden="true">, </span>}
             {href ? (
               <a class="who" href={href}>
                 {name}
@@ -76,43 +82,45 @@ const bibId = `bib-${pub.id}`;
           </>
         );
       })}
-      {hidden > 0 && <span class="more"> and {hidden} more authors</span>}
+      {hidden > 0 && (
+        <span class="more"> {fill(words.label('moreAuthors'), { count: hidden })}</span>
+      )}
     </p>
 
     {inParts.length > 0 && (
       <p class="venue-line">
         <em>{inParts.join(', ')}</em>
-        {d.year ? <span>, {d.year}</span> : null}
+        {record.year ? <span>, {record.year}</span> : null}
       </p>
     )}
 
     <div class="links">
-      {d.pdfUrl && (
-        <a class="chip" href={d.pdfUrl}>
-          PDF
+      {record.pdfUrl && (
+        <a class="chip" href={record.pdfUrl}>
+          {words.label('pdf')}
         </a>
       )}
-      {d.doi ? (
-        <a class="chip" href={`https://doi.org/${d.doi}`} rel="noopener">
-          DOI
+      {record.doi ? (
+        <a class="chip" href={`https://doi.org/${record.doi}`} rel="noopener">
+          {words.label('doi')}
         </a>
       ) : (
         /* Only when there is no DOI: a DOI is the better permalink, and two
              chips pointing at the same paper is noise. */
-        d.url && (
-          <a class="chip" href={d.url} rel="noopener">
-            Link
+        record.url && (
+          <a class="chip" href={record.url} rel="noopener">
+            {words.label('link')}
           </a>
         )
       )}
       {cites > 0 && (
         <span class="chip cites" title="Citations (Google Scholar)">
-          {formatCount(cites)} {cites === 1 ? 'citation' : 'citations'}
+          {words.plural('citations', cites, formatCount(cites))}
         </span>
       )}
       {pagePath && !compact && (
         <a class="chip paper-page" href={pagePath}>
-          Paper page →
+          {words.label('paperPage')}
         </a>
       )}
       {!compact && (
@@ -121,11 +129,11 @@ const bibId = `bib-${pub.id}`;
             <span class="caret mono" aria-hidden="true">
               ▸
             </span>
-            BibTeX
+            {words.label('bibtex')}
           </summary>
           <div class="bib-body">
             <CopyButton target={bibId} />
-            <pre id={bibId}>{d.bibtex}</pre>
+            <pre id={bibId}>{record.bibtex}</pre>
           </div>
         </details>
       )}

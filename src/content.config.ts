@@ -2,7 +2,8 @@ import { defineCollection, reference, type SchemaContext } from 'astro:content';
 import { z } from 'zod';
 import { file, glob } from 'astro/loaders';
 import { bibtexLoader } from './loaders/bibtex.ts';
-import { FEATURES } from './features.ts';
+import { FEATURES, type FeatureId } from './features.ts';
+import { SECTIONS } from './consts.ts';
 import { PAPERS } from './lib/paths.ts';
 
 /*
@@ -84,10 +85,10 @@ const pageRule = {
   field: 'page',
   as: 'pageSlug',
   resolve: (raw: string, { key }: { key: string }) => {
-    const re = new RegExp(`^${PAPERS}([a-z0-9._-]+)/?$`);
-    const m = re.exec(raw);
-    if (!m) throw new Error(`${key}: page = {${raw}} is not a ${PAPERS}<slug>/ path`);
-    return { value: m[1], file: `src/content/papers/${m[1]}.md` };
+    const pattern = new RegExp(`^${PAPERS}([a-z0-9._-]+)/?$`);
+    const match = pattern.exec(raw);
+    if (!match) throw new Error(`${key}: page = {${raw}} is not a ${PAPERS}<slug>/ path`);
+    return { value: match[1], file: `src/content/papers/${match[1]}.md` };
   },
 };
 
@@ -273,21 +274,37 @@ const papers = defineCollection({
       /* Refinements rather than prose, because the failure is silent: a page
        with both sources renders whichever the markup checks first, and one
        with neither renders an empty venue line and sorts last. */
-      .refine((d) => Boolean(d.publication) !== Boolean(d.venue), {
+      .refine((paper) => Boolean(paper.publication) !== Boolean(paper.venue), {
         message:
           'a paper page needs exactly one venue source: a `publication` (the BibTeX entry) or a stated `venue`',
         path: ['venue'],
       })
-      .refine((d) => !(d.venue && (d.conferenceName || d.conferenceUrl)), {
+      .refine((paper) => !(paper.venue && (paper.conferenceName || paper.conferenceUrl)), {
         message:
           '`conferenceName`/`conferenceUrl` belong to a paper with a `publication`; a stated `venue` already carries its own label and url',
         path: ['conferenceName'],
       })
-      .refine((d) => Boolean(d.publication) !== (d.year !== undefined), {
+      .refine((paper) => Boolean(paper.publication) !== (paper.year !== undefined), {
         message:
           'set `year` only on a paper with no `publication` — with an entry the year comes from the BibTeX, and without one nothing else has a date',
         path: ['year'],
       }),
+});
+
+/** The groups /projects/ sorts its entries into: the one list of categories,
+    with each one's heading and blurb. A project's `category` references it. */
+const projectGroups = defineCollection({
+  loader: FEATURES.projects ? file('src/data/project-groups.yml') : empty,
+  schema: z
+    .object({
+      /** The key a project's `category` names; file() leaves it in the data. */
+      id: z.string(),
+      /** file() does not keep the YAML order, so the page sorts by this. */
+      order: z.number().int(),
+      label: z.string(),
+      blurb: z.string(),
+    })
+    .strict(),
 });
 
 /** Things you have made. An entry with `redirect` is a link out and gets no
@@ -301,11 +318,12 @@ const projects = defineCollection({
       title: z.string(),
       description: z.string(),
       /**
-       * Buckets on /projects/; the labels live on that page. Optional: leave it
-       * off every entry for a flat list, and entries without one gather under
-       * a final "Other" group rather than dropping off the page.
+       * The group on /projects/: an id in src/data/project-groups.yml.
+       * Optional: leave it off every entry for a flat list, and entries
+       * without one gather under a final "Other" group rather than dropping
+       * off the page.
        */
-      category: z.enum(['research', 'tools', 'misc']).optional(),
+      category: reference('projectGroups').optional(),
       order: z.number().int().default(100),
       /** When set, the entry links straight out and no page is generated. */
       redirect: z.url().optional(),
@@ -340,12 +358,99 @@ const posts = defineCollection({
   }),
 });
 
+/* ── page text ─────────────────────────────────────────────────────────── */
+
+const featureId = z.enum(Object.keys(FEATURES) as [FeatureId, ...FeatureId[]]);
+
+/** A link row. `feature` hides it while that feature is off (see shown() in
+    src/consts.ts); `section` is the accent it previews in the nav. */
+const linkRow = z
+  .object({
+    label: z.string(),
+    href: z.string(),
+    section: z.enum(SECTIONS).optional(),
+    feature: featureId.optional(),
+  })
+  .strict();
+
+/** Singular and plural; the template picks one and fills in `{count}`. */
+const plural = z.object({ one: z.string(), other: z.string() }).strict();
+
+/** Short labels keyed by what they label. Which keys a page reads is listed in
+    its file; a missing one fails the build naming it (need() in lib/pages.ts). */
+const labels = z.record(z.string(), z.string());
+
+/**
+ * Every word the templates print that is not computed: one Markdown file per
+ * page in src/content/pages/<id>.md, plus site/ for what every page shares and
+ * a few fragments (home/involvement.md) for rich blocks placed on their own.
+ * Front matter holds meta and short strings, the body holds rich text. Strings
+ * may carry `{placeholders}` that the template fills with computed values.
+ *
+ * Fields are optional because the shapes differ per page; the page that needs
+ * one asks for it through need(). `.strict()` makes a misspelt key a build
+ * error rather than a silently ignored line. docs/Content.md, "Page text".
+ */
+const pages = defineCollection({
+  loader: glob({ base: 'src/content/pages', pattern: '**/*.md' }),
+  schema: z
+    .object({
+      // Every page: <title> and meta description. Both may say {name}.
+      title: z.string().optional(),
+      description: z.string().optional(),
+      // site/site.md
+      brand: z.string().optional(),
+      brandPrompt: z.string().optional(),
+      // site/nav.md, site/footer.md
+      links: z.array(linkRow).optional(),
+      // site/footer.md: the holder after "© <year>", the affiliation (text and
+      // links, joined with no added spaces), and the email link's word
+      copyright: z.string().optional(),
+      affiliation: z
+        .array(z.union([z.string(), z.object({ label: z.string(), href: z.string() }).strict()]))
+        .optional(),
+      email: z.string().optional(),
+      // a lede line set before or instead of the body; may hold {placeholders}
+      lede: z.string().optional(),
+      // "N things" before a list's lede; {count} is filled in
+      count: z.string().optional(),
+      // short words a page places around its lists: buttons, chips, notes
+      labels: labels.optional(),
+      // a sentence under a section's heading, keyed by section
+      intros: labels.optional(),
+      // "more →" links under a section
+      more: labels.optional(),
+      // home.md, home/profile.md, home/project.md
+      statLabels: labels.optional(),
+      statNote: z.string().optional(),
+      interests: z.array(z.string()).optional(),
+      // blog.md
+      tagTitle: z.string().optional(),
+      tagDescription: z.string().optional(),
+      tagCount: plural.optional(),
+      // cv.md, site/publication.md
+      plurals: z.record(z.string(), plural).optional(),
+      // site/publication.md: a paper page's link keys → their names
+      linkLabels: labels.optional(),
+      // projects.md: the group for projects with no `category`; the others
+      // are src/data/project-groups.yml
+      other: z.object({ label: z.string(), blurb: z.string() }).strict().optional(),
+      // imprint.md: label and lines of each field
+      fields: z
+        .array(z.object({ label: z.string(), lines: z.array(z.string()) }).strict())
+        .optional(),
+    })
+    .strict(),
+});
+
 export const collections = {
   venues,
   authors,
   people,
   publications,
   papers,
+  projectGroups,
   projects,
   posts,
+  pages,
 };

@@ -3,26 +3,25 @@ import { FEATURES, disabled } from '../../features.ts';
 import Base from '../../layouts/Base.astro';
 import PersonCard from '../../components/people/PersonCard.astro';
 import { members } from '../../lib/people.ts';
+import { getPage } from '../../lib/pages.ts';
 
 if (!FEATURES.people) return disabled();
 
 const list = await members();
+
+/* The words: src/content/pages/people.md. */
+const page = await getPage('people');
 ---
 
-<Base
-  title="people"
-  description="Everyone listed in src/data/people.yml, each with the anchor their author name links to."
-  section="people"
->
+<Base {...page.meta()} section="people">
   <section class="wrap section">
     <p class="kicker" data-sigil="##">
       people
     </p>
     <h1>People</h1>
-    <p class="lede">
-      Each entry's key in <code>src/data/people.yml</code> is its anchor here, which is where an
-      author name in the publication list points.
-    </p>
+    <div class="lede">
+      <page.Content />
+    </div>
 
     <ul class="grid">
       {list.map((member) => (

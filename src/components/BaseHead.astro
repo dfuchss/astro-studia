@@ -2,6 +2,7 @@
 import { FEATURES } from '../features.ts';
 import { SITE } from '../consts.ts';
 import { routePath } from '../lib/paths.ts';
+import { fill, selfName, siteText } from '../lib/pages.ts';
 
 interface Props {
   title?: string;
@@ -14,8 +15,10 @@ interface Props {
 const { title, description, noindex = false } = Astro.props;
 
 // The page title, or the site's own on the home page — never "Home · Site".
-const pageTitle = title ? `${title} · ${SITE.title}` : SITE.title;
-const desc = description ?? SITE.description;
+// Both from src/content/pages/; a page's description may say {name} too.
+const site = await siteText();
+const pageTitle = title ? `${title} · ${site.title}` : site.title;
+const desc = description ? fill(description, { name: selfName }) : site.description;
 
 /* Astro.site, not SITE.url: it is the origin this build was made for, so a
    SITE_URL override reaches the canonical too. Resolving a root-absolute path
@@ -48,11 +51,11 @@ const ogImage = SITE.ogImage && `${origin.href.replace(/\/$/, '')}${SITE.ogImage
 <link rel="manifest" href="/site.webmanifest" />
 
 {FEATURES.feed && (
-  <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/feed.xml" />
+  <link rel="alternate" type="application/rss+xml" title={site.title} href="/feed.xml" />
 )}
 
 <meta property="og:type" content="website" />
-<meta property="og:site_name" content={SITE.title} />
+<meta property="og:site_name" content={site.title} />
 <meta property="og:title" content={pageTitle} />
 <meta property="og:description" content={desc} />
 {canonical && <meta property="og:url" content={canonical} />}

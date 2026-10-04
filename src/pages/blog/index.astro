@@ -9,24 +9,31 @@ import {
   slugifyTag,
 } from '../../lib/blog.ts';
 import { tagPath } from '../../lib/paths.ts';
+import { fill, getPage, need } from '../../lib/pages.ts';
 
 if (!FEATURES.blog) return disabled();
 
+/* The words: src/content/pages/blog.md. */
+const page = await getPage('blog');
+const { label } = page;
+
 const posts = await publishedPosts();
 const tags = groupByTag(posts);
-const featured = posts.filter((p) => p.data.featured);
+const featured = posts.filter((post) => post.data.featured);
 ---
 
-<Base title="Blog" description="Occasional notes, newest first." section="blog">
+<Base {...page.meta()} section="blog">
   <section class="wrap section">
     <p class="kicker" data-sigil="##">
       blog
     </p>
     <h1>Blog</h1>
     <p class="lede">
-      {posts.length} posts{featured.length > 0 ? `, ${featured.length} of them featured` : ''}.
-      Drafts appear here, on the tag pages, in the feed and in the sitemap not at all — they are not
-      built.
+      {fill(label(featured.length > 0 ? 'postsFeatured' : 'posts'), {
+        posts: posts.length,
+        featured: featured.length,
+      })}{' '}
+      {need(page.data.lede, 'blog.lede')}
     </p>
 
     {tags.length > 0 && (
@@ -46,26 +53,26 @@ const featured = posts.filter((p) => p.data.featured);
       </ul>
     )}
     <p class="no-posts mono" hidden>
-      No posts with that tag.
+      {label('noPosts')}
     </p>
 
     <ol class="posts">
-      {posts.map((p) => (
-        <li class="reveal" data-tags={p.data.tags.map(slugifyTag).join(' ')}>
-          <a class="post" href={permalink(p.id)}>
-            <time class="date mono" datetime={p.data.date.toISOString().slice(0, 10)}>
-              {formatPostDate(p.data.date)}
+      {posts.map((post) => (
+        <li class="reveal" data-tags={post.data.tags.map(slugifyTag).join(' ')}>
+          <a class="post" href={permalink(post.id)}>
+            <time class="date mono" datetime={post.data.date.toISOString().slice(0, 10)}>
+              {formatPostDate(post.data.date)}
             </time>
             <span class="ptext">
               <span class="ptitle">
-                {p.data.title}
-                {p.data.featured && (
+                {post.data.title}
+                {post.data.featured && (
                   <span class="star mono" title="Featured">
                     ★
                   </span>
                 )}
               </span>
-              {p.data.description && <span class="pdesc">{p.data.description}</span>}
+              {post.data.description && <span class="pdesc">{post.data.description}</span>}
             </span>
           </a>
         </li>
@@ -87,14 +94,14 @@ const featured = posts.filter((p) => p.data.featured);
 
   const apply = (tag: string | null) => {
     let visible = 0;
-    for (const li of posts) {
-      const hit = !tag || (li.dataset.tags ?? '').split(' ').includes(tag);
-      li.hidden = !hit;
+    for (const item of posts) {
+      const hit = !tag || (item.dataset.tags ?? '').split(' ').includes(tag);
+      item.hidden = !hit;
       if (hit) {
         visible++;
         // A post never scrolled into view is still at opacity 0, and filtering
         // pulls it up the page — so reveal it.
-        if (tag) li.classList.add('is-in');
+        if (tag) item.classList.add('is-in');
       }
     }
     for (const pill of pills) {
@@ -111,10 +118,11 @@ const featured = posts.filter((p) => p.data.featured);
   };
 
   for (const pill of pills) {
-    pill.addEventListener('click', (e) => {
+    pill.addEventListener('click', (event) => {
       // Let modified clicks (new tab, download) fall through to the real page.
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-      e.preventDefault();
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0)
+        return;
+      event.preventDefault();
       apply(pill.classList.contains('is-on') ? null : (pill.dataset.tag ?? null));
     });
   }

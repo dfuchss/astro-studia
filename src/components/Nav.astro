@@ -1,12 +1,17 @@
 ---
-import { NAV, SITE, type Section } from '../consts.ts';
+import { SITE, type Section } from '../consts.ts';
 import { intrinsic } from '../lib/images.ts';
+import { navLinks, siteText } from '../lib/pages.ts';
 
 interface Props {
   section?: Section;
 }
 
 const { section } = Astro.props;
+
+// The rows are src/content/pages/site/nav.md, the wordmark site/site.md.
+const nav = await navLinks();
+const { brand, brandPrompt } = await siteText();
 
 /* The height is set here; the width follows from the file's aspect ratio, read
    off disk, so both attributes the audit requires are always present. */
@@ -26,7 +31,7 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
           <img
             class="brand-logo"
             src={logo.src}
-            alt={logo.replacesWordmark ? SITE.brand : ''}
+            alt={logo.replacesWordmark ? brand : ''}
             width={logoWidth}
             height={LOGO_HEIGHT}
           />
@@ -37,8 +42,8 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
            the name it is a prompt for. */
         !logo?.replacesWordmark && (
           <span>
-            {SITE.brandPrompt && <span class="brand-prompt">{SITE.brandPrompt}</span>}
-            {SITE.brand}
+            {brandPrompt && <span class="brand-prompt">{brandPrompt}</span>}
+            {brand}
           </span>
         )
       }
@@ -46,7 +51,7 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
 
     <nav aria-label="Primary">
       <ul>
-        {NAV.map((item) => (
+        {nav.map((item) => (
           <li>
             <a
               href={item.href}

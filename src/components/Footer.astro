@@ -1,13 +1,19 @@
 ---
-import { SITE, FOOTER, FOOTER_LINKS } from '../consts.ts';
+import { SITE, FOOTER, shown } from '../consts.ts';
+import { fill, getPage, need, selfName } from '../lib/pages.ts';
 import DemoNotice from './DemoNotice.astro';
 import Email from './Email.astro';
 
 /*
- * Everything that differs between sites is FOOTER and FOOTER_LINKS in
- * src/consts.ts; the rest goes through the default slot, which Base.astro
- * forwards as its `footer` slot.
+ * The words are src/content/pages/site/footer.md; which optional parts render
+ * is FOOTER in src/consts.ts. The credit is the theme's branding and stays
+ * here. Anything else goes through the default slot, which Base.astro forwards
+ * as its `footer` slot.
  */
+const footer = await getPage('site/footer');
+const affiliation = footer.data.affiliation ?? [];
+const links = shown(footer.data.links ?? []);
+const holder = fill(need(footer.data.copyright, 'site/footer.copyright'), { name: selfName });
 const year = new Date().getFullYear();
 ---
 
@@ -21,16 +27,16 @@ const year = new Date().getFullYear();
          part can carry its own leading separator and no combination of them
          can leave a dot dangling at either end. */}
     <p class="meta mono">
-      <span>{`© ${year} ${SITE.copyright}`}</span>
+      <span>{`© ${year} ${holder}`}</span>
 
       {
         /* No whitespace between the parts, so " and " and ", " are exactly what
-           the config wrote. */
-        FOOTER.affiliation.length > 0 && (
+           footer.md wrote. */
+        affiliation.length > 0 && (
           <>
             <span aria-hidden="true">·</span>
             <span>
-              {FOOTER.affiliation.map((part) =>
+              {affiliation.map((part) =>
                 typeof part === 'string' ? (
                   part
                 ) : (
@@ -44,7 +50,7 @@ const year = new Date().getFullYear();
         )
       }
 
-      {FOOTER_LINKS.map((link) => (
+      {links.map((link) => (
         <>
           <span aria-hidden="true">·</span>
           <a href={link.href}>{link.label}</a>
@@ -56,7 +62,7 @@ const year = new Date().getFullYear();
           <span aria-hidden="true">·</span>
           {/* Through Email.astro, never a mailto: the audit fails the build on
               any address-shaped string in the served bytes. */}
-          <Email address={SITE.email} label="Email" />
+          <Email address={SITE.email} label={need(footer.data.email, 'site/footer.email')} />
         </>
       )}
 

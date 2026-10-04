@@ -1,11 +1,22 @@
 ---
 import Base from '../layouts/Base.astro';
-import { NAV } from '../consts.ts';
+import { SITE, shown } from '../consts.ts';
+import { getPage } from '../lib/pages.ts';
+
+/* The wording is the theme's; the chips under it are the site's, from
+   src/content/pages/404.md, and a row whose feature is off is dropped, so
+   switching a section off cannot leave a dead link here. */
+const { data } = await getPage('404');
+const links = shown(data.links ?? []);
 ---
 
 {/* noindex: served for every URL that does not exist, so no canonical could
      name it truthfully — without the flag it claimed "/404/". */}
-<Base title="Page not found" description="That page does not exist." noindex>
+<Base
+  title="Page not found"
+  description={`That page does not exist on ${new URL(SITE.url).host}.`}
+  noindex
+>
   <section class="wrap section center">
     <p class="kicker">cat $REQUEST_URI</p>
     <h1>404</h1>
@@ -14,16 +25,13 @@ import { NAV } from '../consts.ts';
       it may never have been anything.
     </p>
     <ul class="options">
-      {
-        /* Built from NAV, so deleting a section cannot leave a dead link here. */
-        NAV.map((item) => (
-          <li>
-            <a class="chip" href={item.href} data-section={item.section}>
-              {item.label}
-            </a>
-          </li>
-        ))
-      }
+      {links.map((item) => (
+        <li>
+          <a class="chip" href={item.href} data-section={item.section}>
+            {item.label}
+          </a>
+        </li>
+      ))}
     </ul>
   </section>
 </Base>

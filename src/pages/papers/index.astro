@@ -5,11 +5,17 @@ import Base from '../../layouts/Base.astro';
 import VenueBadge from '../../components/pub/VenueBadge.astro';
 import { paperPath } from '../../lib/paths.ts';
 import { paperPublication, paperVenue, paperVenueShort, paperYear } from '../../lib/papers.ts';
+import { getPage } from '../../lib/pages.ts';
 
 if (!FEATURES.papers) return disabled();
 
+/* The words: src/content/pages/papers.md, and site/publication.md for a row. */
+const page = await getPage('papers');
+const words = await getPage('site/publication');
+
 const papers = (await getCollection('papers')).sort(
-  (a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title),
+  (first, second) =>
+    first.data.order - second.data.order || first.data.title.localeCompare(second.data.title),
 );
 
 /* Venue and year through the same helpers the detail page uses, so the two
@@ -31,21 +37,15 @@ const rows = await Promise.all(
 );
 ---
 
-<Base
-  title="papers"
-  description="Works with a page of their own: the abstract, the figure, and where to find them."
-  section="papers"
->
+<Base {...page.meta()} section="papers">
   <section class="wrap section">
     <p class="kicker" data-sigil="##">
       papers
     </p>
     <h1>Papers</h1>
-    <p class="lede">
-      Not every publication needs a page. These are the ones with something more to say than the
-      citation — an abstract, a figure, a replication package. The rest live on{' '}
-      <a href="/publications/">publications</a>.
-    </p>
+    <div class="lede">
+      <page.Content />
+    </div>
 
     <ul class="list">
       {rows.map(({ paper, pub, year, tag }) => (
@@ -65,7 +65,9 @@ const rows = await Promise.all(
                 {/* The one thing about a paper that changes after it is
                       written, so it belongs in the list and not only on the
                       page: a reader scanning for what is new wants it here. */}
-                {paper.data.status === 'to-appear' && <span class="soon"> · to appear</span>}
+                {paper.data.status === 'to-appear' && (
+                  <span class="soon"> · {words.label('toAppear')}</span>
+                )}
               </p>
             )}
           </div>

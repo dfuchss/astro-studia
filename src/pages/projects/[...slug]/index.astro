@@ -9,6 +9,7 @@ import { FEATURES } from '../../../features.ts';
 import { PROJECTS, paperPath } from '../../../lib/paths.ts';
 import VenueBadge from '../../../components/pub/VenueBadge.astro';
 import { paperPublication, paperVenueShort, paperYear } from '../../../lib/papers.ts';
+import { getPage } from '../../../lib/pages.ts';
 
 export const getStaticPaths = (async () => {
   /* getStaticPaths runs whatever the page's own guard says, and getCollection()
@@ -19,19 +20,26 @@ export const getStaticPaths = (async () => {
     projects
       // An entry with `redirect` lives somewhere else; a page here would be a
       // second, worse copy for search engines to choose between.
-      .filter((p) => !p.data.redirect)
+      .filter((entry) => !entry.data.redirect)
       .map((project) => ({ params: { slug: project.id }, props: { project } }))
   );
 }) satisfies GetStaticPaths;
 
 const { project } = Astro.props;
 const { Content } = await render(project);
-const d = project.data;
+const frontmatter = project.data;
+
+/* The words: src/content/pages/projects.md, and site/publication.md for the
+   related papers (read only while `papers` is on, which owns them). */
+const page = await getPage('projects');
+const words = FEATURES.papers ? await getPage('site/publication') : undefined;
 
 /* Every paper whose front matter names this project. By collection id, not
    title: a title match silently empties the list the first time one is edited. */
 const papers = FEATURES.papers
-  ? await getCollection('papers', (p) => p.data.projects.some((ref) => ref.id === project.id))
+  ? await getCollection('papers', (paper) =>
+      paper.data.projects.some((ref) => ref.id === project.id),
+    )
   : [];
 const related = (
   await Promise.all(
@@ -51,30 +59,40 @@ const related = (
 )
   // Newest edition first, then the order /papers/ uses, so two works from the
   // same year keep the sequence a reader has already seen.
-  .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.paper.data.order - b.paper.data.order);
+  .sort(
+    (first, second) =>
+      (second.year ?? 0) - (first.year ?? 0) || first.paper.data.order - second.paper.data.order,
+  );
 ---
 
-<Base title={d.title} description={d.description} section="projects">
+<Base title={frontmatter.title} description={frontmatter.description} section="projects">
   <article class="wrap section">
     <header class="head">
-      {d.logo && (
-        <Image class="logo" src={d.logo} alt="" width={64} height={64} densities={[1, 2]} />
+      {frontmatter.logo && (
+        <Image
+          class="logo"
+          src={frontmatter.logo}
+          alt=""
+          width={64}
+          height={64}
+          densities={[1, 2]}
+        />
       )}
       <div>
-        <h1>{d.title}</h1>
-        <p class="lede">{d.description}</p>
+        <h1>{frontmatter.title}</h1>
+        <p class="lede">{frontmatter.description}</p>
       </div>
     </header>
 
     {
       /* The overview diagram, when the front matter names one. Above the prose
          because "what is this, in one picture" is what a reader wants first. */
-      d.figure && (
+      frontmatter.figure && (
         <Figure
-          src={d.figure.src}
-          alt={d.figure.alt}
-          plate={d.figure.plate}
-          frame={d.figure.frame}
+          src={frontmatter.figure.src}
+          alt={frontmatter.figure.alt}
+          plate={frontmatter.figure.plate}
+          frame={frontmatter.figure.frame}
         />
       )
     }
@@ -85,16 +103,16 @@ const related = (
 
     {
       /* This project's own repositories, not the site-wide /repositories/ page. */
-      d.repositories.length > 0 && (
+      frontmatter.repositories.length > 0 && (
         <section class="block" aria-labelledby="code-h">
           <h2 class="mono" id="code-h">
             Code
           </h2>
           <ul class="chips">
-            {d.repositories.map((r) => (
+            {frontmatter.repositories.map((repository) => (
               <li>
-                <a class="chip" href={r.url} rel="noopener">
-                  {r.name}
+                <a class="chip" href={repository.url} rel="noopener">
+                  {repository.name}
                 </a>
               </li>
             ))}
@@ -121,7 +139,9 @@ const related = (
                 <p class="mono year">
                   {year}
                   {tag && <span> · {tag}</span>}
-                  {paper.data.status === 'to-appear' && <span> · to appear</span>}
+                  {paper.data.status === 'to-appear' && words && (
+                    <span> · {words.label('toAppear')}</span>
+                  )}
                 </p>
               </div>
             </li>
@@ -132,7 +152,7 @@ const related = (
 
     <p class="back">
       <a class="chip" href={PROJECTS}>
-        ← All projects
+        {page.label('back')}
       </a>
     </p>
   </article>

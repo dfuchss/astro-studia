@@ -3,12 +3,13 @@ import { FEATURES, disabled } from '../../features.ts';
 import Base from '../../layouts/Base.astro';
 import CopyButton from '../../components/CopyButton.astro';
 import { armoredKey, fingerprint, grouped, keyId, keyPath } from '../../lib/pgp.ts';
+import { getPage, need } from '../../lib/pages.ts';
 
 if (!FEATURES.pgp) return disabled();
 
 // All of these derive from the single value in socials.yml, so they cannot
 // disagree with one another. All are null when it is unset.
-const fp = fingerprint();
+const keyFingerprint = fingerprint();
 const id = keyId();
 const pretty = grouped();
 const asc = keyPath();
@@ -16,32 +17,37 @@ const asc = keyPath();
 // Both null when public/assets/pgp-key/<FINGERPRINT>.asc is absent, leaving the
 // fingerprint and key id: publishing only a fingerprint is a legitimate choice.
 const key = armoredKey();
+
+/* The site's words: src/content/pages/pgp-key.md. The advice and the setup
+   notice below are the theme's. */
+const page = await getPage('pgp-key');
+const { label } = page;
 ---
 
-<Base title="pgp key" description="Public key for encrypted mail." section="home">
+<Base {...page.meta()} section="home">
   <section class="wrap section page">
     <p class="kicker" data-sigil="##">
       pgp
     </p>
     <h1>PGP key</h1>
 
-    {fp ? (
+    {keyFingerprint ? (
       <>
-        <p class="lede">For anything you would rather not send in the clear.</p>
+        <p class="lede">{need(page.data.lede, 'pgp-key.lede')}</p>
         <dl class="fields">
           <div>
-            <dt class="mono">Fingerprint</dt>
+            <dt class="mono">{label('fingerprint')}</dt>
             <dd class="mono fp">{pretty}</dd>
           </div>
           <div>
-            <dt class="mono">Long key id</dt>
+            <dt class="mono">{label('keyId')}</dt>
             <dd class="mono">{id}</dd>
           </div>
         </dl>
         {asc && (
           <p class="actions">
             <a class="chip" href={asc} download>
-              Download public key
+              {label('download')}
             </a>
           </p>
         )}
@@ -70,8 +76,8 @@ const key = armoredKey();
         <p>
           This page and the PGP chip in the profile row both appear on their own once it is set, and
           the key block is inlined here with a copy button as soon as the <code>.asc</code> file is
-          in place. If you do not use PGP, delete
-          <code>src/pages/pgp-key/index.astro</code> and <code>src/lib/pgp.ts</code>.
+          in place. If you do not use PGP, set <code>pgp: false</code> in
+          <code>src/features.ts</code>.
         </p>
       </div>
     )}

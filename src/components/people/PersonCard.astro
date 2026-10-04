@@ -3,7 +3,8 @@ import { Image } from 'astro:assets';
 
 import Email from '../Email.astro';
 import type { Member } from '../../lib/people.ts';
-import { PEOPLE_CHIPS } from '../../consts.ts';
+import { PEOPLE_ORCID } from '../../consts.ts';
+import { getPage } from '../../lib/pages.ts';
 
 interface Props {
   member: Member;
@@ -11,29 +12,30 @@ interface Props {
 
 const { member } = Astro.props;
 const { entry, author } = member;
-const d = entry.data;
+const person = entry.data;
 
 /* Width only: a non-square portrait keeps its ratio and is cropped by
    `object-fit: cover`, rather than squashed into a square by sharp. */
 const PORTRAIT = 72;
 
 // Each is optional in people.yml, so a person with none renders as a name and
-// a portrait. The words on the chips are PEOPLE_CHIPS in src/consts.ts.
+// a portrait. The words on the chips are `labels` in src/content/pages/people.md.
+const { label } = await getPage('people');
 const profiles = [
-  d.url && { label: PEOPLE_CHIPS.homepage, href: d.url },
+  person.url && { label: label('homepage'), href: person.url },
   author.data.orcid && {
-    label: PEOPLE_CHIPS.orcid === 'id' ? author.data.orcid : 'ORCID',
+    label: PEOPLE_ORCID === 'id' ? author.data.orcid : label('orcid'),
     href: `https://orcid.org/${author.data.orcid}`,
     title: `ORCID ${author.data.orcid}`,
   },
-  d.github && { label: PEOPLE_CHIPS.github, href: `https://github.com/${d.github}` },
+  person.github && { label: label('github'), href: `https://github.com/${person.github}` },
 ].filter(Boolean) as { label: string; href: string; title?: string }[];
 ---
 
 <li class="person reveal" id={entry.id}>
   <Image
     class="portrait"
-    src={d.image}
+    src={person.image}
     alt=""
     width={PORTRAIT}
     densities={[1, 2]}
@@ -43,15 +45,15 @@ const profiles = [
 
   <div class="body">
     <h2>{author.data.name}</h2>
-    {d.role && <p class="role mono">{d.role}</p>}
+    {person.role && <p class="role mono">{person.role}</p>}
 
     <div class="chips">
-      {profiles.map((p) => (
-        <a class="chip" href={p.href} rel="noopener" title={p.title}>
-          {p.label}
+      {profiles.map((profile) => (
+        <a class="chip" href={profile.href} rel="noopener" title={profile.title}>
+          {profile.label}
         </a>
       ))}
-      {d.email && <Email address={d.email} label={PEOPLE_CHIPS.email} class="chip" />}
+      {person.email && <Email address={person.email} label={label('email')} class="chip" />}
     </div>
   </div>
 </li>
