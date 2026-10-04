@@ -1,6 +1,4 @@
-<p align="center"><img src="public/favicon.svg" alt="" height="96"></p>
-
-<h1 align="center">Studia Theme</h1>
+<h1 align="center"><img src=".github/media/logo.png" alt="Studia Theme" height="110"></h1>
 
 <p align="center">
 An academic website template: publications from BibTeX, paper pages, projects,
@@ -215,7 +213,7 @@ little is too little.
 | `npm run check`       | `astro check` + `prettier --check`                                                |
 | `npm run format`      | `prettier --write`                                                                |
 | `npm run audit`       | the one gate: every check over `dist/` — see below                                |
-| `npm run favicons`    | rasterize `public/favicon.svg` into PNGs                                          |
+| `npm run icons`       | write the three `public/` icon PNGs from one image: `npm run icons -- logo.png`   |
 | `npm run data:github` | refresh `src/data/github-metadata.json`                                           |
 | `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)                          |
 | `npm run init`        | write the flags, and who the site is about, from a preset or a selection          |

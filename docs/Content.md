@@ -30,7 +30,7 @@ property of the list is that it is finite.
 | `src/data/`, generated | `citations.yml`, `github-metadata.json`                                                                                                   |
 | `src/content/`         | `papers/`, `projects/`, `posts/`                                                                                                          |
 | `src/assets/`          | `portrait.*`, `papers/`, `projects/`, `people/`                                                                                           |
-| `public/`              | `favicon.svg` (then `npm run favicons`), `site.webmanifest`, `assets/img/og.png`, `assets/img/brand-mark.svg`                             |
+| `public/`              | `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`, `site.webmanifest`, `assets/img/og.png`, `assets/img/brand-mark.svg`            |
 | `public/assets/`       | `pgp-key/*.asc`, `pdf/editions/de-re-publica-excerpt.pdf`, `img/papers/*.svg`, `img/posts/*.svg`                                          |
 | the repository itself  | `README.md`, `.github/media/*.webp`, `LICENSE`                                                                                            |
 

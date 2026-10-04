@@ -43,9 +43,9 @@ const ogImage = SITE.ogImage && `${origin.href.replace(/\/$/, '')}${SITE.ogImage
 <meta name="description" content={desc} />
 {canonical ? <link rel="canonical" href={canonical} /> : <meta name="robots" content="noindex" />}
 
-{/* SVG first, the 32px PNG for browsers that ignore SVG icons, apple-touch-icon
-    for iOS. Regenerate the PNGs with `npm run favicons` after editing the SVG. */}
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+{/* PNGs only: the 32px one for tabs, apple-touch-icon for iOS. All three in
+    public/ are resized copies of one square image — `npm run icons -- <image>`
+    writes all three. */}
 <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
 <link rel="manifest" href="/site.webmanifest" />

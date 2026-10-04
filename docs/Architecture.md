@@ -336,7 +336,6 @@ disk for every entry and drops the ones with nothing behind them.
 | `init.mjs`                    | `npm run init`               | writes `src/features.ts`, `src/consts.ts` and `site/site.md` from a preset or selection, then checks, builds and audits           |
 | `gen-docs.mjs`                | `npm run docs`, `docs:check` | regenerates the flags and dependency tables in `src/features.ts` and the table in [Features](Features.md), both from the manifest |
 | `audit-site.mjs`              | `npm run audit`              | the one gate: every check over `dist/`, including the host files                                                                  |
-| `generate-favicons.mjs`       | `npm run favicons`           | rasterizes `public/favicon.svg` into the PNGs beside it                                                                           |
 | `fetch-github-metadata.mjs`   | `npm run data:github`        | writes the committed `src/data/github-metadata.json`                                                                              |
 | `update_bib.py`               | `npm run bib:check`          | checks `papers.bib` against Crossref. Python stdlib only.                                                                         |
 | `update_scholar_citations.py` | the citations workflow       | writes the committed `src/data/citations.yml`. The one piece of tooling that needs pip.                                           |

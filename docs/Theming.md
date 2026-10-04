@@ -158,8 +158,8 @@ path is exercised rather than only described. Replace the file, or set
 
 `ProjectHero.astro` — the centred hero a project or group site opens with —
 reads the same value, so a site with a logo does not show it in the corner and a
-favicon in the middle of its own front page. It used to hard-code
-`/favicon.svg`, which meant putting your own logo there was a component edit.
-With `brandLogo: null` it falls back to `/favicon.svg`, because a centred hero
-still needs something above the title and the favicon is the one image every
-site here is guaranteed to have.
+favicon in the middle of its own front page. It used to hard-code the
+favicon, which meant putting your own logo there was a component edit. With
+`brandLogo: null` it falls back to `/apple-touch-icon.png`, because a centred
+hero still needs something above the title and the site icon is the one image
+every site here is guaranteed to have.

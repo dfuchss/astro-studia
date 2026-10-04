@@ -60,7 +60,7 @@ Nothing here is a code change; all of it is one file each.
 | 4   | `src/content/`             | Your paper pages, projects and posts.                                                                              |
 | 5   | `src/assets/portrait.*`    | Your photo. The filename is the whole setting.                                                                     |
 | 6   | `public/assets/img/og.png` | The link-preview card. The shipped one says "replace this".                                                        |
-| 7   | `public/favicon.svg`       | Then `npm run favicons` to rasterize the PNGs beside it.                                                           |
+| 7   | `public/*.png` icons       | The three icon PNGs from one square image: `npm run icons -- path/to/square.png`.                                  |
 | 8   | `src/content/pages/`       | Every word the site prints: `site/` for the title, brand, tagline, nav and footer; one file per page for the rest. |
 
 Row 5 only matters for the **profile** shape. The project shape renders no

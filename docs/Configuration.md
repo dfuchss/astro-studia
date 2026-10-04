@@ -81,7 +81,7 @@ name twice; in place of the wordmark it _is_ the name and takes `brand` from
 `src/content/pages/site/site.md`.
 
 `ProjectHero.astro` — the centred hero a project or group site opens with — reads
-the same value, falling back to `/favicon.svg`, so a site with a logo does not
+the same value, falling back to `/apple-touch-icon.png`, so a site with a logo does not
 show it in the corner and a favicon in the middle of its own front page.
 
 ### `ogImage`

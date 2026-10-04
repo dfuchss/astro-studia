@@ -23,7 +23,7 @@
     "check": "astro check && prettier . --check",
     "format": "prettier . --write",
     "audit": "node scripts/audit-site.mjs",
-    "favicons": "node scripts/generate-favicons.mjs",
+    "icons": "node scripts/generate-icons.mjs",
     "data:github": "node scripts/fetch-github-metadata.mjs",
     "bib:check": "python3 scripts/update_bib.py",
     "docs": "node scripts/gen-docs.mjs",

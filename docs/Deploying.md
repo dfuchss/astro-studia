@@ -53,7 +53,7 @@ exists to prevent.
 The dev server follows it. `http://localhost:4321/` answers with a 302 to
 `/my-repo/`, and `src/integrations/base-paths.ts` runs as dev middleware as well
 as over the build, so the two serve identical URLs. Typing an unprefixed
-`public/` path by hand — `/favicon.svg` — still 404s, which is exactly what the
+`public/` path by hand — `/favicon-32.png` — still 404s, which is exactly what the
 deployed site does.
 
 That is genuinely all, but it is worth knowing why, because Astro's own
@@ -219,15 +219,15 @@ Want a different mix — flat project pages, say? Move that route between
 keep. That is the test for putting a file there, and the reason the list is
 short:
 
-| Path                                                                                        | Why it needs a fixed URL                                        |
-| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`, `site.webmanifest` | browsers and app installers fetch these by name                 |
-| `.nojekyll`                                                                                 | the host reads it, not a page                                   |
-| `assets/img/og.png`                                                                         | named by an absolute URL in a `<meta>` tag                      |
-| `assets/img/brand-mark.svg`                                                                 | a configured path, `SITE.brandLogo` — see [Theming](Theming.md) |
-| `assets/pdf/**`                                                                             | linked from papers, and fed to the sitemap's `customPages`      |
-| `assets/pgp-key/*.asc`                                                                      | downloaded, and read at build time by `src/lib/pgp.ts`          |
-| the images a post links to at full size                                                     | an `<a href>` to an image is a URL like any other               |
+| Path                                                                         | Why it needs a fixed URL                                        |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`, `site.webmanifest` | browsers and app installers fetch these by name                 |
+| `.nojekyll`                                                                  | the host reads it, not a page                                   |
+| `assets/img/og.png`                                                          | named by an absolute URL in a `<meta>` tag                      |
+| `assets/img/brand-mark.svg`                                                  | a configured path, `SITE.brandLogo` — see [Theming](Theming.md) |
+| `assets/pdf/**`                                                              | linked from papers, and fed to the sitemap's `customPages`      |
+| `assets/pgp-key/*.asc`                                                       | downloaded, and read at build time by `src/lib/pgp.ts`          |
+| the images a post links to at full size                                      | an `<a href>` to an image is a URL like any other               |
 
 Everything else is an image, and every image a collection schema names lives in
 `src/assets/` and goes through Astro's pipeline instead: hashed filename,

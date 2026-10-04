@@ -5,7 +5,7 @@ import { join } from 'node:path';
  * Intrinsic dimensions of an image under public/, which never touches Astro's
  * image pipeline — so nothing else knows how big it is, and the audit fails an
  * <img> without width and height. One caller: `SITE.brandLogo`, or the
- * /favicon.svg ProjectHero falls back to — configuration rather than an import,
+ * /apple-touch-icon.png ProjectHero falls back to — configuration rather than an import,
  * so it cannot come from src/assets/.
  *
  * Resolved from the working directory, NOT import.meta.url: `astro build`

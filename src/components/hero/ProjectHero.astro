@@ -16,11 +16,13 @@ import { fill, getPage, need, siteText } from '../../lib/pages.ts';
  */
 
 /*
- * The same mark as the nav, from SITE.brandLogo. The favicon is the fallback:
- * a centred hero still needs something above the title, and the favicon is
- * the one image every site here is guaranteed to have.
+ * The same mark as the nav, from SITE.brandLogo. The site icon is the
+ * fallback: a centred hero still needs something above the title, and the icon
+ * is the one image every site here is guaranteed to have. The 180px
+ * apple-touch-icon, because the hero draws it at most 96px tall, so that is
+ * enough for a 2x screen.
  */
-const logo = SITE.brandLogo?.src ?? '/favicon.svg';
+const logo = SITE.brandLogo?.src ?? '/apple-touch-icon.png';
 const { width: logoWidth, height: logoHeight } = intrinsic(logo);
 
 /* A switched-off collection loads empty, so these would return [] anyway; the
