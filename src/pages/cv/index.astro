@@ -383,7 +383,8 @@ const more = (count: number) => fill(label('more'), { count });
     margin: 0 0 0.15rem;
     font-size: 1.0625rem;
   }
-  .now {
+  /* Scoped: `.course.now` marks a current-semester row, not a badge. */
+  .what .now {
     padding: 0.1em 0.5em;
     border: 1px solid var(--sec-line);
     border-radius: 999px;
