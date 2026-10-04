@@ -1,11 +1,12 @@
 # Content
 
-Seven collections, defined in `src/content.config.ts`. Every cross-reference
+Eight collections, defined in `src/content.config.ts`. Every cross-reference
 goes through Astro's `reference()`, which is the point of the whole file: a bad
 slug, an unknown venue or a BibTeX key pointing at a page that does not exist
-**stops the build and names the offender**. The single values and short lists
-that are not content live in `src/consts.ts` instead — see
-[Configuration](Configuration.md).
+**stops the build and names the offender**. The single values that configure
+the site live in `src/consts.ts` instead — see
+[Configuration](Configuration.md) — and the words every page prints around its
+data are a collection of their own, `pages` — see [Page text](#page-text).
 
 What a failure looks like:
 
@@ -20,18 +21,18 @@ in collection "publications" (field: abbr) references "NOPE" in collection
 Every path below holds Cicero's bytes. Grouped by directory, because the useful
 property of the list is that it is finite.
 
-| Where                  | What                                                                                                                              |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `src/consts.ts`        | `SITE.url`, `title`, `brand`, `tagline`, `description`, `email`, `repo`, `copyright`, `SELF`, `NAV`, `FOOTER`; `demoNotice: null` |
-| `src/styles/`          | `tokens.css`                                                                                                                      |
-| `src/data/`            | `papers.bib`, `venues.yml`, `authors.yml`, `people.yml`, `cv.yml`, `contact.yml`, `socials.yml`, `repositories.yml`               |
-| `src/data/`, generated | `citations.yml`, `github-metadata.json`                                                                                           |
-| `src/content/`         | `papers/`, `projects/`, `posts/`                                                                                                  |
-| `src/assets/`          | `portrait.*`, `papers/`, `projects/`, `people/`                                                                                   |
-| `src/pages/`           | `index.astro`, under the `DEMO COPY` banners                                                                                      |
-| `public/`              | `favicon.svg` (then `npm run favicons`), `site.webmanifest`, `assets/img/og.png`, `assets/img/brand-mark.svg`                     |
-| `public/assets/`       | `pgp-key/*.asc`, `pdf/editions/de-re-publica-excerpt.pdf`, `img/papers/*.svg`, `img/posts/*.svg`                                  |
-| the repository itself  | `README.md`, `.github/media/*.webp`, `LICENSE`                                                                                    |
+| Where                  | What                                                                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/consts.ts`        | `SITE.url`, `email`, `repo`, `brandLogo`, `SELF`, `FOOTER`; `demoNotice: false`                                                           |
+| `src/content/pages/`   | every file: the title, brand, tagline and description in `site/`, the nav and footer rows, and each page's words                          |
+| `src/styles/`          | `tokens.css`                                                                                                                              |
+| `src/data/`            | `papers.bib`, `venues.yml`, `authors.yml`, `people.yml`, `cv.yml`, `contact.yml`, `socials.yml`, `repositories.yml`, `project-groups.yml` |
+| `src/data/`, generated | `citations.yml`, `github-metadata.json`                                                                                                   |
+| `src/content/`         | `papers/`, `projects/`, `posts/`                                                                                                          |
+| `src/assets/`          | `portrait.*`, `papers/`, `projects/`, `people/`                                                                                           |
+| `public/`              | `favicon.svg` (then `npm run favicons`), `site.webmanifest`, `assets/img/og.png`, `assets/img/brand-mark.svg`                             |
+| `public/assets/`       | `pgp-key/*.asc`, `pdf/editions/de-re-publica-excerpt.pdf`, `img/papers/*.svg`, `img/posts/*.svg`                                          |
+| the repository itself  | `README.md`, `.github/media/*.webp`, `LICENSE`                                                                                            |
 
 Three of those are quieter than the others:
 
@@ -260,7 +261,9 @@ side under `slides` — see `linkLabel()` in `src/lib/papers.ts`.
 The filename is the URL here too: `latin-vocabulary.md` is
 `/projects/latin-vocabulary/`.
 
-`category` is an enum, so a typo fails the build — and it is optional. Leave
+`category` names a group in `src/data/project-groups.yml` — its heading, its
+blurb and its `order` on `/projects/` — through `reference()`, so a typo fails
+the build, and a new group is one entry in that file. It is optional. Leave
 it off every entry and `/projects/` is one flat list with no group headings,
 which is what a site that does not sort its projects wants; set it on some
 entries and not others and the rest gather under a final "Other" group rather
@@ -422,6 +425,62 @@ Nothing here assumes one author. List every member's surname in
 `src/features.ts` directly if you have already run init. Both shapes stay in
 `src/pages/index.astro`; the flag just picks which one renders at `/`.
 
+## Page text — `src/content/pages/`
+
+The `.astro` files under `src/pages/`, `src/components/` and `src/layouts/` hold
+layout and code. Every word a reader sees that is not computed — a page's
+`<title>` and description, its lede, the labels on its chips and buttons, the
+nav and footer rows — is in `src/content/pages/`, one Markdown file per page:
+
+| File                                                                                                                                    | Holds                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `site/site.md`                                                                                                                          | the site `title` (the `<title>` suffix, the feed's title, the project hero), the nav `brand` and `brandPrompt`, the default `description` |
+| `site/tagline.md`                                                                                                                       | the line under the name in both heroes, as Markdown — so it can carry any number of links                                                 |
+| `site/nav.md`, `site/footer.md`                                                                                                         | the nav rows; the footer's copyright holder, affiliation, link row and email label                                                        |
+| `site/contact.md`, `site/publication.md`                                                                                                | words shared across pages: the contact block, a publication entry and paper page                                                          |
+| `home.md`, `home/profile.md`, `home/project.md`, `home/involvement.md`                                                                  | the entry page: shared stat labels, then each shape's words; `profile.md`'s body is the pitch, `involvement.md` the list                  |
+| `404.md`, `blog.md`, `cv.md`, `imprint.md`, `papers.md`, `people.md`, `pgp-key.md`, `projects.md`, `publications.md`, `repositories.md` | one page each; `404.md` holds only the chips under the theme's message                                                                    |
+
+**Front matter holds the short strings, the body holds rich text.** `title` and
+`description` are the page's meta; the body is its lede, or the block the file
+is named for. The rest is grouped by kind — `labels` for short words, `intros`
+for the sentence under a section heading, `more` for the "all … →" links,
+`plurals` for a `{ one, other }` pair — and the comments in each file say where
+each string lands.
+
+**`{placeholders}`** are filled by the template with computed values:
+`'{count} entries,'`, `'since {date}'`. `{name}` works in every title and
+description, and in `site/site.md`, and is `SELF.first` and `SELF.last` from
+`src/consts.ts` — the name has one source. A placeholder the template does not
+know stays as typed, so a typo shows on the page rather than vanishing.
+
+**The schema is strict.** Every field is optional, because one collection holds
+every page's shape, and the template asks for the ones it needs through `need()`
+in `src/lib/pages.ts` — a missing one fails the build naming file and field. A
+key the schema does not know is a build error too, so a misspelt `descripton:`
+cannot be silently ignored, and a nav or footer row's `feature` is checked
+against the flags.
+
+**Each feature's file is read only while it is on**, and is listed in that
+feature's `Owns` column in [Features](Features.md), so deleting a switched-off
+feature's files includes its page text.
+
+What stays in the templates, deliberately: headings and the `## kicker` above
+them, `aria-label`s, `alt` text and tooltips, the labels of interactive controls
+(the copy buttons, the skip link, the filter's placeholder), separators and
+glyphs, and the footer's "built with" credit, which is the theme's branding.
+So does wording that is the theme's voice rather than the site's — text no
+owner would reasonably edit: the 404 page's title, message and description,
+the demo banner and switcher, the advice and setup notice on `/pgp-key/`, the
+"nothing to cite" sentence on a paper page, and the "no metadata yet" notes on
+`/repositories/`. `content/pages/` holds what a site owner changes: their own
+text, their links and where they point. Structured data that grows — your CV, contact rows, people — stays in
+`src/data/`.
+
+Two Markdown details. Astro's typographer curls a straight `'` in a body into
+`’`; write `&#39;` where the straight one matters. And a body renders as
+paragraphs, so a template places it in a block, never inside a `<p>`.
+
 ## Renaming a route
 
 Say `/papers/` should be `/conferences/`, or `/projects/` should be
@@ -430,7 +489,7 @@ edits**, and only one of them is code:
 
 1. **The constant in `src/lib/paths.ts`.** `PAPERS` and `PROJECTS` are the only
    places those two prefixes are written down. Every back link, breadcrumb,
-   `NAV` row, hero action and slug helper reads one of them, and so does the
+   hero action and slug helper reads one of them, and so does the
    regex in `src/content.config.ts` that validates a `page = {…}` field — it is
    assembled from the constant rather than typed out, precisely so a rename
    cannot leave a validator behind insisting on the old prefix.
@@ -441,7 +500,10 @@ edits**, and only one of them is code:
 
 3. **The data that names the route.** For `papers`, the `page = {/papers/…/}`
    fields in `src/data/papers.bib`. They are content, not code, and the build
-   fails with the offending BibTeX key if you forget one.
+   fails with the offending BibTeX key if you forget one. So are the `href`s
+   in `src/content/pages/site/nav.md` and the papers lede in
+   `src/content/pages/papers.md`, which cannot import a constant; the audit
+   names the page a stale one is on.
 
 Two things that look like they should be on that list and are not. The
 **collection name** (`papers` in `src/content.config.ts`) and its **source

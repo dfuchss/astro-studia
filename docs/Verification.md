@@ -141,7 +141,7 @@ against `--bg` alone.
 Every `data-section="x"` found in the built HTML must have a `[data-section='x']`
 block in the built CSS.
 
-The `Section` union in `src/consts.ts` and those blocks in `tokens.css` have to
+`SECTIONS` in `src/consts.ts` and those blocks in `tokens.css` have to
 agree, or a page renders with the wrong accent — or with the default one, which
 looks deliberate and is the harder bug. Comparing built HTML against built CSS
 catches it from the outside, without this script needing to parse TypeScript.

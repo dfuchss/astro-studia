@@ -75,15 +75,15 @@ cd my-site && npm install && npm run dev
 
 Then, in order:
 
-| #   | Edit                    | For                                                                                                       |
-| --- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| 1   | `src/consts.ts`         | **`SITE.url` first** — see below. Then your name, email, the `NAV` rows you want, and `demoNotice: null`. |
-| 2   | `src/styles/tokens.css` | One base hex per accent family. See [docs/Theming.md](docs/Theming.md).                                   |
-| 3   | `src/data/`             | Your `papers.bib`, venues, CV and `contact.yml`. All of it is demo content.                               |
-| 4   | `src/content/`          | Your posts, projects and paper pages.                                                                     |
-| 5   | `src/assets/portrait.*` | Your photo. Any common extension; the filename is the whole setting.                                      |
-| 6   | `src/pages/index.astro` | Your home page copy, under the `DEMO COPY` banner.                                                        |
-| 7   | —                       | `npm run check && npm run build && npm run audit`                                                         |
+| #   | Edit                    | For                                                                                        |
+| --- | ----------------------- | ------------------------------------------------------------------------------------------ |
+| 1   | `src/consts.ts`         | **`SITE.url` first** — see below. Then your name (`SELF`), email, and `demoNotice: false`. |
+| 2   | `src/styles/tokens.css` | One base hex per accent family. See [docs/Theming.md](docs/Theming.md).                    |
+| 3   | `src/data/`             | Your `papers.bib`, venues, CV and `contact.yml`. All of it is demo content.                |
+| 4   | `src/content/`          | Your posts, projects and paper pages.                                                      |
+| 5   | `src/assets/portrait.*` | Your photo. Any common extension; the filename is the whole setting.                       |
+| 6   | `src/content/pages/`    | Every word the site prints: title, brand, tagline, nav and footer rows, each page's text.  |
+| 7   | —                       | `npm run check && npm run build && npm run audit`                                          |
 
 `SITE.url` is first because both sides of the base come from it:
 `astro.config.ts` derives `base` from its path, and `npm run audit` derives the
@@ -108,28 +108,29 @@ See [docs/Quickstart.md](docs/Quickstart.md) for the walkthrough and
 `docs/` is the whole of it, one page per file, also published to this
 repository's [wiki](https://github.com/dfuchss/astro-studia/wiki).
 
-| Page                                   | For                                                                 |
-| -------------------------------------- | ------------------------------------------------------------------- |
-| [Quickstart](docs/Quickstart.md)       | clone, pick features, first build, first deploy                     |
-| [Configuration](docs/Configuration.md) | every knob in `src/consts.ts`, and each file in `src/data/`         |
-| [Content](docs/Content.md)             | the seven collections, their schemas, and what markdown can express |
-| [Theming](docs/Theming.md)             | the palette, the section accents, the widths, the primitives        |
-| [Features](docs/Features.md)           | the flags, their dependencies, and what belongs to what             |
-| [Deploying](docs/Deploying.md)         | Pages, base paths, the URL policy, the wiki                         |
-| [Verification](docs/Verification.md)   | what each check asserts, and why it is written that way             |
-| [Architecture](docs/Architecture.md)   | how the loader, collections, integrations and scripts fit together  |
+| Page                                   | For                                                                          |
+| -------------------------------------- | ---------------------------------------------------------------------------- |
+| [Quickstart](docs/Quickstart.md)       | clone, pick features, first build, first deploy                              |
+| [Configuration](docs/Configuration.md) | every knob in `src/consts.ts`, and each file in `src/data/`                  |
+| [Content](docs/Content.md)             | the collections, their schemas, the page text, and what markdown can express |
+| [Theming](docs/Theming.md)             | the palette, the section accents, the widths, the primitives                 |
+| [Features](docs/Features.md)           | the flags, their dependencies, and what belongs to what                      |
+| [Deploying](docs/Deploying.md)         | Pages, base paths, the URL policy, the wiki                                  |
+| [Verification](docs/Verification.md)   | what each check asserts, and why it is written that way                      |
+| [Architecture](docs/Architecture.md)   | how the loader, collections, integrations and scripts fit together           |
 
 ## Layout
 
 ```
 src/
-  consts.ts           the config file: SITE, SELF, Section, NAV, FOOTER_LINKS, FOOTER,
-                      AUTHOR_LIMIT, STAT_LABELS, PEOPLE_CHIPS
-  content.config.ts   the seven collections and their schemas
+  consts.ts           the config file: SITE, SELF, SECTIONS, shown(), FOOTER,
+                      AUTHOR_LIMIT, PEOPLE_ORCID, ALLOWED_THIRD_PARTY
+  content.config.ts   the eight collections and their schemas
   loaders/bibtex.ts   papers.bib -> a typed `publications` collection
   lib/paths.ts        every URL shape, and URL_POLICY — see docs/Deploying.md
   data/               papers.bib, venues, authors, people, cv, contact, socials, repositories
-  content/            papers/, projects/, posts/
+  content/            papers/, projects/, posts/, and pages/: every word the
+                      templates print, one Markdown file per page
   components/ layouts/ lib/ pages/ styles/
   integrations/       base-paths: makes `base` work for hand-written links, in
                       the dev server and in the build alike
@@ -142,7 +143,7 @@ docs/                 the wiki, page per file: quickstart, configuration, conten
 
 ## Content model
 
-Seven collections. Every cross-reference is an Astro `reference()`, so a bad
+Seven collections of content, plus `pages`, the site's own words. Every cross-reference is an Astro `reference()`, so a bad
 slug, an unknown venue, or a BibTeX key pointing at a page that does not exist
 **stops the build** and names the offender. In a template language each of
 those is a silent lookup that renders blank, and you find out when a reader
@@ -217,7 +218,7 @@ little is too little.
 | `npm run favicons`    | rasterize `public/favicon.svg` into PNGs                                          |
 | `npm run data:github` | refresh `src/data/github-metadata.json`                                           |
 | `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)                          |
-| `npm run init`        | write `src/features.ts` and `src/consts.ts` from a preset or a selection          |
+| `npm run init`        | write the flags, and who the site is about, from a preset or a selection          |
 | `npm run docs`        | regenerate the flag list in `src/features.ts` and the table in `docs/Features.md` |
 | `npm run docs:check`  | fail if either is out of date, or a flag combination cannot build (run in CI)     |
 

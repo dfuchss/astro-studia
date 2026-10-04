@@ -1,16 +1,19 @@
 # Configuration
 
-Three places, and a handful of filenames.
+Four places, and a handful of filenames.
 
 `src/features.ts` is which parts of the template are switched on, plus the two
-shape choices below it. `src/consts.ts` is everything else: single values,
-short lists, and the words the template prints. Lists that grow — your
-bibliography, your CV, the people in your group — live in `src/data/`
-instead, and prose lives in `src/content/`. Page copy stays on its page.
+shape choices below it. `src/consts.ts` is configuration: single values that
+decide how the site behaves — where it lives, what language it formats in, who
+it is about. **The words the site prints are not here**: the title, the brand,
+the tagline, the nav and footer labels and every page's prose live in
+`src/content/pages/`, one Markdown file per page — see
+[Content](Content.md#page-text). Lists that grow — your bibliography, your CV,
+the people in your group — live in `src/data/`, and the works themselves in
+`src/content/`.
 
 Everything in `src/consts.ts` is read by code somewhere. If you cannot find where
-a value goes, grep for it; there is nothing decorative in there but
-`SITE.brandPrompt`.
+a value goes, grep for it.
 
 ## `src/features.ts`
 
@@ -30,22 +33,20 @@ flags, and the per-feature table of what each one owns.
 
 ## `SITE`
 
-| Field         | Is                                                                                                                                                                                                                                                                            |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `url`         | The site's address, **no trailing slash**, path included. The first field to set — see below. A `SITE_URL` environment variable overrides it for one build, for a preview host ([Deploying](Deploying.md#a-second-host-for-the-same-build)).                                  |
-| `title`       | The `<title>` suffix. Can afford to disambiguate.                                                                                                                                                                                                                             |
-| `brand`       | What the nav shows. Has to fit beside the nav items on a phone, so a word or two.                                                                                                                                                                                             |
-| `brandPrompt` | A fainter prefix before the brand — the shell-prompt conceit, `~/name`. `null` for a plain wordmark. Pure decoration.                                                                                                                                                         |
-| `brandLogo`   | `{ src, replacesWordmark? }` or `null` — see below.                                                                                                                                                                                                                           |
-| `tagline`     | The line under the name in the hero. A string, or one with exactly one link in it — see below.                                                                                                                                                                                |
-| `description` | The default meta description, and the fallback for any page without one.                                                                                                                                                                                                      |
-| `lang`        | `<html lang>`.                                                                                                                                                                                                                                                                |
-| `locale`      | Passed to every date and number format on the site. Explicit because `toLocaleString()`'s default follows the _build machine's_ locale, so your laptop and CI would disagree.                                                                                                 |
-| `email`       | Your address. It never reaches the served bytes — see `FOOTER.email` and `contact.yml`.                                                                                                                                                                                       |
-| `repo`        | Your repository, linked from the footer credit.                                                                                                                                                                                                                               |
-| `ogImage`     | The 1200×630 link-preview card, or `null`. See below.                                                                                                                                                                                                                         |
-| `copyright`   | The footer's "© 2026 —". Kept separate from `brand` because a site _about_ someone is not necessarily copyright them.                                                                                                                                                         |
-| `demoNotice`  | **Delete this (set it to `null`).** While it is set, a banner sits on the entry page and a line runs in the footer saying the content is a demo, so an unmodified deploy cannot be mistaken for a real site. `components/DemoNotice.astro` renders nothing when it is `null`. |
+| Field        | Is                                                                                                                                                                                                                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`        | The site's address, **no trailing slash**, path included. The first field to set — see below. A `SITE_URL` environment variable overrides it for one build, for a preview host ([Deploying](Deploying.md#a-second-host-for-the-same-build)). |
+| `brandLogo`  | `{ src, replacesWordmark? }` or `null` — see below. The wordmark itself is text: `brand` in `src/content/pages/site/site.md`.                                                                                                                |
+| `lang`       | `<html lang>`.                                                                                                                                                                                                                               |
+| `locale`     | Passed to every date and number format on the site. Explicit because `toLocaleString()`'s default follows the _build machine's_ locale, so your laptop and CI would disagree.                                                                |
+| `email`      | Your address. It never reaches the served bytes — see `FOOTER.email` and `contact.yml`.                                                                                                                                                      |
+| `repo`       | Your repository: the project hero's GitHub button, and the footer credit's link.                                                                                                                                                             |
+| `ogImage`    | The 1200×630 link-preview card, or `null`. See below.                                                                                                                                                                                        |
+| `demoNotice` | **Set this to `false`.** While it is `true`, a banner sits on the entry page and a word runs in the footer saying the content is a demo, so an unmodified deploy cannot be mistaken for a real site.                                         |
+
+The site's title, nav brand, tagline, default description and copyright holder
+used to sit in this table. They are words, so they are in
+`src/content/pages/site/` now — see [Content](Content.md#page-text).
 
 ### `url`
 
@@ -76,29 +77,12 @@ a build error naming the path rather than a silently broken image.
 
 There is no `alt` either, for the same reason: beside the wordmark the mark is
 decoration and takes `alt=""` rather than making a screen reader say the site's
-name twice; in place of the wordmark it _is_ the name and takes `SITE.brand`.
+name twice; in place of the wordmark it _is_ the name and takes `brand` from
+`src/content/pages/site/site.md`.
 
 `ProjectHero.astro` — the centred hero a project or group site opens with — reads
 the same value, falling back to `/favicon.svg`, so a site with a logo does not
 show it in the corner and a favicon in the middle of its own front page.
-
-### `tagline`
-
-A plain string, or three typed fields with one link between them:
-
-```ts
-tagline: {
-  before: 'Researcher at the ',
-  link: { label: 'Karlsruhe Institute of Technology', href: 'https://kit.edu/' },
-  after: ', Germany.',
-} as Tagline,
-```
-
-`Tagline.astro` joins the three with **no added whitespace**, so the punctuation
-is exactly what you wrote — which is the case this shape exists for: that
-trailing comma is impossible if the component inserts spaces. Not HTML, on
-purpose: a tagline is one sentence with at most one link in it, and a string of
-markup in a config file is a string nothing can check.
 
 ### `ogImage`
 
@@ -118,6 +102,10 @@ For a per-page image, take an optional `image` prop through `BaseHead` the way
 export const SELF = { first: 'Marcus Tullius', last: 'Cicero', surnames: ['Cicero'] } as const;
 ```
 
+`first` and `last` are the **one source of the name**: the person hero's heading
+and the CV read them, and so does every `{name}` in `src/content/pages/` — the
+shipped site title is `'{name} — Studia Theme demo'`.
+
 `surnames` is how an author parsed out of `papers.bib` is recognised as you, so
 your name renders bold in an author list. Matching folds accents and the German
 sharp s, so `Fuchß`/`Fuchss` and `Muñoz`/`Munoz` both hit — see `isSelf()` in
@@ -127,68 +115,73 @@ previous name.
 For a group site, list **every member's** surname here — or delete `SELF` along
 with the bolding in `src/components/pub/PubEntry.astro`.
 
-## `Section` and `NAV`
+## `SECTIONS`
 
-`Section` is the union of areas the site has. Whatever lands on
-`<body data-section>` re-points the neutral `--sec-*` aliases at one accent
-family in `src/styles/tokens.css`, so one set of components recolours itself per
-area. Nav links carry the attribute too, which is how each one previews the
-colour of the page it leads to.
+`SECTIONS` lists the areas the site has, and `Section` is its union type.
+Whatever lands on `<body data-section>` re-points the neutral `--sec-*` aliases
+at one accent family in `src/styles/tokens.css`, so one set of components
+recolours itself per area. Nav links carry the attribute too, which is how each
+one previews the colour of the page it leads to. It is a list rather than a bare
+union so the `section` of each nav row in `src/content/pages/site/nav.md` is
+validated against it.
 
-**Adding a section is two edits**: this union, and a matching
+**Adding a section is two edits**: this list, and a matching
 `[data-section='…']` block in `tokens.css`. Forget the second and the build fails
 — `scripts/audit-site.mjs` collects every value out of the built HTML and every
 selector out of the built CSS and compares them.
 
-`tokens.css` always covers one value more than the union has members, which is
-why the audit reports nine sections where the union lists eight. The extra one is
+`tokens.css` always covers one value more than the list has members, which is
+why the audit reports nine sections where the list has eight. The extra one is
 `contact`: `src/pages/index.astro` sets `data-section="contact"` on its contact
-section, and the union types only what `<body data-section>` takes, so a section
+section, and `Section` types only what `<body data-section>` takes, so a section
 of a page that is not an area of the site never joins it. The audit reads the
 built HTML, where the two are the same attribute.
 
-`NAV` is the top bar: a `label`, an `href` (from `src/lib/paths.ts`, not a
-literal) and the `section` whose accent the link carries. A row may carry a
-`feature` key — a `FeatureId` from `src/features.ts` — and the exported list
-is already filtered down to the rows whose feature is on, through the small
-`Row<T>`/`shown()` pair just above it; a row with no `feature` always shows.
-So turning `blog` off in `src/features.ts` is what drops the `blog` row —
-nothing to edit here for that. The demo ships every area the template can
-render, which is more than any real site wants; deleting a row outright is
-for one you will never want back, as distinct from one a flag already hides.
-See [Features](Features.md) for what goes with each.
+## The nav and footer rows, and `shown()`
 
-## `FOOTER_LINKS` and `FOOTER`
+The top bar and the footer's link row are text, so their rows live in
+`src/content/pages/site/nav.md` and `site/footer.md` — a `label`, an `href`, and
+for the nav the `section` whose accent the link carries. A row may carry a
+`feature` key — a `FeatureId` from `src/features.ts`, checked by the content
+schema, so a misspelt one fails the build — and `shown()` in `src/consts.ts`
+drops the rows whose feature is off; a row with no `feature` always shows. So
+turning `blog` off in `src/features.ts` is what drops the `blog` row — nothing to
+edit there for that. The demo ships every area the template can render, which is
+more than any real site wants; deleting a row outright is for one you will never
+want back, as distinct from one a flag already hides. See
+[Features](Features.md) for what goes with each.
 
-`FOOTER_LINKS` is the thin link row — `Feed`, `PGP`, `Imprint` as shipped,
-each carrying the `feature` it belongs to, filtered by the same `shown()` as
-`NAV`. Add and drop freely — a row with no `feature` always shows.
+An `href` is written out, `/publications/`, rather than taken from
+`src/lib/paths.ts`: content cannot import. If you rename a route, change the
+row too — `npm run audit` fails on a nav link with no page behind it.
 
-`FOOTER` is the rest. Every part of the footer that differed between the two
-sites this template came from is a field here; the layout is not.
+## `FOOTER`
+
+Which optional parts of the footer render. The words — the copyright holder,
+your affiliation, the link row and the email link's label — are
+`src/content/pages/site/footer.md`; the layout is `Footer.astro`.
 
 ```ts
 export const FOOTER = {
-  affiliation: [
-    'Written at ',
-    { label: 'Tusculum', href: '…' },
-    ' and ',
-    { label: 'Arpinum', href: '…' },
-  ],
   email: true,
   credit: true,
 };
 ```
 
-- `affiliation` is the line after the copyright — "developed at the MCSE group,
-  KASTEL, KIT" on ardoco.de — as plain strings and links **in order, joined
-  without spaces**, so what you write is what renders. An empty array for none.
 - `email` puts `SITE.email` in the footer through `components/Email.astro`, which
   is the only way an address is allowed into a page: the audit greps the built
   output for anything address-shaped and fails the build on a plain `mailto:`.
-- `credit` is the "Built with Astro and Studia Theme" line. The licence is MIT and
-  turning this off is expected, not a breach — a credit that cannot be switched
-  off is one people delete from the component on day one.
+- `credit` is the "built with Astro and Studia Theme" line. It is the theme's
+  branding, so its words stay in `Footer.astro`. The licence is MIT and turning
+  this off is expected, not a breach — a credit that cannot be switched off is
+  one people delete from the component on day one.
+
+In `footer.md`, `affiliation` is the part after the copyright — "developed at the
+MCSE group, KASTEL, KIT" on ardoco.de — as plain strings and links **in order,
+joined without spaces**, so what you write is what renders; `[]` for none.
+`copyright` is the holder after "© 2026": kept apart from the brand because a
+site _about_ someone is not necessarily copyright them, and `'{name}'` for
+`SELF`.
 
 Markup none of these can express goes in `Base.astro`'s `footer` slot, which
 `Footer.astro` renders as its default slot.
@@ -207,40 +200,16 @@ exactly `limit + 1` names all are shown anyway — "and 1 more author" takes mor
 room than the name it stands in for and tells the reader less. See
 `truncateAuthors()` in `src/lib/authors.ts`.
 
-## `STAT_LABELS`
+## `PEOPLE_ORCID`
 
-The words under the counted numbers in the hero. The numbers come from the
-collections and cannot be edited; the words can.
+Whether the ORCID chip on a person's card at `/people/` shows the word
+(`'label'`) or the identifier itself (`'id'`), which is what a registry-minded
+reader wants to see and copy. The chips' words — `Website`, `ORCID`, `GitHub`,
+`Email` — are `labels` in `src/content/pages/people.md`; ardoco.de's homepage
+chip says "Website at KIT", because everyone's is.
 
-```ts
-export const STAT_LABELS = {
-  publications: 'publications',
-  citations: 'citations',
-  hIndex: 'h-index',
-  projects: 'projects',
-  people: 'collaborators',
-};
-```
-
-fuchss.org's fourth stat reads "replication packages", and that is not a rename a
-component should have to be edited for. A key with no stat behind it — `people` on
-the profile hero, which has no people stat — is simply unread.
-
-## `PEOPLE_CHIPS`
-
-The chips on a person's card at `/people/`.
-
-```ts
-export const PEOPLE_CHIPS = { homepage: 'Website', orcid: 'id', github: 'GitHub', email: 'Email' };
-```
-
-`homepage` is the label for a person's `url` — ardoco.de says "Website at KIT",
-because everyone's is. `orcid` is `'label'` for the word or `'id'` for the
-identifier itself, which is what a registry-minded reader wants to see and copy.
-
-It stays here whatever `people` in `src/features.ts` says — unused and
-harmless while the feature is off, the same way `STAT_LABELS` keeps every key
-unconditionally.
+The words under the counted numbers in the hero (`STAT_LABELS` before) are
+`statLabels` in `src/content/pages/home.md`.
 
 ## `ALLOWED_THIRD_PARTY`
 
@@ -274,6 +243,7 @@ Nine files. Four are content collections with Zod schemas behind them
 | `contact.yml`         | The rows under "Get in touch", on the entry page and in the `/cv/` lede.                           |
 | `socials.yml`         | Profile ids for the chip row, and the ids the data scripts need. Every field optional.             |
 | `repositories.yml`    | What `/repositories/` lists: GitHub users, GitHub repos, Zenodo DOIs.                              |
+| `project-groups.yml`  | The groups `/projects/` sorts into: `order`, heading, blurb. A project's `category` names one.     |
 | `language_colors.yml` | GitHub's language colours, for the dot beside a repository's language.                             |
 
 Plus two **generated and committed** files, which is what makes a fresh clone

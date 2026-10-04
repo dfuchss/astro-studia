@@ -52,16 +52,16 @@ with afterwards.
 
 Nothing here is a code change; all of it is one file each.
 
-| #   | Edit                       | For                                                                                                                         |
-| --- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `src/consts.ts`            | The rest of it: `title`, `brand`, `tagline`, `email`, `repo`, `copyright`, `SELF`, `NAV`. Set `demoNotice: null` when done. |
-| 2   | `src/styles/tokens.css`    | One base hex per accent family. See [Theming](Theming.md).                                                                  |
-| 3   | `src/data/`                | `papers.bib`, `venues.yml`, `cv.yml`, `contact.yml`, `socials.yml`.                                                         |
-| 4   | `src/content/`             | Your paper pages, projects and posts.                                                                                       |
-| 5   | `src/assets/portrait.*`    | Your photo. The filename is the whole setting.                                                                              |
-| 6   | `public/assets/img/og.png` | The link-preview card. The shipped one says "replace this".                                                                 |
-| 7   | `public/favicon.svg`       | Then `npm run favicons` to rasterize the PNGs beside it.                                                                    |
-| 8   | `src/pages/index.astro`    | Your front-page copy, under the `DEMO COPY` banners.                                                                        |
+| #   | Edit                       | For                                                                                                                |
+| --- | -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 1   | `src/consts.ts`            | The rest of it: `email`, `repo`, `SELF`, `brandLogo`. Set `demoNotice: false` when done.                           |
+| 2   | `src/styles/tokens.css`    | One base hex per accent family. See [Theming](Theming.md).                                                         |
+| 3   | `src/data/`                | `papers.bib`, `venues.yml`, `cv.yml`, `contact.yml`, `socials.yml`.                                                |
+| 4   | `src/content/`             | Your paper pages, projects and posts.                                                                              |
+| 5   | `src/assets/portrait.*`    | Your photo. The filename is the whole setting.                                                                     |
+| 6   | `public/assets/img/og.png` | The link-preview card. The shipped one says "replace this".                                                        |
+| 7   | `public/favicon.svg`       | Then `npm run favicons` to rasterize the PNGs beside it.                                                           |
+| 8   | `src/content/pages/`       | Every word the site prints: `site/` for the title, brand, tagline, nav and footer; one file per page for the rest. |
 
 Row 5 only matters for the **profile** shape. The project shape renders no
 portrait, but nothing deletes `src/lib/portrait.ts` or the file underneath it
@@ -70,7 +70,7 @@ you leave off.
 
 [Configuration](Configuration.md) walks the whole of `src/consts.ts` and every
 file in `src/data/`. [Content](Content.md) is the collections and their front
-matter; the eight rows above are what matters first, and
+matter, and [Page text](Content.md#page-text) the files in `src/content/pages/`; the eight rows above are what matters first, and
 [Replacing the demo content](Content.md#replacing-the-demo-content) is every
 remaining file that still holds Cicero's bytes.
 
@@ -83,8 +83,8 @@ npm run init
 Every feature ships on, as a boolean in `src/features.ts`. Turning one off is
 editing that boolean — nothing is deleted, the code stays on disk, and
 `astro check` still type-checks it. `npm run init` is the fast way to set them
-all at once; it writes exactly two files, `src/features.ts` and
-`src/consts.ts`, and nothing else. It offers two starting selections and then
+all at once; it writes exactly three files, `src/features.ts`,
+`src/consts.ts` and `src/content/pages/site/site.md`, and nothing else. It offers two starting selections and then
 lets you tick and untick freely:
 
 ```
@@ -117,9 +117,11 @@ which one you meant — it names the offender and stops, the same check
 Interactively, after the feature list it also asks for `HOME_SHAPE` (which
 entry-page shape renders at `/`), `FEED_SOURCE` (what `/feed.xml` is a feed of,
 when more than one answer is still possible), and the six strings that say who
-the site is about — `SITE.url`, `SITE.title`, `SITE.brand`, `SITE.email`,
-`SELF.first`, `SELF.last` — each defaulting to the value already there. It
-then runs `prettier` on the two files it wrote, and offers to run `check`,
+the site is about — `SITE.url`, `SITE.email`, `SELF.first` and `SELF.last` in
+`src/consts.ts`, the `title` and `brand` in `src/content/pages/site/site.md` —
+each defaulting to the value already there. The title may say `{name}`, which
+is filled from the first and last name. It then runs `prettier` on the files it
+wrote, and offers to run `check`,
 `build` and `audit`, reporting which one failed if any did.
 
 There is no confirmation gate and nothing to say no to: running it twice is a

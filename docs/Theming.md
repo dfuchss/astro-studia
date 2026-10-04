@@ -62,7 +62,7 @@ attribute on the link has already re-pointed `--sec` inside it.
 
 **Adding a section is two edits:**
 
-1. the `Section` union in `src/consts.ts`
+1. the `SECTIONS` list in `src/consts.ts`
 2. a matching `[data-section='…']` block in `tokens.css`
 
 Forget the second and the build fails: `audit-site.mjs` collects every
@@ -131,9 +131,9 @@ Documented so you use them rather than reinventing them. All in `base.css`.
 
 ## The logo in the header
 
-`Nav.astro` renders a wordmark with an optional `SITE.brandPrompt` prefix, and a
-mark beside it when `SITE.brandLogo` is set. That is one line in `src/consts.ts`
-and no edit here — see [Configuration](Configuration.md):
+`Nav.astro` renders a wordmark — `brand`, with an optional `brandPrompt` prefix,
+both text in `src/content/pages/site/site.md` — and a mark beside it when
+`SITE.brandLogo` is set. That is one line in `src/consts.ts` and no edit here — see [Configuration](Configuration.md):
 
 ```ts
 brandLogo: { src: '/assets/img/brand-mark.svg' },       // beside the wordmark
@@ -149,8 +149,8 @@ path with no file behind it fails the build naming the path.
 
 There is no `alt` either, for the same reason: beside the wordmark the mark is
 decoration and takes `alt=""` rather than making a screen reader say the site's
-name twice, and in place of the wordmark it _is_ the name, so its alt is
-`SITE.brand`.
+name twice, and in place of the wordmark it _is_ the name, so its alt is the
+`brand` from `site/site.md`.
 
 The demo ships `public/assets/img/brand-mark.svg` with `brandLogo` set, so the
 path is exercised rather than only described. Replace the file, or set

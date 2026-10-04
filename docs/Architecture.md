@@ -18,9 +18,10 @@ astro.config.ts
   ├─ publicPdfs()      walks public/assets/pdf/ → the sitemap's customPages
   └─ integrations: [ sitemap, sitemapShape, basePaths ]
 
-src/content.config.ts        seven collections
+src/content.config.ts        eight collections
   ├─ file()      venues.yml, authors.yml, people.yml
-  ├─ glob()      content/papers/, content/projects/, content/posts/
+  ├─ glob()      content/papers/, content/projects/, content/posts/,
+  │              content/pages/ → the words every template prints
   └─ bibtexLoader()  data/papers.bib  → the `publications` collection
 
 src/pages/**                 routes; each renders through layouts/Base.astro
@@ -59,14 +60,17 @@ has the resolution rule.
 `paths.ts` also holds every route prefix as a constant. For `PAPERS` and
 `PROJECTS` that holds absolutely: nothing else interpolates a slug into one of
 those two, and nothing else writes either as a literal — not a back link, not a
-breadcrumb, not a `NAV` row, not even the regex `src/content.config.ts` validates
+breadcrumb, not even the regex `src/content.config.ts` validates
 a `page = {…}` field with, which is _assembled_ from `PAPERS` precisely so a
-route rename cannot leave a validator behind insisting on the old prefix.
+route rename cannot leave a validator behind insisting on the old prefix. The
+one exception is text: the nav rows in `src/content/pages/site/nav.md` write
+every top-level `href` out, because a content file cannot import a constant —
+the audit fails on a row whose page is gone.
 
 `/blog/` and `/publications/` are not in that state. `src/lib/blog.ts:20` builds
 the permalink from a literal `/blog/`, the tag page's "← all posts" back link and
-two breadcrumbs write it out, and `src/pages/papers/index.astro` links
-`/publications/` directly. Renaming the blog is therefore more than the three
+two breadcrumbs write it out, and the lede in `src/content/pages/papers.md`
+links `/publications/` directly. Renaming the blog is therefore more than the three
 edits in [Content](Content.md) — grep the prefix as well. The audit reports a
 stale link, but only once it is in the built output.
 
@@ -103,8 +107,18 @@ and making you remember that separately is a trap.
 
 ## Collections and cross-references
 
-Seven collections, in `src/content.config.ts`. Three are YAML through `file()`,
-three are markdown through `glob()`, one is the BibTeX loader.
+Eight collections, in `src/content.config.ts`. Three are YAML through `file()`,
+four are markdown through `glob()`, one is the BibTeX loader.
+
+The eighth, `pages`, is not content in the same sense: it is the site's own
+words, one file per page under `src/content/pages/`, so the `.astro` files hold
+layout and code only. It is always loaded, whatever the flags say; each
+feature's file is read only from code that runs while the feature is on.
+`src/lib/pages.ts` reads it — `getPage(id)` for front matter plus the rendered
+body, `fill()` for `{placeholders}`, `need()` to fail the build on a missing
+field — and its schema is `.strict()`, so an unknown key is an error, and nav and
+footer rows validate their `feature` against the flags and their `section`
+against `SECTIONS`. [Content](Content.md#page-text) has the file list.
 
 Every cross-reference goes through Astro's `reference()`. That is the point of the
 whole file: a bad slug, an unknown venue or a BibTeX key pointing at a page that
@@ -147,6 +161,7 @@ in this directory usually exists because two consumers had drifted apart.
 | Module            | Answers                                                                                                               |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `paths.ts`        | every URL shape, and `URL_POLICY`                                                                                     |
+| `pages.ts`        | the page text: `getPage()`, `{placeholder}` filling, plurals, the site title and nav rows, and the joined `SELF` name |
 | `data.ts`         | the YAML and JSON in `src/data/`, imported with `?raw` and parsed once                                                |
 | `papers.ts`       | is this page a publication or a talk; its year, venue, short label, description, byline, and which pages are featured |
 | `publications.ts` | the deterministic newest-first order, and year buckets                                                                |
@@ -318,7 +333,7 @@ disk for every entry and drops the ones with nothing behind them.
 | Script                        | Run by                       | Is                                                                                                                                |
 | ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `features.mjs`                | —                            | the manifest: what each optional area is made of, and the rules a selection has to satisfy                                        |
-| `init.mjs`                    | `npm run init`               | writes `src/features.ts` and `src/consts.ts` from a preset or selection, then checks, builds and audits                           |
+| `init.mjs`                    | `npm run init`               | writes `src/features.ts`, `src/consts.ts` and `site/site.md` from a preset or selection, then checks, builds and audits           |
 | `gen-docs.mjs`                | `npm run docs`, `docs:check` | regenerates the flags and dependency tables in `src/features.ts` and the table in [Features](Features.md), both from the manifest |
 | `audit-site.mjs`              | `npm run audit`              | the one gate: every check over `dist/`, including the host files                                                                  |
 | `generate-favicons.mjs`       | `npm run favicons`           | rasterizes `public/favicon.svg` into the PNGs beside it                                                                           |
@@ -338,15 +353,17 @@ same command), `build`, `preview` (serves the built `dist/`), `check` and
 starting dev.
 
 `init.mjs` is small because it does one thing: write booleans into
-`src/features.ts` and six strings into `src/consts.ts`, nothing else. It still
+`src/features.ts`, four strings into `src/consts.ts` and two into
+`src/content/pages/site/site.md`, nothing else. It still
 refuses rather than guesses — `export const FEATURES = {`, a flag line per
-feature, `export const HOME_SHAPE`, and each `SITE`/`SELF` string field are all
+feature, `export const HOME_SHAPE`, each `SITE`/`SELF` string field and the
+`title`/`brand` lines of `site.md` are all
 landmarks it has to find before it edits around them, and a missing one is a
 hard stop, because that means the file has been restructured since the
 manifest was written and the script no longer understands it. It reports
 rather than repairs: it offers to run check, build and audit at the end and
-says which failed, and because nothing is ever deleted, `git diff
-src/features.ts src/consts.ts` is the whole story either way.
+says which failed, and because nothing is ever deleted, `git diff` of those
+three files is the whole story either way.
 
 `gen-docs.mjs` exists for a narrower reason. The manifest already knows what
 each feature owns and what a human still has to edit by hand; a second,
