@@ -30,56 +30,82 @@ type Link = { label: string; href: string; icon?: Icon };
 const known = (name: string | null | undefined): Icon | undefined =>
   name && name in ICONS ? (name as Icon) : undefined;
 
-// An entry with an unset id is dropped. rel="me" lets those profiles verify
-// this site back (Mastodon, IndieAuth).
-const links: Link[] = [
-  socials.orcid_id && {
+/*
+ * One shape for every profile: the platform, the value from socials.yml, and
+ * how that value becomes a URL. A platform whose value is unset is dropped by
+ * the one filter below, so an optional platform is not a special case.
+ */
+const profiles: {
+  label: string;
+  value: string | null;
+  url: (value: string) => string;
+  icon?: Icon;
+}[] = [
+  {
     label: 'ORCID',
-    href: `https://orcid.org/${socials.orcid_id}`,
-    icon: 'orcid' as const,
+    value: socials.orcid_id,
+    url: (id) => `https://orcid.org/${id}`,
+    icon: 'orcid',
   },
-  socials.scholar_userid && {
+  {
     label: 'Google Scholar',
-    href: `https://scholar.google.com/citations?user=${socials.scholar_userid}`,
-    icon: 'scholar' as const,
+    value: socials.scholar_userid,
+    url: (id) => `https://scholar.google.com/citations?user=${id}`,
+    icon: 'scholar',
   },
-  socials.dblp_url && { label: 'DBLP', href: socials.dblp_url, icon: 'dblp' as const },
-  socials.github_username && {
+  { label: 'DBLP', value: socials.dblp_url, url: (address) => address, icon: 'dblp' },
+  {
     label: 'GitHub',
-    href: `https://github.com/${socials.github_username}`,
-    icon: 'github' as const,
+    value: socials.github_username,
+    url: (username) => `https://github.com/${username}`,
+    icon: 'github',
   },
-  socials.semanticscholar_id && {
+  {
     label: 'Semantic Scholar',
-    href: `https://www.semanticscholar.org/author/${socials.semanticscholar_id}`,
-    icon: 'semanticscholar' as const,
+    value: socials.semanticscholar_id,
+    url: (id) => `https://www.semanticscholar.org/author/${id}`,
+    icon: 'semanticscholar',
   },
-  socials.linkedin_username && {
+  {
     label: 'LinkedIn',
-    href: `https://www.linkedin.com/in/${socials.linkedin_username}`,
-    icon: 'linkedin' as const,
+    value: socials.linkedin_username,
+    url: (username) => `https://www.linkedin.com/in/${username}`,
+    icon: 'linkedin',
   },
-  ...(socials.extra ?? []).map((e) => ({ label: e.label, href: e.url, icon: known(e.icon) })),
-].filter(Boolean) as Link[];
+  // Anything the fixed fields do not cover: the same shape, its URL as written.
+  ...(socials.extra ?? []).map((extra) => ({
+    label: extra.label,
+    value: extra.url,
+    url: (address: string) => address,
+    icon: known(extra.icon),
+  })),
+];
+
+// rel="me" lets those profiles verify this site back (Mastodon, IndieAuth).
+const links: Link[] = profiles.flatMap((profile) =>
+  profile.value
+    ? [{ label: profile.label, href: profile.url(profile.value), icon: profile.icon }]
+    : [],
+);
 ---
 
 {links.length > 0 && (
   <ul class="row">
-    {links.map((l) => (
+    {links.map((link) => (
       <li>
         <a
-          class:list={['chip', l.icon && 'social']}
-          href={l.href}
+          class:list={['chip', link.icon && 'social']}
+          href={link.href}
           rel="me noopener"
-          aria-label={l.icon ? l.label : undefined}
-          title={l.label}
+          aria-label={link.icon ? link.label : undefined}
+          title={link.label}
         >
-          {l.icon ? (
+          {link.icon ? (
             <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false">
-              <path d={ICONS[l.icon]} />
+              <path d={ICONS[link.icon]} />
             </svg>
           ) : (
-            l.label
+            link.label
           )}
         </a>
       </li>
