@@ -67,6 +67,16 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
   </div>
 </header>
 
+<script>
+  // On a phone the links scroll sideways; start with the current one in view.
+  for (const row of document.querySelectorAll<HTMLElement>('nav')) {
+    const current = row.querySelector<HTMLElement>('[aria-current="page"]');
+    if (current && row.scrollWidth > row.clientWidth) {
+      row.scrollLeft = current.offsetLeft - (row.clientWidth - current.offsetWidth) / 2;
+    }
+  }
+</script>
+
 <style>
   .nav {
     position: sticky;
@@ -139,5 +149,35 @@ const logoWidth = natural ? Math.round((natural.width / natural.height) * LOGO_H
   ul a[aria-current='page'] {
     color: var(--sec);
     border-bottom-color: var(--sec-line);
+  }
+
+  /* Phones: the brand gets its own row and the links one scrollable row under
+     it, edge to edge, so the sticky bar stays two rows high however many
+     items there are. The fade on the right says there is more. */
+  @media (max-width: 48rem) {
+    .inner {
+      gap: 0.25rem;
+      padding-block: 0.6rem 0;
+    }
+    nav {
+      position: relative;
+      flex: 1 0 100%;
+      margin: 0 calc(-1 * var(--gutter));
+      padding-inline: var(--gutter);
+      overflow-x: auto;
+      scrollbar-width: none;
+      mask-image: linear-gradient(to right, #000 calc(100% - var(--gutter)), transparent);
+    }
+    nav::-webkit-scrollbar {
+      display: none;
+    }
+    nav ul {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      width: max-content;
+    }
+    nav a {
+      white-space: nowrap;
+    }
   }
 </style>
