@@ -302,14 +302,14 @@ Neither is repeated here, because a second copy is a copy that can disagree.
 ### `socials.yml`
 
 `orcid_id`, `scholar_userid`, `github_username`, `dblp_url`,
-`linkedin_username`, `semanticscholar_id`, `researchgate_username`,
+`linkedin_username`, `semanticscholar_id`, `researchgate_username`, `work_url`,
 `pgp_fingerprint`, plus `extra[]` for
 anything the fixed fields do not cover. Set a field to `null` (or delete the
 line) and its chip does not render — that is how you remove a profile you do not
 have, rather than by editing `SocialRow.astro`.
 
 An `extra` entry's `icon` may name one of the marks in `SocialRow.astro` — `orcid`,
-`scholar`, `dblp`, `github`, `codeberg`, `linkedin`, `semanticscholar`, `researchgate` — and
+`scholar`, `dblp`, `github`, `codeberg`, `linkedin`, `semanticscholar`, `researchgate`, `work` — and
 without one it renders as a text chip, so an unfamiliar platform still looks
 deliberate. The fixed list is a convenience, not a whitelist: where an academic
 keeps a profile is not something a template gets to decide.

@@ -24,10 +24,13 @@ semanticscholar_id: null
 # The slug in your ResearchGate profile URL, e.g. Jane-Doe-2.
 researchgate_username: null
 
+# Your page at your institution; renders as a briefcase chip.
+work_url: null
+
 # Anything the fields above do not cover. `icon` may name one of the marks in
 # components/SocialRow.astro — orcid, scholar, dblp, github, codeberg, linkedin,
-# semanticscholar, researchgate — and without one the entry renders as a text
-# chip instead.
+# semanticscholar, researchgate, work — and without one the entry renders as a
+# text chip instead.
 extra:
   - label: Codeberg
     url: https://codeberg.org/

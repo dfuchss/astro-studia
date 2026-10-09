@@ -26,6 +26,7 @@ export type Socials = {
   linkedin_username: string | null;
   semanticscholar_id: string | null;
   researchgate_username: string | null;
+  work_url: string | null;
   pgp_fingerprint: string | null;
   /**
    * Anything the fixed fields do not cover. `icon` names one of the marks in
