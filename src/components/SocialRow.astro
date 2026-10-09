@@ -100,31 +100,29 @@ const links: Link[] = profiles.flatMap((profile) =>
 );
 ---
 
-{
-  links.length > 0 && (
-    <ul class="row">
-      {links.map((link) => (
-        <li>
-          <a
-            class:list={['chip', link.icon && 'social']}
-            href={link.href}
-            rel="me noopener"
-            aria-label={link.icon ? link.label : undefined}
-            title={link.label}
-          >
-            {link.icon ? (
-              <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false">
-                <path d={ICONS[link.icon]} />
-              </svg>
-            ) : (
-              link.label
-            )}
-          </a>
-        </li>
-      ))}
-    </ul>
-  )
-}
+{links.length > 0 && (
+  <ul class="row">
+    {links.map((link) => (
+      <li>
+        <a
+          class:list={['chip', link.icon && 'social']}
+          href={link.href}
+          rel="me noopener"
+          aria-label={link.icon ? link.label : undefined}
+          title={link.label}
+        >
+          {link.icon ? (
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false">
+              <path d={ICONS[link.icon]} />
+            </svg>
+          ) : (
+            link.label
+          )}
+        </a>
+      </li>
+    ))}
+  </ul>
+)}
 
 <style>
   .row {
