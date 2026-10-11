@@ -1,10 +1,9 @@
 # Refresh src/data/citations.yml from Google Scholar and commit it.
 #
 # OPT-IN, and on demand only: uncomment the schedule below to run it nightly.
-# Needs scholar_userid in src/data/socials.yml, or the script exits saying so,
-# and secrets.PAT — a push made with GITHUB_TOKEN triggers no other workflow, so
-# the site would never rebuild. That secret is shared with docs.yml, which needs
-# it to be a CLASSIC token with the `repo` scope. Scholar rate-limits hard and
+# Needs scholar_userid in src/data/socials.yml, or the script exits saying so.
+# No secret: it pushes with GITHUB_TOKEN and then starts deploy.yml itself,
+# because that push triggers no other workflow. Scholar rate-limits hard and
 # has no API, so the timeout below is treated as success and the counts simply
 # stay as they are. docs/Deploying.md, "The two opt-in workflows".
 name: Update Scholar citations
@@ -14,29 +13,21 @@ on:
   # schedule:
   #   - cron: '0 0 * * *' # daily, midnight UTC
 
+# actions: write lets the job start deploy.yml itself.
 permissions:
   contents: write
+  actions: write
+
+# Queued, never cancelled: a cancelled run could leave a commit that never deploys.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      # Checked through env: the secrets context is not available in a step-level
-      # `if`, so `if: ${{ !secrets.PAT }}` would never fire. Hard failure rather
-      # than a GITHUB_TOKEN fallback, which would leave this job green while the
-      # refreshed data silently stopped reaching the site.
-      - name: Require a PAT
-        env:
-          PAT: ${{ secrets.PAT }}
-        run: |
-          if [ -z "$PAT" ]; then
-            echo "::error::secrets.PAT is not set. See the comment at the top of this file."
-            exit 1
-          fi
-
       - uses: actions/checkout@v7
-        with:
-          token: ${{ secrets.PAT }}
 
       - uses: actions/setup-python@v7
         with:
@@ -59,6 +50,7 @@ jobs:
           exit $code
 
       - name: Commit if changed
+        id: commit
         run: |
           if git diff --quiet -- src/data/citations.yml; then
             echo "No change."
@@ -68,4 +60,15 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src/data/citations.yml
           git commit -m "chore: refresh Scholar citations"
+          # The other data workflow may have pushed since checkout.
+          git pull --rebase
           git push
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # A push made with GITHUB_TOKEN triggers no other workflow, but a dispatch
+      # does. No fallback: a green job whose data never ships is the failure to avoid.
+      - name: Rebuild the site
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref "$GITHUB_REF_NAME"

@@ -256,7 +256,7 @@ build offline with no network and no token:
 
 Both workflows are opt-in and neither ships on a schedule. `update-citations.yml`
 runs on demand only; `update-github-metadata.yml` also triggers on a push to
-`main` touching `src/data/repositories.yml`. Both need a classic `PAT`. See
+`main` touching `src/data/repositories.yml`. Neither needs a secret. See
 [Deploying](Deploying.md).
 
 ### `cv.yml`

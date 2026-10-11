@@ -290,22 +290,19 @@ For a per-page image, take an optional `image` prop through `BaseHead` the way
 result. Neither ships on a schedule; uncomment the `schedule:` block to give one
 a cadence. `update-citations.yml` is otherwise on demand only, but
 `update-github-metadata.yml` **also runs on a push to `main` touching
-`src/data/repositories.yml`** — so it needs its token from the first time you add
-a repository there, not only when somebody clicks it.
+`src/data/repositories.yml`**.
 
-Both need `secrets.PAT`, and it has to be the **classic** token described under
-[Publishing the docs to the wiki](#publishing-the-docs-to-the-wiki) below: these
-two want no more than `contents: write`, but the third workflow sharing the
-secret pushes to a wiki, which no fine-grained token can do. The built-in
-`GITHUB_TOKEN` will not do either: a push made with it triggers no other
-workflow, so the data would land and the site would never rebuild. Both
-workflows fail loudly rather than falling back, because the failure that matters
-here is a green job whose result silently never ships.
+Neither needs a secret. Both push with the built-in `GITHUB_TOKEN`, and since a
+push made with it triggers no other workflow, each then starts `deploy.yml`
+itself with `gh workflow run` — which is why they ask for `actions: write`. That
+step has no fallback, because the failure that matters here is a green job whose
+result silently never ships. Each rebases before pushing, so the two can run
+close together.
 
 The Scholar one additionally tolerates its own timeout. Scholar rate-limits
 hard and has no API, so a run that cannot finish is routine — the counts stay
 as they are until next time. It is also the one piece of tooling that needs pip:
-the workflow pins `python-version: '3.13'` and installs `requirements.txt`, and
+the workflow pins `python-version: '3.15'` and installs `requirements.txt`, and
 `scholar_userid` must be set in `src/data/socials.yml` or the script exits saying
 so.
 
@@ -339,10 +336,8 @@ Four steps, once:
    to a wiki. Neither can the built-in `GITHUB_TOKEN`, for the same reason.
 
 3. **Add it as the repository secret `PAT`.** Settings → Secrets and variables →
-   Actions → New repository secret, named exactly `PAT` — the same secret the two
-   data-refresh workflows above read. One token covers all three: those two need
-   no more than write access to the repository's contents, which `repo` includes.
-   The wiki is therefore what decides _which kind_ of token to create.
+   Actions → New repository secret, named exactly `PAT`. Only this workflow
+   reads it; the two data-refresh workflows above use the built-in token.
 
 4. **Push to `main`.** Or run "Publish the wiki" from the Actions tab.
 

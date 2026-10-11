@@ -6,10 +6,8 @@
 #
 # Two things are needed once, and both are checked below before anything runs: a
 # wiki initialised by hand, and a CLASSIC personal access token in secrets.PAT
-# (GitHub's fine-grained permission list has no wiki entry to grant). The same
-# secret serves update-citations.yml and update-github-metadata.yml, so the wiki
-# decides which KIND of token to make. docs/Deploying.md, "Publishing the docs
-# to the wiki".
+# (GitHub's fine-grained permission list has no wiki entry to grant).
+# docs/Deploying.md, "Publishing the docs to the wiki".
 name: Publish the wiki
 
 on:

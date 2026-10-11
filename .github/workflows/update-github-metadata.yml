@@ -1,10 +1,8 @@
 # Refresh src/data/github-metadata.json from the GitHub API and commit it.
 #
 # Runs on demand and on a push to repositories.yml; uncomment the schedule below
-# to add a weekly run. Needs secrets.PAT, not the built-in GITHUB_TOKEN, whose
-# pushes trigger no other workflow — the commit would land and the site would
-# never rebuild. Contents write is all this job wants, but the secret is shared
-# with docs.yml, which needs a CLASSIC token with the `repo` scope.
+# to add a weekly run. No secret: it pushes with GITHUB_TOKEN and then starts
+# deploy.yml itself, because that push triggers no other workflow.
 # docs/Deploying.md, "The two opt-in workflows".
 name: Update GitHub metadata
 
@@ -16,29 +14,21 @@ on:
     paths: [src/data/repositories.yml]
     branches: [main]
 
+# actions: write lets the job start deploy.yml itself.
 permissions:
   contents: write
+  actions: write
+
+# Queued, never cancelled: a cancelled run could leave a commit that never deploys.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      # Checked through env: the secrets context is not available in a step-level
-      # `if`, so `if: ${{ !secrets.PAT }}` would never fire. Hard failure rather
-      # than a GITHUB_TOKEN fallback, which would leave this job green while the
-      # refreshed data silently stopped reaching the site.
-      - name: Require a PAT
-        env:
-          PAT: ${{ secrets.PAT }}
-        run: |
-          if [ -z "$PAT" ]; then
-            echo "::error::secrets.PAT is not set. See the comment at the top of this file."
-            exit 1
-          fi
-
       - uses: actions/checkout@v7
-        with:
-          token: ${{ secrets.PAT }}
 
       - uses: actions/setup-node@v7
         with:
@@ -49,10 +39,11 @@ jobs:
 
       - name: Fetch metadata
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: npm run data:github
 
       - name: Commit if changed
+        id: commit
         run: |
           if git diff --quiet -- src/data/github-metadata.json; then
             echo "No change."
@@ -62,4 +53,15 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src/data/github-metadata.json
           git commit -m "chore: refresh GitHub metadata"
+          # The other data workflow may have pushed since checkout.
+          git pull --rebase
           git push
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # A push made with GITHUB_TOKEN triggers no other workflow, but a dispatch
+      # does. No fallback: a green job whose data never ships is the failure to avoid.
+      - name: Rebuild the site
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref "$GITHUB_REF_NAME"

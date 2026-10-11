@@ -383,12 +383,11 @@ right trade.
 
 Two workflows refresh them and commit the result. `update-citations.yml` runs on
 demand only; `update-github-metadata.yml` also runs on a push touching
-`src/data/repositories.yml`, so it needs its token from the first repository you
-add there. Both need a classic PAT rather than the built-in `GITHUB_TOKEN` — a
-push made with that token triggers no other workflow, so the data would land and
-the site would never rebuild — and both **fail loudly** when the PAT is absent
-rather than falling back, because the failure that matters here is a green job
-whose result silently never ships. See
+`src/data/repositories.yml`. Both push with the built-in `GITHUB_TOKEN` and then start
+`deploy.yml` themselves with `gh workflow run`: a push made with that token
+triggers no other workflow, but a dispatch does. The dispatch step has no
+fallback, because the failure that matters here is a green job whose result
+silently never ships. See
 [Deploying](Deploying.md).
 
 ## CI

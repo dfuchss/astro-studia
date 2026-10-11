@@ -234,8 +234,9 @@ which is what makes a fresh clone build offline.
 `.github/workflows/deploy.yml` checks, builds and audits on every push and
 pull request to `main`, then publishes `dist/` to the `gh-pages` branch. Three
 further workflows are opt-in: two refresh the committed data files, and
-`docs.yml` publishes `docs/` to this repository's wiki. All three need the `PAT`
-secret, and `docs.yml` is pinned to this repository so it does nothing in a copy.
+`docs.yml` publishes `docs/` to this repository's wiki. The data workflows need
+no secret; `docs.yml` needs the `PAT` secret and is pinned to this repository, so
+it does nothing in a copy.
 See [docs/Deploying.md](docs/Deploying.md).
 
 ## Licence
