@@ -112,16 +112,18 @@ const involvement = isProfile ? await getPage('home/involvement') : undefined;
         </section>
       )}
 
-      {FEATURES.projects && (
+      {(FEATURES.projects || involvement?.hasBody) && (
         <section class="wrap section" id="building" data-section="projects">
           <p class="kicker" data-sigil="##">
             building
           </p>
           <h2>Also involved in</h2>
           <div class="involve">{involvement && <involvement.Content />}</div>
-          <p class="more mono">
-            <a href={PROJECTS}>{profile.text('more', 'projects')}</a>
-          </p>
+          {FEATURES.projects && (
+            <p class="more mono">
+              <a href={PROJECTS}>{profile.text('more', 'projects')}</a>
+            </p>
+          )}
         </section>
       )}
 
