@@ -3,6 +3,7 @@ import type { CollectionEntry } from 'astro:content';
 import { FEATURES } from '../../features.ts';
 import VenueBadge from './VenueBadge.astro';
 import CopyButton from '../CopyButton.astro';
+import DoiMark from '../DoiMark.astro';
 import PdfMark from '../PdfMark.astro';
 import ScholarMark from '../ScholarMark.astro';
 import { citationsFor, scholarPaperUrl } from '../../lib/citations.ts';
@@ -78,6 +79,17 @@ const bibId = `bib-${pub.id}`;
           <PdfMark />
         </a>
       )}
+      {record.doi && (
+        <a
+          class="title-icon"
+          href={`https://doi.org/${record.doi}`}
+          rel="noopener"
+          title={words.label('doi')}
+          aria-label={`${words.label('doi')}: ${record.title}`}
+        >
+          <DoiMark />
+        </a>
+      )}
     </h3>
 
     <p class="authors">
@@ -110,18 +122,11 @@ const bibId = `bib-${pub.id}`;
     )}
 
     <div class="links">
-      {record.doi ? (
-        <a class="chip" href={`https://doi.org/${record.doi}`} rel="noopener">
-          {words.label('doi')}
+      {!record.doi && record.url && (
+        /* The DOI icon is the better permalink; this is the fallback. */
+        <a class="chip" href={record.url} rel="noopener">
+          {words.label('link')}
         </a>
-      ) : (
-        /* Only when there is no DOI: a DOI is the better permalink, and two
-             chips pointing at the same paper is noise. */
-        record.url && (
-          <a class="chip" href={record.url} rel="noopener">
-            {words.label('link')}
-          </a>
-        )
       )}
       {cites > 0 && (
         <Cites
