@@ -3,6 +3,7 @@ import type { CollectionEntry } from 'astro:content';
 import { FEATURES } from '../../features.ts';
 import VenueBadge from './VenueBadge.astro';
 import CopyButton from '../CopyButton.astro';
+import PdfMark from '../PdfMark.astro';
 import ScholarMark from '../ScholarMark.astro';
 import { citationsFor, scholarPaperUrl } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
@@ -13,7 +14,7 @@ import { fill, getPage } from '../../lib/pages.ts';
 interface Props {
   pub: CollectionEntry<'publications'>;
   /**
-   * Trim the entry to its citation: no BibTeX block, no "Paper page" chip.
+   * Trim the entry to its citation: no BibTeX block.
    * For places that list a few publications alongside other things — a home
    * page — where the full apparatus would drown the rest of the page.
    */
@@ -62,9 +63,20 @@ const bibId = `bib-${pub.id}`;
       {pagePath ? (
         <a class="title-link" href={pagePath}>
           {record.title}
+          <span class="sr-only"> ({words.label('hasPage')})</span>
         </a>
       ) : (
         record.title
+      )}
+      {record.pdfUrl && (
+        <a
+          class="title-icon"
+          href={record.pdfUrl}
+          title={words.label('pdf')}
+          aria-label={`${words.label('pdf')}: ${record.title}`}
+        >
+          <PdfMark />
+        </a>
       )}
     </h3>
 
@@ -98,11 +110,6 @@ const bibId = `bib-${pub.id}`;
     )}
 
     <div class="links">
-      {record.pdfUrl && (
-        <a class="chip" href={record.pdfUrl}>
-          {words.label('pdf')}
-        </a>
-      )}
       {record.doi ? (
         <a class="chip" href={`https://doi.org/${record.doi}`} rel="noopener">
           {words.label('doi')}
@@ -126,11 +133,6 @@ const bibId = `bib-${pub.id}`;
           {words.plural('citations', cites, formatCount(cites))}
           <span class="sr-only"> (Google Scholar)</span>
         </Cites>
-      )}
-      {pagePath && !compact && (
-        <a class="chip paper-page" href={pagePath}>
-          {words.label('paperPage')}
-        </a>
       )}
       {!compact && (
         <details class="bib">
@@ -225,19 +227,33 @@ const bibId = `bib-${pub.id}`;
     color: var(--sec);
     background: var(--sec-dim);
   }
-  /* The links here that lead to a page of ours rather than off-site. */
+  /* Underlined at rest: the one cue that a title leads to a page of ours. */
   .title-link {
     color: inherit;
-    text-decoration: none;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--sec-line);
+    text-underline-offset: 0.2em;
   }
   .title-link:hover {
     color: var(--sec-strong);
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    text-decoration-color: var(--sec-strong);
+    text-decoration-thickness: 2px;
   }
-  .paper-page {
-    border-color: var(--sec-line);
-    color: var(--sec-strong);
+
+  /* Beside the title, not inside its link, so the underline stops at the text. */
+  .title-icon {
+    display: inline-flex;
+    margin-inline-start: 0.4em;
+    vertical-align: -0.1em;
+    transition:
+      translate var(--dur) var(--ease),
+      filter var(--dur) var(--ease);
+  }
+  .title-icon:hover,
+  .title-icon:focus-visible {
+    translate: 0 -1px;
+    filter: brightness(1.12);
   }
 
   /* `display: contents` promotes the summary and the body to children of the

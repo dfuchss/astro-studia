@@ -14,4 +14,4 @@ labels:
   noResults: 'No publications match that filter.'
 ---
 
-parsed from `src/data/papers.bib` at build time. Each one carries its own BibTeX; entries with a **Paper page** link have a page of their own.
+parsed from `src/data/papers.bib` at build time. Each one carries its own BibTeX; entries with an underlined title have a page of their own.

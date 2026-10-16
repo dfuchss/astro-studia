@@ -6,7 +6,7 @@ labels:
   doi: 'DOI'
   # the entry's `url`, shown when it has no DOI
   link: 'Link'
-  paperPage: 'Paper page →'
+  hasPage: 'has a paper page'
   bibtex: 'BibTeX'
   readPdf: 'Read the PDF'
   moreAuthors: 'and {count} more authors'
