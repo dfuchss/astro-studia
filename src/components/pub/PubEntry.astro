@@ -3,7 +3,9 @@ import type { CollectionEntry } from 'astro:content';
 import { FEATURES } from '../../features.ts';
 import VenueBadge from './VenueBadge.astro';
 import CopyButton from '../CopyButton.astro';
+import BibMark from '../BibMark.astro';
 import DoiMark from '../DoiMark.astro';
+import LinkMark from '../LinkMark.astro';
 import PdfMark from '../PdfMark.astro';
 import ScholarMark from '../ScholarMark.astro';
 import { citationsFor, scholarPaperUrl } from '../../lib/citations.ts';
@@ -31,7 +33,7 @@ const record = pub.data;
 const words = await getPage('site/publication');
 
 const { shown, hidden } = truncateAuthors(record.authors);
-/* 0, not undefined: a count of zero already means "no chip" below. */
+/* 0, not undefined: a count of zero already means no count below. */
 const cites = FEATURES.citations ? citationsFor(record.googleScholarId) : 0;
 const scholarUrl = scholarPaperUrl(record.googleScholarId);
 const Cites = scholarUrl ? 'a' : 'span';
@@ -69,27 +71,69 @@ const bibId = `bib-${pub.id}`;
       ) : (
         record.title
       )}
-      {record.pdfUrl && (
-        <a
-          class="title-icon"
-          href={record.pdfUrl}
-          title={words.label('pdf')}
-          aria-label={`${words.label('pdf')}: ${record.title}`}
-        >
-          <PdfMark />
-        </a>
-      )}
-      {record.doi && (
-        <a
-          class="title-icon"
-          href={`https://doi.org/${record.doi}`}
-          rel="noopener"
-          title={words.label('doi')}
-          aria-label={`${words.label('doi')}: ${record.title}`}
-        >
-          <DoiMark />
-        </a>
-      )}
+      <span class="title-icons">
+        {record.pdfUrl && (
+          <a
+            class="title-icon"
+            href={record.pdfUrl}
+            title={words.label('pdf')}
+            aria-label={`${words.label('pdf')}: ${record.title}`}
+          >
+            <PdfMark />
+          </a>
+        )}
+        {record.doi && (
+          <a
+            class="title-icon"
+            href={`https://doi.org/${record.doi}`}
+            rel="noopener"
+            title={words.label('doi')}
+            aria-label={`${words.label('doi')}: ${record.title}`}
+          >
+            <DoiMark />
+          </a>
+        )}
+        {!record.doi && record.url && (
+          /* The DOI icon is the better permalink; this is the fallback. */
+          <a
+            class="title-icon link-icon"
+            href={record.url}
+            rel="noopener"
+            title={words.label('link')}
+            aria-label={`${words.label('link')}: ${record.title}`}
+          >
+            <LinkMark />
+          </a>
+        )}
+        {!compact && (
+          <button
+            class="title-icon bib-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls={bibId}
+            aria-label={`BibTeX: ${record.title}`}
+            title={words.label('bibtex')}
+            hidden
+          >
+            <BibMark />
+          </button>
+        )}
+        {cites > 0 && (
+          <Cites
+            class="title-icon cites"
+            title="Citations according to Google Scholar"
+            {...(scholarUrl ? { href: scholarUrl, rel: 'noopener' } : {})}
+          >
+            <ScholarMark />
+            <span class="count mono" aria-hidden="true">
+              {formatCount(cites)}
+            </span>
+            <span class="sr-only">
+              {words.plural('citations', cites, formatCount(cites))} on Google Scholar
+            </span>
+          </Cites>
+        )}
+      </span>
     </h3>
 
     <p class="authors">
@@ -121,41 +165,29 @@ const bibId = `bib-${pub.id}`;
       </p>
     )}
 
-    <div class="links">
-      {!record.doi && record.url && (
-        /* The DOI icon is the better permalink; this is the fallback. */
-        <a class="chip" href={record.url} rel="noopener">
-          {words.label('link')}
-        </a>
-      )}
-      {cites > 0 && (
-        <Cites
-          class="chip cites"
-          title="Citations according to Google Scholar"
-          {...(scholarUrl ? { href: scholarUrl, rel: 'noopener' } : {})}
-        >
-          <ScholarMark />
-          {words.plural('citations', cites, formatCount(cites))}
-          <span class="sr-only"> (Google Scholar)</span>
-        </Cites>
-      )}
-      {!compact && (
-        <details class="bib">
-          <summary class="chip bib-toggle">
-            <span class="caret mono" aria-hidden="true">
-              ▸
-            </span>
-            {words.label('bibtex')}
-          </summary>
-          <div class="bib-body">
-            <CopyButton target={bibId} />
-            <pre id={bibId}>{record.bibtex}</pre>
-          </div>
-        </details>
-      )}
-    </div>
+    {!compact && (
+      <div class="bib-body" id={bibId}>
+        <CopyButton target={`${bibId}-text`} />
+        <pre id={`${bibId}-text`}>{record.bibtex}</pre>
+      </div>
+    )}
   </div>
 </li>
+
+<script>
+  // Without JS the BibTeX stays open and the button stays hidden.
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('button.bib-toggle')) {
+    const panel = document.getElementById(btn.getAttribute('aria-controls')!);
+    if (!panel) continue;
+    panel.hidden = true;
+    btn.hidden = false;
+    btn.addEventListener('click', () => {
+      const open = btn.getAttribute('aria-expanded') !== 'true';
+      btn.setAttribute('aria-expanded', String(open));
+      panel.hidden = !open;
+    });
+  }
+</script>
 
 <style>
   .entry {
@@ -215,83 +247,70 @@ const bibId = `bib-${pub.id}`;
     color: var(--text-muted);
   }
 
-  /* Inline layout, not flex. The chips are inline-flex so they wrap on their
-     own, and the BibTeX block — a block-level child — starts its own line and
-     sizes to this container. As a flex item it instead resolves its width from
-     the `pre` and its padding, and ends up wider than the column. */
-  .links {
-    margin: 0.5rem 0 0;
-  }
-  .links > .chip,
-  .links .bib-toggle {
-    margin: 0 0.4rem 0.4rem 0;
-    vertical-align: middle;
-  }
-  .cites {
-    border-color: var(--sec-line);
-    color: var(--sec);
-    background: var(--sec-dim);
-  }
   /* Underlined at rest: the one cue that a title leads to a page of ours. */
   .title-link {
     color: inherit;
     text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-decoration-color: var(--sec-line);
-    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1.5px;
+    text-decoration-color: color-mix(in srgb, var(--sec) 70%, transparent);
+    text-decoration-skip-ink: auto;
+    text-underline-offset: 0.18em;
   }
   .title-link:hover {
     color: var(--sec-strong);
     text-decoration-color: var(--sec-strong);
-    text-decoration-thickness: 2px;
+    text-decoration-thickness: 2.5px;
   }
 
-  /* Beside the title, not inside its link, so the underline stops at the text. */
+  /* Beside the title, not inside its link, so the underline stops at the text.
+     The group does not break, so the icons never split across lines. */
+  .title-icons {
+    white-space: nowrap;
+  }
   .title-icon {
     display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
     margin-inline-start: 0.4em;
     vertical-align: -0.1em;
     transition:
       translate var(--dur) var(--ease),
       filter var(--dur) var(--ease);
   }
-  .title-icon:hover,
-  .title-icon:focus-visible {
+  a.title-icon:hover,
+  a.title-icon:focus-visible,
+  button.title-icon:hover,
+  button.title-icon:focus-visible {
     translate: 0 -1px;
     filter: brightness(1.12);
   }
-
-  /* `display: contents` promotes the summary and the body to children of the
-     pill row, so the chip keeps its place in the row and does not move when you
-     open it — the body just wraps onto a full-width line beneath. It also
-     bypasses the UA's own hiding of closed content, so hide it explicitly. */
-  .bib {
-    display: contents;
-  }
-  .bib:not([open]) .bib-body {
-    display: none;
-  }
-  /* Reads as one more chip in the row above, so it is obviously a control. The
-     default disclosure triangle is replaced by a caret we can animate. */
+  /* The BibTeX control is a button: strip the UA chrome. */
   .bib-toggle {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
     cursor: pointer;
-    list-style: none;
-    user-select: none;
   }
-  .bib-toggle::-webkit-details-marker {
+  .title-icon[hidden] {
     display: none;
   }
-  .bib-toggle:hover {
-    border-color: var(--sec-line);
-    color: var(--sec-strong);
+  .bib-toggle[aria-expanded='true'] {
+    filter: brightness(1.25);
   }
-  .caret {
-    display: inline-block;
-    font-size: 0.7em;
-    transition: rotate var(--dur) var(--ease);
+  .link-icon {
+    color: var(--text-muted);
   }
-  .bib[open] .caret {
-    rotate: 90deg;
+  /* Scholar blue, lifted for the dark theme; the mark itself is currentColor. */
+  .cites {
+    color: #5b9bff;
+    text-decoration: none;
+  }
+  .count {
+    font-size: 0.78rem;
+    line-height: 1;
+    color: #a9c7ff;
   }
 
   /* Copy sits in the corner of the block it copies rather than floating above
@@ -299,7 +318,7 @@ const bibId = `bib-${pub.id}`;
      padding pushes the block past its basis and off the screen. */
   .bib-body {
     position: relative;
-    margin-top: 0.1rem;
+    margin-top: 0.5rem;
   }
   .bib-body pre {
     margin: 0;
