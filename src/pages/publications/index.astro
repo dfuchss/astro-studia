@@ -3,8 +3,9 @@ import { FEATURES, disabled } from '../../features.ts';
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import PubEntry from '../../components/pub/PubEntry.astro';
+import ScholarMark from '../../components/ScholarMark.astro';
 import { byYear } from '../../lib/publications.ts';
-import { scholarMetrics, formatUpdated } from '../../lib/citations.ts';
+import { scholarMetrics, scholarProfileUrl, formatUpdated } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
 import { peopleLinks } from '../../lib/people.ts';
 import { fill, getPage, need } from '../../lib/pages.ts';
@@ -14,6 +15,8 @@ if (!FEATURES.publications) return disabled();
 const pubs = await getCollection('publications');
 const groups = byYear(pubs);
 const metrics = FEATURES.citations ? scholarMetrics() : undefined;
+const profile = scholarProfileUrl();
+const Metric = profile ? 'a' : 'div';
 // Built once for the whole page, then handed to every entry.
 const links = FEATURES.people ? await peopleLinks() : undefined;
 
@@ -36,21 +39,27 @@ const { label } = page;
 
     {metrics && metrics.total > 0 && (
       <ul class="metrics">
-        <li class="metric">
-          <span class="metric-value">{formatCount(metrics.total)}</span>
-          <span class="metric-label mono">{label('citations')}</span>
-          <span class="metric-sub mono">
-            {fill(label('asOf'), { date: formatUpdated(metrics.lastUpdated) })}
-          </span>
-        </li>
-        <li class="metric">
-          <span class="metric-value">{metrics.hIndex}</span>
-          <span class="metric-label mono">{label('hIndex')}</span>
-        </li>
-        <li class="metric">
-          <span class="metric-value">{metrics.i10}</span>
-          <span class="metric-label mono">{label('i10')}</span>
-        </li>
+        {[
+          { value: formatCount(metrics.total), key: 'citations', asOf: true },
+          { value: String(metrics.hIndex), key: 'hIndex' },
+          { value: String(metrics.i10), key: 'i10' },
+        ].map((metric) => (
+          <li>
+            <Metric class="metric" {...(profile ? { href: profile, rel: 'noopener' } : {})}>
+              <span class="metric-value">{metric.value}</span>
+              <span class="metric-label mono">
+                <ScholarMark />
+                {label(metric.key)}
+                <span class="sr-only"> (Google Scholar)</span>
+              </span>
+              {metric.asOf && (
+                <span class="metric-sub mono">
+                  {fill(label('asOf'), { date: formatUpdated(metrics.lastUpdated) })}
+                </span>
+              )}
+            </Metric>
+          </li>
+        ))}
       </ul>
     )}
 
@@ -153,13 +162,18 @@ const { label } = page;
   /* Flat, like the home page stats: a hairline rule instead of a card. */
   .metric {
     display: grid;
+    align-content: start;
     gap: 0.15rem;
     padding: 0.85rem 0 0;
     border-top: 1px solid var(--border);
+    text-decoration: none;
     transition: border-color var(--dur) var(--ease);
   }
   .metric:hover {
     border-top-color: var(--sec-line);
+  }
+  a.metric:hover .metric-label {
+    color: var(--sec);
   }
   .metric-value {
     font-family: var(--font-head);
@@ -170,6 +184,10 @@ const { label } = page;
   }
   .metric-label {
     color: var(--text-faint);
+  }
+  .metric-label :global(svg) {
+    margin-right: 0.3em;
+    vertical-align: -0.15em;
   }
   .metric-sub {
     color: var(--text-faint);

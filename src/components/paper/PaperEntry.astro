@@ -3,7 +3,8 @@ import { getEntry } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import { FEATURES } from '../../features.ts';
 import VenueBadge from '../pub/VenueBadge.astro';
-import { citationsFor } from '../../lib/citations.ts';
+import ScholarMark from '../ScholarMark.astro';
+import { citationsFor, scholarPaperUrl } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
 import { isSelfName } from '../../lib/authors.ts';
 import { paperPath } from '../../lib/paths.ts';
@@ -40,6 +41,8 @@ const year = paperYear(paper, pub);
 /* 0, not undefined: a count of zero already means "no chip" everywhere below,
    so the flag needs no second spelling. */
 const cites = FEATURES.citations ? citationsFor(record?.googleScholarId) : 0;
+const scholarUrl = scholarPaperUrl(record?.googleScholarId);
+const Cites = scholarUrl ? 'a' : 'span';
 
 /*
  * The byline comes from authors.yml, not from the BibTeX author list, for the
@@ -177,9 +180,15 @@ hasLinks ||= cites > 0;
           )
         )}
         {cites > 0 && (
-          <span class="chip cites" title="Citations (Google Scholar)">
+          <Cites
+            class="chip cites"
+            title="Citations according to Google Scholar"
+            {...(scholarUrl ? { href: scholarUrl, rel: 'noopener' } : {})}
+          >
+            <ScholarMark />
             {words.plural('citations', cites, formatCount(cites))}
-          </span>
+            <span class="sr-only"> (Google Scholar)</span>
+          </Cites>
         )}
       </div>
     )}

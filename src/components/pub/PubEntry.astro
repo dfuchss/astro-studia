@@ -3,7 +3,8 @@ import type { CollectionEntry } from 'astro:content';
 import { FEATURES } from '../../features.ts';
 import VenueBadge from './VenueBadge.astro';
 import CopyButton from '../CopyButton.astro';
-import { citationsFor } from '../../lib/citations.ts';
+import ScholarMark from '../ScholarMark.astro';
+import { citationsFor, scholarPaperUrl } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
 import { truncateAuthors, fullName, isSelf, surnameKey } from '../../lib/authors.ts';
 import { paperPath } from '../../lib/paths.ts';
@@ -30,6 +31,8 @@ const words = await getPage('site/publication');
 const { shown, hidden } = truncateAuthors(record.authors);
 /* 0, not undefined: a count of zero already means "no chip" below. */
 const cites = FEATURES.citations ? citationsFor(record.googleScholarId) : 0;
+const scholarUrl = scholarPaperUrl(record.googleScholarId);
+const Cites = scholarUrl ? 'a' : 'span';
 
 /* Resolved here rather than in the two places it is rendered: a site with no
    paper pages has nothing to link to — `undefined` then renders the title as
@@ -114,9 +117,15 @@ const bibId = `bib-${pub.id}`;
         )
       )}
       {cites > 0 && (
-        <span class="chip cites" title="Citations (Google Scholar)">
+        <Cites
+          class="chip cites"
+          title="Citations according to Google Scholar"
+          {...(scholarUrl ? { href: scholarUrl, rel: 'noopener' } : {})}
+        >
+          <ScholarMark />
           {words.plural('citations', cites, formatCount(cites))}
-        </span>
+          <span class="sr-only"> (Google Scholar)</span>
+        </Cites>
       )}
       {pagePath && !compact && (
         <a class="chip paper-page" href={pagePath}>

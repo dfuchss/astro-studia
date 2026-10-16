@@ -6,6 +6,7 @@ import { FEATURES } from '../../features.ts';
 import { SELF } from '../../consts.ts';
 import { portrait, PORTRAIT_SIZE } from '../../lib/portrait.ts';
 import { PROJECTS, PUBLICATIONS } from '../../lib/paths.ts';
+import ScholarMark from '../ScholarMark.astro';
 import { formatUpdatedShort, scholarMetrics } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
 import { fill, getPage, need } from '../../lib/pages.ts';
@@ -41,14 +42,26 @@ const updated = metrics
  * collection.
  */
 /** `note` dates a figure that came from somewhere else and goes stale. */
-type Stat = { value: number; label: string; href: string; note?: string };
+type Stat = { value: number; label: string; href: string; note?: string; scholar?: boolean };
 
 const rows: Stat[] = [
   { value: pubs.length, label: statLabel('publications'), href: PUBLICATIONS },
   ...(metrics
     ? [
-        { value: metrics.total, label: statLabel('citations'), href: PUBLICATIONS, note: updated },
-        { value: metrics.hIndex, label: statLabel('hIndex'), href: PUBLICATIONS, note: updated },
+        {
+          value: metrics.total,
+          label: statLabel('citations'),
+          href: PUBLICATIONS,
+          note: updated,
+          scholar: true,
+        },
+        {
+          value: metrics.hIndex,
+          label: statLabel('hIndex'),
+          href: PUBLICATIONS,
+          note: updated,
+          scholar: true,
+        },
       ]
     : []),
   { value: projects.length, label: statLabel('projects'), href: PROJECTS },
@@ -86,7 +99,9 @@ const stats = rows.filter((stat) => stat.value > 0);
           <a href={stat.href}>
             <span class="stat-value">{formatCount(stat.value)}</span>
             <span class="stat-label mono">
+              {stat.scholar && <ScholarMark />}
               {stat.label}
+              {stat.scholar && <span class="sr-only"> (Google Scholar)</span>}
               {stat.note && <span class="stat-note">{stat.note}</span>}
             </span>
           </a>
@@ -183,6 +198,10 @@ const stats = rows.filter((stat) => stat.value > 0);
   .stat-label {
     color: var(--text-faint);
     font-size: 0.6875rem;
+  }
+  .stat-label :global(svg) {
+    margin-right: 0.3em;
+    vertical-align: -0.15em;
   }
   /* Inline after the label, not a row of its own: the margin carries the gap,
      so the markup needs no whitespace expression between the two. */
