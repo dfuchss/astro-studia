@@ -8,7 +8,6 @@ labels:
   link: 'Link'
   hasPage: 'has a paper page'
   bibtex: 'BibTeX'
-  readPdf: 'Read the PDF'
   moreAuthors: 'and {count} more authors'
   alsoPresented: 'Also presented at'
   # the status in a list row, and alone on a paper page with no venue line

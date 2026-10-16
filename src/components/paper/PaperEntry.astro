@@ -3,6 +3,9 @@ import { getEntry } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import { FEATURES } from '../../features.ts';
 import VenueBadge from '../pub/VenueBadge.astro';
+import DoiMark from '../DoiMark.astro';
+import LinkMark from '../LinkMark.astro';
+import PdfMark from '../PdfMark.astro';
 import ScholarMark from '../ScholarMark.astro';
 import { citationsFor, scholarPaperUrl } from '../../lib/citations.ts';
 import { formatCount } from '../../lib/format.ts';
@@ -38,8 +41,7 @@ const words = await getPage('site/publication');
 
 const venue = paperVenue(paper);
 const year = paperYear(paper, pub);
-/* 0, not undefined: a count of zero already means "no chip" everywhere below,
-   so the flag needs no second spelling. */
+/* 0, not undefined: a count of zero already means no count below. */
 const cites = FEATURES.citations ? citationsFor(record?.googleScholarId) : 0;
 const scholarUrl = scholarPaperUrl(record?.googleScholarId);
 const Cites = scholarUrl ? 'a' : 'span';
@@ -62,15 +64,6 @@ const inParts = [
   record?.booktitle ?? record?.journal ?? record?.school ?? record?.institution,
   record?.location,
 ].filter(Boolean);
-
-/*
- * Whether the pill row exists at all. Tested here rather than with `:empty`,
- * which a div holding only whitespace does not match — and a talk with no
- * BibTeX entry has no pills, so the row would otherwise contribute its top
- * margin to every one of those entries.
- */
-let hasLinks = Boolean(record?.pdfUrl || record?.doi || record?.url);
-hasLinks ||= cites > 0;
 ---
 
 <li class="entry reveal">
@@ -86,6 +79,56 @@ hasLinks ||= cites > 0;
       <a class="title-link" href={paperPath(paper.id)}>
         {paper.data.title}
       </a>
+      <span class="title-icons">
+        {record?.pdfUrl && (
+          <a
+            class="title-icon"
+            href={record.pdfUrl}
+            title={words.label('pdf')}
+            aria-label={`${words.label('pdf')}: ${paper.data.title}`}
+          >
+            <PdfMark />
+          </a>
+        )}
+        {record?.doi && (
+          <a
+            class="title-icon"
+            href={`https://doi.org/${record.doi}`}
+            rel="noopener"
+            title={words.label('doi')}
+            aria-label={`${words.label('doi')}: ${paper.data.title}`}
+          >
+            <DoiMark />
+          </a>
+        )}
+        {!record?.doi && record?.url && (
+          /* The DOI icon is the better permalink; this is the fallback. */
+          <a
+            class="title-icon link-icon"
+            href={record.url}
+            rel="noopener"
+            title={words.label('link')}
+            aria-label={`${words.label('link')}: ${paper.data.title}`}
+          >
+            <LinkMark />
+          </a>
+        )}
+        {cites > 0 && (
+          <Cites
+            class="title-icon cites"
+            title="Citations according to Google Scholar"
+            {...(scholarUrl ? { href: scholarUrl, rel: 'noopener' } : {})}
+          >
+            <ScholarMark />
+            <span class="count mono" aria-hidden="true">
+              {formatCount(cites)}
+            </span>
+            <span class="sr-only">
+              {words.plural('citations', cites, formatCount(cites))} on Google Scholar
+            </span>
+          </Cites>
+        )}
+      </span>
     </h3>
 
     {authors.length > 0 && (
@@ -158,40 +201,6 @@ hasLinks ||= cites > 0;
         </p>
       )
     }
-
-    {hasLinks && (
-      <div class="links">
-        {record?.pdfUrl && (
-          <a class="chip" href={record.pdfUrl}>
-            {words.label('pdf')}
-          </a>
-        )}
-        {record?.doi ? (
-          <a class="chip" href={`https://doi.org/${record.doi}`} rel="noopener">
-            {words.label('doi')}
-          </a>
-        ) : (
-          /* Only when there is no DOI: a DOI is the better permalink, and two
-               chips pointing at the same paper is noise. */
-          record?.url && (
-            <a class="chip" href={record.url} rel="noopener">
-              {words.label('link')}
-            </a>
-          )
-        )}
-        {cites > 0 && (
-          <Cites
-            class="chip cites"
-            title="Citations according to Google Scholar"
-            {...(scholarUrl ? { href: scholarUrl, rel: 'noopener' } : {})}
-          >
-            <ScholarMark />
-            {words.plural('citations', cites, formatCount(cites))}
-            <span class="sr-only"> (Google Scholar)</span>
-          </Cites>
-        )}
-      </div>
-    )}
   </div>
 </li>
 
@@ -246,17 +255,37 @@ hasLinks ||= cites > 0;
     font-size: var(--fs-small);
     color: var(--text-faint);
   }
-  .links {
-    margin: 0.5rem 0 0;
+  /* Beside the title, not inside its link. The group does not break. */
+  .title-icons {
+    white-space: nowrap;
   }
-  .links > .chip {
-    margin: 0 0.4rem 0.4rem 0;
-    vertical-align: middle;
+  .title-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    margin-inline-start: 0.4em;
+    vertical-align: -0.1em;
+    transition:
+      translate var(--dur) var(--ease),
+      filter var(--dur) var(--ease);
   }
+  a.title-icon:hover,
+  a.title-icon:focus-visible {
+    translate: 0 -1px;
+    filter: brightness(1.12);
+  }
+  .link-icon {
+    color: var(--text-muted);
+  }
+  /* Scholar blue, lifted for the dark theme; the mark itself is currentColor. */
   .cites {
-    border-color: var(--sec-line);
-    color: var(--sec);
-    background: var(--sec-dim);
+    color: #5b9bff;
+    text-decoration: none;
+  }
+  .count {
+    font-size: 0.78rem;
+    line-height: 1;
+    color: #a9c7ff;
   }
 
   @media (max-width: 34rem) {

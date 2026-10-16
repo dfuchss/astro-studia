@@ -7,8 +7,13 @@ import Figure from '../../components/Figure.astro';
 import VenueBadge from '../../components/pub/VenueBadge.astro';
 import ScholarMeta from '../../components/pub/ScholarMeta.astro';
 import CopyButton from '../../components/CopyButton.astro';
+import DoiMark from '../../components/DoiMark.astro';
+import PdfMark from '../../components/PdfMark.astro';
+import ScholarMark from '../../components/ScholarMark.astro';
 import { FEATURES } from '../../features.ts';
 import { PAPERS, projectPath } from '../../lib/paths.ts';
+import { citationsFor, scholarPaperUrl } from '../../lib/citations.ts';
+import { formatCount } from '../../lib/format.ts';
 import { isSelfName } from '../../lib/authors.ts';
 import {
   linkLabel,
@@ -82,9 +87,11 @@ const inParts = [
   record?.location,
 ].filter(Boolean);
 
-// The two links a reader came for, repeated in the link rows below on
-// purpose: nobody should have to read an index to find the PDF.
-const hasActions = Boolean(record?.pdfUrl || record?.doi);
+/* 0, not undefined: a count of zero already means no count below. */
+const cites = FEATURES.citations ? citationsFor(record?.googleScholarId) : 0;
+const scholarUrl = scholarPaperUrl(record?.googleScholarId);
+const Cites = scholarUrl ? 'a' : 'span';
+const hasIcons = Boolean(record?.pdfUrl || record?.doi || cites > 0);
 
 // The citation and the id CopyButton copies from; one object so the Cite
 // section has one thing to test.
@@ -122,7 +129,49 @@ hasLinkSection ||= projects.length > 0;
         )}
       </p>
 
-      <h1>{paper.data.title}</h1>
+      <h1>
+        {paper.data.title}
+        {hasIcons && (
+          <span class="title-icons">
+            {record?.pdfUrl && (
+              <a
+                class="title-icon"
+                href={record.pdfUrl}
+                title={words.label('pdf')}
+                aria-label={`${words.label('pdf')}: ${paper.data.title}`}
+              >
+                <PdfMark />
+              </a>
+            )}
+            {record?.doi && (
+              <a
+                class="title-icon"
+                href={`https://doi.org/${record.doi}`}
+                rel="noopener"
+                title={words.label('doi')}
+                aria-label={`${words.label('doi')}: ${paper.data.title}`}
+              >
+                <DoiMark />
+              </a>
+            )}
+            {cites > 0 && (
+              <Cites
+                class="title-icon cites"
+                title="Citations according to Google Scholar"
+                {...(scholarUrl ? { href: scholarUrl, rel: 'noopener' } : {})}
+              >
+                <ScholarMark />
+                <span class="count mono" aria-hidden="true">
+                  {formatCount(cites)}
+                </span>
+                <span class="sr-only">
+                  {words.plural('citations', cites, formatCount(cites))} on Google Scholar
+                </span>
+              </Cites>
+            )}
+          </span>
+        )}
+      </h1>
 
       {authors.length > 0 && (
         <p class="byline">
@@ -214,21 +263,6 @@ hasLinkSection ||= projects.length > 0;
               </a>
             </>
           ))}
-        </p>
-      )}
-
-      {hasActions && (
-        <p class="actions">
-          {record?.pdfUrl && (
-            <a class="chip primary" href={record.pdfUrl}>
-              {words.label('readPdf')}
-            </a>
-          )}
-          {record?.doi && (
-            <a class="chip" href={`https://doi.org/${record.doi}`} rel="noopener">
-              {words.label('doi')}
-            </a>
-          )}
         </p>
       )}
     </header>
@@ -407,18 +441,35 @@ hasLinkSection ||= projects.length > 0;
     background: var(--sec-dim);
   }
 
-  /* The one emphatic element on the page, because it is the one thing most
-     readers arrived to do. Everything else here is a hairline. */
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 1.1rem 0 0;
+  /* Beside the title, scaled to the heading; the group does not break. */
+  .title-icons {
+    font-size: 0.8em;
+    white-space: nowrap;
   }
-  .actions .primary {
-    border-color: var(--sec-line);
-    background: var(--sec-dim);
-    color: var(--sec-strong);
+  .title-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    margin-inline-start: 0.4em;
+    vertical-align: -0.1em;
+    transition:
+      translate var(--dur) var(--ease),
+      filter var(--dur) var(--ease);
+  }
+  a.title-icon:hover,
+  a.title-icon:focus-visible {
+    translate: 0 -1px;
+    filter: brightness(1.12);
+  }
+  /* Scholar blue, lifted for the dark theme; the mark itself is currentColor. */
+  .cites {
+    color: #5b9bff;
+    text-decoration: none;
+  }
+  .count {
+    font-size: 0.5em;
+    line-height: 1;
+    color: #a9c7ff;
   }
 
   .links {
