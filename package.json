@@ -24,6 +24,7 @@
     "format": "prettier . --write",
     "audit": "node scripts/audit-site.mjs",
     "icons": "node scripts/generate-icons.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
     "data:github": "node scripts/fetch-github-metadata.mjs",
     "bib:check": "python3 scripts/update_bib.py",
     "bib:missing": "node scripts/find-missing-papers.mjs",

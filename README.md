@@ -214,6 +214,7 @@ little is too little.
 | `npm run format`      | `prettier --write`                                                                     |
 | `npm run audit`       | the one gate: every check over `dist/` — see below                                     |
 | `npm run icons`       | write the three `public/` icon PNGs from one image: `npm run icons -- logo.png`        |
+| `npm run screenshots` | regenerate the `.github/media/` README screenshots (needs Chrome; `CHROME` picks one)  |
 | `npm run data:github` | refresh `src/data/github-metadata.json`                                                |
 | `npm run bib:check`   | check `papers.bib` against Crossref (stdlib Python only)                               |
 | `npm run bib:missing` | propose papers from DBLP or OpenAlex that `papers.bib` lacks (`-i` asks, `--yes` adds) |
