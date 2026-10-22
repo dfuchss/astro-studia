@@ -1,6 +1,6 @@
 # Google Scholar citation counts, keyed by cluster id.
 #
-# MACHINE-WRITTEN by scripts/update_scholar_citations.py, and committed so the
+# MACHINE-WRITTEN by scripts/update-scholar-citations.mjs, and committed so the
 # site builds offline, with no token and nothing to rate-limit. The workflow
 # that refreshes it is opt-in — see .github/workflows/update-citations.yml.
 #

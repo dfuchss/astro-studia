@@ -301,10 +301,8 @@ close together.
 
 The Scholar one additionally tolerates its own timeout. Scholar rate-limits
 hard and has no API, so a run that cannot finish is routine — the counts stay
-as they are until next time. It is also the one piece of tooling that needs pip:
-the workflow pins `python-version: '3.15'` and installs `requirements.txt`, and
-`scholar_userid` must be set in `src/data/socials.yml` or the script exits saying
-so.
+as they are until next time. `scholar_userid` must be set in
+`src/data/socials.yml` or the script exits saying so.
 
 Neither is needed to build. Both output files are committed, which is what lets
 a fresh clone build with no network, no token and nothing to rate-limit.

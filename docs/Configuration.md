@@ -249,10 +249,10 @@ Nine files. Four are content collections with Zod schemas behind them
 Plus two **generated and committed** files, which is what makes a fresh clone
 build offline with no network and no token:
 
-| File                   | Written by                            | Refreshed by                                   |
-| ---------------------- | ------------------------------------- | ---------------------------------------------- |
-| `citations.yml`        | `scripts/update_scholar_citations.py` | `.github/workflows/update-citations.yml`       |
-| `github-metadata.json` | `scripts/fetch-github-metadata.mjs`   | `.github/workflows/update-github-metadata.yml` |
+| File                   | Written by                             | Refreshed by                                   |
+| ---------------------- | -------------------------------------- | ---------------------------------------------- |
+| `citations.yml`        | `scripts/update-scholar-citations.mjs` | `.github/workflows/update-citations.yml`       |
+| `github-metadata.json` | `scripts/fetch-github-metadata.mjs`    | `.github/workflows/update-github-metadata.yml` |
 
 Both workflows are opt-in and neither ships on a schedule. `update-citations.yml`
 runs on demand only; `update-github-metadata.yml` also triggers on a push to
@@ -315,7 +315,7 @@ deliberate. The fixed list is a convenience, not a whitelist: where an academic
 keeps a profile is not something a template gets to decide.
 
 `scholar_userid` does two things: it renders the Scholar chip, and it tells
-`scripts/update_scholar_citations.py` whose citations to fetch.
+`scripts/update-scholar-citations.mjs` whose citations to fetch.
 `scripts/find-missing-papers.mjs` (`npm run bib:missing`) reads `dblp_url` for
 the publication list and falls back to `orcid_id` (OpenAlex) without it; with
 neither it says which keys to set and changes nothing. Papers you decline for

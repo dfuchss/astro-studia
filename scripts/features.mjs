@@ -50,7 +50,7 @@ export const FEATURES = [
       'src/loaders/bibtex.ts',
       'src/data/papers.bib',
       'src/data/venues.yml',
-      'scripts/update_bib.py',
+      'scripts/update-bib.mjs',
       'scripts/find-missing-papers.mjs',
       'scripts/lib/missing-papers.mjs',
       'src/data/papers-ignore.yml',
@@ -202,7 +202,7 @@ export const FEATURES = [
     presets: ['profile', 'project'],
     /*
      * NOT `socials`, although the refresh script needs it:
-     * update_scholar_citations.py reads `scholar_userid` from
+     * update-scholar-citations.mjs reads `scholar_userid` from
      * src/data/socials.yml, and that file is on disk whatever the flags say.
      * `requires` means "cannot build", and this builds — citations.yml is read
      * on its own. Turning socials off only means nobody refreshes the counts.
@@ -211,8 +211,7 @@ export const FEATURES = [
     paths: [
       'src/lib/citations.ts',
       'src/data/citations.yml',
-      'scripts/update_scholar_citations.py',
-      'requirements.txt',
+      'scripts/update-scholar-citations.mjs',
       '.github/workflows/update-citations.yml',
     ],
     manual: [],

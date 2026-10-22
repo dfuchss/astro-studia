@@ -9,7 +9,7 @@
 orcid_id: 0000-0002-1825-0097
 
 # The `user` parameter in your Scholar profile URL. Renders the Scholar chip,
-# and tells scripts/update_scholar_citations.py whose citations to fetch. Left
+# and tells scripts/update-scholar-citations.mjs whose citations to fetch. Left
 # unset because Google Scholar has no placeholder account.
 scholar_userid: null
 

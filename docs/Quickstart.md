@@ -2,7 +2,7 @@
 
 Node 22 or newer (`.nvmrc` pins it, and `.devcontainer/devcontainer.json` pins
 the same version for GitHub Codespaces and VS Code dev containers). Nothing
-else: the build needs no network, no token and no Python.
+else: the build needs no network and no token.
 
 ```bash
 npx degit dfuchss/astro-studia my-site   # or "Use this template" on GitHub

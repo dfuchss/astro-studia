@@ -26,7 +26,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "screenshots": "node scripts/screenshots.mjs",
     "data:github": "node scripts/fetch-github-metadata.mjs",
-    "bib:check": "python3 scripts/update_bib.py",
+    "data:citations": "node scripts/update-scholar-citations.mjs",
+    "bib:check": "node scripts/update-bib.mjs",
     "bib:missing": "node scripts/find-missing-papers.mjs",
     "docs": "node scripts/gen-docs.mjs",
     "docs:check": "node scripts/gen-docs.mjs --check"
