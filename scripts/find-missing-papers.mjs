@@ -33,6 +33,7 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { XMLParser } from 'fast-xml-parser';
+import { COMMON_HTML, CURRENCY, EntityDecoder, XML } from '@nodable/entities';
 import {
   BIB_FILE,
   SOCIALS_FILE,
@@ -91,7 +92,10 @@ function parseDblpRecords(xmlText) {
     preserveOrder: true,
     ignoreAttributes: false,
     attributeNamePrefix: '',
-    htmlEntities: true,
+    entityDecoder: new EntityDecoder({
+      namedEntities: { ...XML, ...COMMON_HTML, ...CURRENCY },
+      numericAllowed: true,
+    }),
     trimValues: false,
   });
   const publications = [];
