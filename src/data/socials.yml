@@ -28,9 +28,9 @@ researchgate_username: null
 work_url: null
 
 # Anything the fields above do not cover. `icon` may name one of the marks in
-# components/SocialRow.astro — orcid, scholar, dblp, github, codeberg, linkedin,
-# semanticscholar, researchgate, work — and without one the entry renders as a
-# text chip instead.
+# components/SocialRow.astro — orcid, scholar, dblp, github, codeberg, gitlab,
+# linkedin, mastodon, bluesky, semanticscholar, researchgate, work — and without
+# one the entry renders as a text chip instead.
 extra:
   - label: Codeberg
     url: https://codeberg.org/
