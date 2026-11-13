@@ -11,6 +11,11 @@ npm install
 npm run dev                              # http://localhost:4321 → /astro-studia/
 ```
 
+Put the upstream commit you started from (`git ls-remote
+https://github.com/dfuchss/astro-studia.git main`) into your first commit's
+message. Then, if you later want upstream fixes, [Updating](Updating.md) is two
+commands instead of a search.
+
 `/` redirects to `/astro-studia/` because the template ships configured for a
 project page and `base` is derived from `SITE.url`. Hand-written links, `public/`
 assets, the favicon and the brand mark then resolve in dev exactly as they do in

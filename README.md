@@ -116,6 +116,7 @@ repository's [wiki](https://github.com/dfuchss/astro-studia/wiki).
 | [Deploying](docs/Deploying.md)         | Pages, base paths, the URL policy, the wiki                                  |
 | [Verification](docs/Verification.md)   | what each check asserts, and why it is written that way                      |
 | [Architecture](docs/Architecture.md)   | how the loader, collections, integrations and scripts fit together           |
+| [Updating](docs/Updating.md)           | pulling upstream fixes into your copy, even one made with `degit`            |
 
 ## Layout
 
