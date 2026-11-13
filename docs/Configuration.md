@@ -309,7 +309,8 @@ line) and its chip does not render — that is how you remove a profile you do n
 have, rather than by editing `SocialRow.astro`.
 
 An `extra` entry's `icon` may name one of the marks in `SocialRow.astro` — `orcid`,
-`scholar`, `dblp`, `github`, `codeberg`, `linkedin`, `semanticscholar`, `researchgate`, `work` — and
+`scholar`, `dblp`, `github`, `codeberg`, `gitlab`, `linkedin`, `mastodon`, `bluesky`,
+`semanticscholar`, `researchgate`, `work` — and
 without one it renders as a text chip, so an unfamiliar platform still looks
 deliberate. The fixed list is a convenience, not a whitelist: where an academic
 keeps a profile is not something a template gets to decide.
