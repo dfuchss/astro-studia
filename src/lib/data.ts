@@ -71,7 +71,14 @@ export type GithubMetadata = {
   >;
 };
 
-export const citations = parse(citationsRaw) as CitationsFile;
+// A bare `papers:` with its rows deleted parses as null, not as an empty map.
+const parsedCitations = parse(citationsRaw) as Omit<CitationsFile, 'papers'> & {
+  papers: CitationsFile['papers'] | null;
+};
+export const citations: CitationsFile = {
+  ...parsedCitations,
+  papers: parsedCitations.papers ?? {},
+};
 export const socials = parse(socialsRaw) as Socials;
 export const repositories = parse(repositoriesRaw) as Repositories;
 export const languageColors = parse(languageColorsRaw) as Record<string, string>;
