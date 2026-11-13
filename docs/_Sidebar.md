@@ -13,6 +13,7 @@
 
 - [Deploying](Deploying.md)
 - [Verification](Verification.md)
+- [Updating](Updating.md)
 
 **Understanding it**
 
