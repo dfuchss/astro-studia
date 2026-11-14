@@ -1,7 +1,7 @@
 ---
 # /projects/ and each project's page. The body follows the count in the lede.
 # Owned by the `projects` feature.
-title: 'projects'
+title: 'Projects'
 description: 'Tools, corpora and long-running work.'
 count: '{count} entries.'
 # The groups are src/data/project-groups.yml. With no project categorised the

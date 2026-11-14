@@ -1,7 +1,7 @@
 ---
 # /publications/. The body follows the count in the lede. The words on each
 # entry are site/publication.md. Owned by the `publications` feature.
-title: 'publications'
+title: 'Publications'
 description: 'Everything in src/data/papers.bib, newest first, with the BibTeX for each.'
 count: '{count} entries,'
 labels:

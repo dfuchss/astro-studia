@@ -1,7 +1,7 @@
 ---
 # /pgp-key/. The advice under the key and the notice shown while no
 # fingerprint is set are the theme's, in the template. Owned by the `pgp` feature.
-title: 'pgp key'
+title: 'PGP key'
 description: 'Public key for encrypted mail.'
 labels:
   fingerprint: 'Fingerprint'

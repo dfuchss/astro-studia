@@ -1,7 +1,7 @@
 ---
 # /papers/, the list of paper pages. The body is the lede. Each page's own
 # words are site/publication.md. Owned by the `papers` feature.
-title: 'papers'
+title: 'Papers'
 description: 'Works with a page of their own: the abstract, the figure, and where to find them.'
 ---
 
