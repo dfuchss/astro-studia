@@ -1,9 +1,18 @@
 import type { Loader } from 'astro/loaders';
-import { parse } from '@retorquere/bibtex-parser/js';
+import type { VerbatimEntry } from '@retorquere/bibtex-parser';
+import { initSync, parse, parseVerbatim } from '@retorquere/bibtex-parser';
 import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// The parser is a WASM build that must be initialized before the first parse.
+initSync({
+  module: readFileSync(
+    createRequire(import.meta.url).resolve('@retorquere/bibtex-parser/bibtex_parser_bg.wasm'),
+  ),
+});
 
 /** One BibTeX field that carries a link. Declaring it validates the value
     against disk, exposes it on the entry under `as`, and keeps it out of the
@@ -56,39 +65,18 @@ const num = (v: unknown): number | undefined => {
   return Number.isNaN(n) ? undefined : n;
 };
 
-/** A parsed BibTeX name. The parser hands these back even in `raw` mode. */
-type BibName = { lastName?: string; firstName?: string; prefix?: string; suffix?: string };
-
-const isNameList = (v: unknown): v is BibName[] =>
-  Array.isArray(v) && v.length > 0 && typeof v[0] === 'object' && v[0] !== null;
-
-/** `author` and `editor` come back as name objects, never strings — naive
-    stringifying yields "[object Object]". Rebuild "Last, First" joined by
-    " and ", LaTeX escapes untouched. */
-const names = (list: BibName[]): string =>
-  list
-    .map((n) => {
-      const last = (n.lastName ?? '').trim();
-      const first = (n.firstName ?? '').trim();
-      if (last && first) return `${last}, ${first}`;
-      return last || first;
-    })
-    .filter(Boolean)
-    .join(' and ');
-
 /** One entry re-serialized as public BibTeX, private fields dropped. From the
-    RAW parse, so LaTeX escapes and brace protection survive verbatim into
-    whatever a reader pastes into their own .bib. */
-function serialize(
-  type: string,
-  key: string,
-  fields: Record<string, unknown>,
-  privateFields: Set<string>,
-): string {
-  const rows = Object.entries(fields)
-    .filter(([k]) => !privateFields.has(k.toLowerCase()))
-    .map(([k, v]) => `  ${k.padEnd(12)} = {${(isNameList(v) ? names(v) : str(v)) ?? ''}}`);
-  return `@${type}{${key},\n${rows.join(',\n')}\n}`;
+    VERBATIM parse, so LaTeX escapes and brace protection survive verbatim into
+    whatever a reader pastes into their own .bib. The parser returns fields in
+    hash order, so they are sorted back into the order of the source entry
+    (`input`). */
+function serialize(entry: VerbatimEntry, privateFields: Set<string>): string {
+  const position = (field: string) => entry.input.search(new RegExp(`[,{]\\s*${field}\\s*=`, 'i'));
+  const rows = Object.entries(entry.fields)
+    .filter(([field]) => !privateFields.has(field.toLowerCase()))
+    .sort(([a], [b]) => position(a) - position(b))
+    .map(([field, value]) => `  ${field.padEnd(12)} = {${str(value) ?? ''}}`);
+  return `@${entry.type}{${entry.key},\n${rows.join(',\n')}\n}`;
 }
 
 export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
@@ -113,24 +101,25 @@ export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
 
       const source = await readFile(bibPath, 'utf8');
 
-      // Two passes: `cooked` decodes LaTeX to Unicode for display, `raw` keeps
-      // the escapes for the copyable block. sentenceCase:false preserves
-      // brace-protected casing — {LiSSA} stays LiSSA, not Lissa.
-      const cooked = parse(source, { sentenceCase: false });
-      const raw = parse(source, { sentenceCase: false, raw: true });
+      // Two passes: `cooked` decodes LaTeX to Unicode for display, `verbatim`
+      // keeps the escapes for the copyable block. The parser sentence-cases
+      // titles of English entries; with no language counted as English, titles
+      // keep their casing — {LiSSA} stays LiSSA, not Lissa.
+      const cooked = parse(source, { english: [] });
+      const verbatim = parseVerbatim(source);
 
       if (cooked.errors.length > 0) {
         for (const e of cooked.errors) logger.error(`${opts.file}: ${JSON.stringify(e)}`);
         throw new Error(`${cooked.errors.length} BibTeX parse error(s) in ${opts.file}`);
       }
 
-      const rawByKey = new Map(raw.entries.map((e) => [e.key, e]));
+      const verbatimByKey = new Map(verbatim.entries.map((e) => [e.key, e]));
       store.clear();
 
       for (const entry of cooked.entries) {
-        const f = entry.fields as Record<string, unknown>;
+        const f = entry.fields;
 
-        const authors = (f.author as BibName[] | undefined) ?? [];
+        const authors = f.author ?? [];
         if (authors.length === 0) throw new Error(`${entry.key}: no authors parsed`);
 
         // Resolve and verify every declared link field. A dangling one fails
@@ -155,20 +144,17 @@ export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
           linkValues[link.as] = resolved.value;
         }
 
-        const rawEntry = rawByKey.get(entry.key);
-        const bibtex = serialize(
-          entry.type,
-          entry.key,
-          (rawEntry?.fields as Record<string, unknown>) ?? f,
-          privateFields,
-        );
+        const verbatimEntry = verbatimByKey.get(entry.key);
+        if (!verbatimEntry) throw new Error(`${entry.key}: missing from the verbatim parse`);
+        const bibtex = serialize(verbatimEntry, privateFields);
 
         // The normalizing parse splits a nobiliary particle off into `prefix`
         // and a "Jr."-style tail into `suffix`. Reading `lastName` alone turns
-        // "von Geisau, Johannes" into "Johannes Geisau".
+        // "von Geisau, Johannes" into "Johannes Geisau". A name the parser
+        // cannot split arrives whole in `name`.
         const people = authors.map((a) => ({
           first: str(a.firstName) ?? '',
-          last: [str(a.prefix), str(a.lastName), str(a.suffix)].filter(Boolean).join(' '),
+          last: [str(a.prefix), str(a.lastName ?? a.name), str(a.suffix)].filter(Boolean).join(' '),
         }));
 
         const data = {
@@ -195,10 +181,7 @@ export function bibtexLoader(opts: BibtexLoaderOptions): Loader {
           location: str(f.location) ?? str(f.venue) ?? str(f.address),
           doi: unLatex(str(f.doi)),
           url: unLatex(str(f.url)),
-          keywords: (str(f.keywords) ?? '')
-            .split(',')
-            .map((k) => k.trim())
-            .filter(Boolean),
+          keywords: f.keywords ?? [],
           googleScholarId: str(f.google_scholar_id),
           ...linkValues,
           bibtex,
